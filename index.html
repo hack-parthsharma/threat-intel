@@ -1768,16 +1768,19 @@ async function startSIAScan() {
 
 function analyzeFileType(name, ext, size) {
   const dangerous = ['exe','msi','bat','cmd','ps1','vbs','wsf','scr','pif','com','hta','cpl','jar','apk','sh'];
+  const macroEnabled = ['docm','xlsm','pptm','dotm','xltm','potm'];
   const archives = ['zip','rar','7z','tar','gz','tgz'];
-  const documents = ['pdf','doc','docx','xls','xlsx','ppt','pptx','rtf'];
-  const safe = ['txt','csv','json','xml','yml','yaml','md','png','jpg','jpeg','gif','svg','mp4','mp3'];
+  const documents = ['pdf','doc','docx','xls','xlsx','ppt','pptx','rtf','odt','ods','odp'];
+  const safe = ['txt','csv','json','xml','yml','yaml','md','png','jpg','jpeg','gif','svg','mp4','mp3','wav','webp','ico','bmp','ttf','woff','woff2'];
 
   if (dangerous.includes(ext)) {
     return { engine: 'File Type Analysis', status: 'malicious', confidence: 80, details: { 'Type': 'Executable / Script', 'Extension': '.' + ext, 'Risk': 'HIGH — Can execute code on system' }, description: `This is an executable/script file (.${ext}) that can run code directly on the system. Requires thorough review before allowing.` };
+  } else if (macroEnabled.includes(ext)) {
+    return { engine: 'File Type Analysis', status: 'suspicious', confidence: 70, details: { 'Type': 'Macro-Enabled Document', 'Extension': '.' + ext, 'Risk': 'MODERATE — Contains executable macros' }, description: `Macro-enabled document (.${ext}) can execute code via embedded macros. Macros should be reviewed before enabling.` };
   } else if (archives.includes(ext)) {
-    return { engine: 'File Type Analysis', status: 'suspicious', confidence: 60, details: { 'Type': 'Archive', 'Extension': '.' + ext, 'Risk': 'MODERATE — May contain hidden executables' }, description: `Archive file (.${ext}) can contain any file type inside, including executables. Contents should be inspected.` };
+    return { engine: 'File Type Analysis', status: 'suspicious', confidence: 55, details: { 'Type': 'Archive', 'Extension': '.' + ext, 'Risk': 'MODERATE — May contain hidden executables' }, description: `Archive file (.${ext}) can contain any file type inside, including executables. Contents should be inspected.` };
   } else if (documents.includes(ext)) {
-    return { engine: 'File Type Analysis', status: 'suspicious', confidence: 40, details: { 'Type': 'Document', 'Extension': '.' + ext, 'Risk': 'LOW-MODERATE — Can contain macros' }, description: `Document file (.${ext}) could contain macros or embedded content. Verify source before opening.` };
+    return { engine: 'File Type Analysis', status: 'clean', confidence: 80, details: { 'Type': 'Document', 'Extension': '.' + ext, 'Risk': 'LOW — Standard document format' }, description: `Standard document file (.${ext}). No macro capability in this format.` };
   } else if (safe.includes(ext)) {
     return { engine: 'File Type Analysis', status: 'clean', confidence: 85, details: { 'Type': 'Data / Media', 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `Data/media file (.${ext}) with low inherent risk.` };
   }
