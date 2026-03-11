@@ -1745,10 +1745,10 @@ async function startSIAScan() {
   pFill.style.width = '70%';
   pText.textContent = 'Scanning with MetaDefender (20+ engines)...';
   pEngine.textContent = 'MetaDefender';
-  if (backendAvailable && siaFile) {
+  if (siaFile && fileHash) {
     results.push(await checkMetaDefender(fileHash));
   } else {
-    results.push({ engine: 'MetaDefender Cloud', status: 'error', confidence: 0, details: { 'Note': 'Requires backend connection' }, description: 'MetaDefender requires the backend proxy.' });
+    results.push({ engine: 'MetaDefender Cloud', status: 'error', confidence: 0, details: { 'Error': 'No file or hash' }, description: 'Could not scan with MetaDefender.' });
   }
 
   // Engine 6: Name Pattern Analysis
@@ -1994,12 +1994,20 @@ function parseVTFileResult(data, hash) {
 }
 
 async function checkMetaDefender(hash) {
+  const MD_KEY = '498a6ecf01d9e5637878be789e58891c';
   try {
     // Step 1: Try hash lookup first
     let data;
     try {
-      const resp = await fetch(PROXY_BASE + `/api/metadefender/hash?hash=${hash}`);
-      data = await resp.json();
+      if (backendAvailable) {
+        const resp = await fetch(PROXY_BASE + `/api/metadefender/hash?hash=${hash}`);
+        data = await resp.json();
+      } else {
+        const resp = await fetch(`https://api.metadefender.com/v4/hash/${hash}`, {
+          headers: { 'apikey': MD_KEY }
+        });
+        data = await resp.json();
+      }
     } catch(e) { data = null; }
 
     // If hash found and scan complete
@@ -2013,16 +2021,29 @@ async function checkMetaDefender(hash) {
     pText.textContent = 'Uploading to MetaDefender Cloud...';
     pEngine.textContent = 'File Upload';
 
-    const uploadForm = new FormData();
-    uploadForm.append('file', siaFile, siaFile.name);
-
     let uploadData;
     try {
-      const uploadResp = await fetch(PROXY_BASE + '/api/metadefender/file', {
-        method: 'POST',
-        body: uploadForm,
-      });
-      uploadData = await uploadResp.json();
+      if (backendAvailable) {
+        const uploadForm = new FormData();
+        uploadForm.append('file', siaFile, siaFile.name);
+        const uploadResp = await fetch(PROXY_BASE + '/api/metadefender/file', {
+          method: 'POST',
+          body: uploadForm,
+        });
+        uploadData = await uploadResp.json();
+      } else {
+        const fileBytes = await siaFile.arrayBuffer();
+        const uploadResp = await fetch('https://api.metadefender.com/v4/file', {
+          method: 'POST',
+          headers: {
+            'apikey': MD_KEY,
+            'content-type': 'application/octet-stream',
+            'filename': siaFile.name,
+          },
+          body: fileBytes,
+        });
+        uploadData = await uploadResp.json();
+      }
     } catch(e) { uploadData = null; }
 
     if (uploadData?.data_id) {
@@ -2035,8 +2056,16 @@ async function checkMetaDefender(hash) {
         pText.textContent = `MetaDefender scanning... (${(attempt+1)*5}s)`;
 
         try {
-          const pollResp = await fetch(PROXY_BASE + `/api/metadefender/result?id=${encodeURIComponent(dataId)}`);
-          const pollData = await pollResp.json();
+          let pollData;
+          if (backendAvailable) {
+            const pollResp = await fetch(PROXY_BASE + `/api/metadefender/result?id=${encodeURIComponent(dataId)}`);
+            pollData = await pollResp.json();
+          } else {
+            const pollResp = await fetch(`https://api.metadefender.com/v4/file/${dataId}`, {
+              headers: { 'apikey': MD_KEY }
+            });
+            pollData = await pollResp.json();
+          }
 
           if (pollData.scan_results && pollData.scan_results.progress_percentage === 100) {
             return parseMDResult(pollData);
@@ -2049,7 +2078,7 @@ async function checkMetaDefender(hash) {
         status: 'unknown',
         confidence: 40,
         details: { 'Data ID': dataId, 'Result': 'Scan still processing' },
-        description: 'File uploaded to MetaDefender but scan still in progress. Check back shortly.'
+        description: 'File uploaded to MetaDefender but scan still in progress.'
       };
     }
 
