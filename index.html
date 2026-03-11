@@ -1729,28 +1729,40 @@ async function startSIAScan() {
   await new Promise(r => setTimeout(r, 400));
   results.push(analyzeFileSize(fileSize, fileExt));
 
-  // Engine 4: VirusTotal Hash Lookup
-  pFill.style.width = '65%';
+  // Engine 4: VirusTotal (files under 32MB)
+  pFill.style.width = '50%';
   pText.textContent = 'Querying VirusTotal...';
   pEngine.textContent = 'VirusTotal';
-  if (fileHash) {
+  if (fileHash && fileSize <= 33554432) {
     results.push(await checkVTHash(fileHash));
+  } else if (fileSize > 33554432) {
+    results.push({ engine: 'VirusTotal (File Scan)', status: 'unknown', confidence: 0, details: { 'Note': 'File exceeds 32MB VT limit — using MetaDefender instead' }, description: 'File too large for VirusTotal free tier (32MB max). MetaDefender handles files up to 140MB.', skipped: true });
   } else {
-    results.push({ engine: 'VirusTotal (Hash Lookup)', status: 'error', confidence: 0, details: { 'Error': 'Could not compute hash' }, description: 'File hash computation failed.' });
+    results.push({ engine: 'VirusTotal (File Scan)', status: 'error', confidence: 0, details: { 'Error': 'Could not compute hash' }, description: 'File hash computation failed.' });
   }
 
-  // Engine 5: Name Pattern Analysis
-  pFill.style.width = '80%';
+  // Engine 5: MetaDefender Cloud (20+ AV engines, up to 140MB)
+  pFill.style.width = '70%';
+  pText.textContent = 'Scanning with MetaDefender (20+ engines)...';
+  pEngine.textContent = 'MetaDefender';
+  if (backendAvailable && siaFile) {
+    results.push(await checkMetaDefender(fileHash));
+  } else {
+    results.push({ engine: 'MetaDefender Cloud', status: 'error', confidence: 0, details: { 'Note': 'Requires backend connection' }, description: 'MetaDefender requires the backend proxy.' });
+  }
+
+  // Engine 6: Name Pattern Analysis
+  pFill.style.width = '85%';
   pText.textContent = 'Checking filename patterns...';
   pEngine.textContent = 'Name Analysis';
   await new Promise(r => setTimeout(r, 400));
   results.push(analyzeFileName(fileName));
 
-  // Engine 6: Overall Risk Score
+  // Final
   pFill.style.width = '95%';
   pText.textContent = 'Calculating verdict...';
   pEngine.textContent = 'Risk Engine';
-  await new Promise(r => setTimeout(r, 400));
+  await new Promise(r => setTimeout(r, 300));
 
   pFill.style.width = '100%';
   pText.textContent = 'Analysis complete';
@@ -1981,6 +1993,125 @@ function parseVTFileResult(data, hash) {
   return { engine: 'VirusTotal (File Scan)', status, confidence: 92, details, description: desc };
 }
 
+async function checkMetaDefender(hash) {
+  try {
+    // Step 1: Try hash lookup first
+    let data;
+    try {
+      const resp = await fetch(PROXY_BASE + `/api/metadefender/hash?hash=${hash}`);
+      data = await resp.json();
+    } catch(e) { data = null; }
+
+    // If hash found and scan complete
+    if (data && data.scan_results && data.scan_results.scan_all_result_a !== undefined) {
+      return parseMDResult(data);
+    }
+
+    // Step 2: Upload file for scanning
+    const pText = document.getElementById('siaProgressText');
+    const pEngine = document.getElementById('siaProgressEngine');
+    pText.textContent = 'Uploading to MetaDefender Cloud...';
+    pEngine.textContent = 'File Upload';
+
+    const uploadForm = new FormData();
+    uploadForm.append('file', siaFile, siaFile.name);
+
+    let uploadData;
+    try {
+      const uploadResp = await fetch(PROXY_BASE + '/api/metadefender/file', {
+        method: 'POST',
+        body: uploadForm,
+      });
+      uploadData = await uploadResp.json();
+    } catch(e) { uploadData = null; }
+
+    if (uploadData?.data_id) {
+      const dataId = uploadData.data_id;
+      pText.textContent = 'MetaDefender scanning (20+ engines)...';
+
+      // Step 3: Poll for results (up to 60 seconds)
+      for (let attempt = 0; attempt < 12; attempt++) {
+        await new Promise(r => setTimeout(r, 5000));
+        pText.textContent = `MetaDefender scanning... (${(attempt+1)*5}s)`;
+
+        try {
+          const pollResp = await fetch(PROXY_BASE + `/api/metadefender/result?id=${encodeURIComponent(dataId)}`);
+          const pollData = await pollResp.json();
+
+          if (pollData.scan_results && pollData.scan_results.progress_percentage === 100) {
+            return parseMDResult(pollData);
+          }
+        } catch(e) { continue; }
+      }
+
+      return {
+        engine: 'MetaDefender Cloud',
+        status: 'unknown',
+        confidence: 40,
+        details: { 'Data ID': dataId, 'Result': 'Scan still processing' },
+        description: 'File uploaded to MetaDefender but scan still in progress. Check back shortly.'
+      };
+    }
+
+    return {
+      engine: 'MetaDefender Cloud',
+      status: 'error',
+      confidence: 0,
+      details: { 'Error': uploadData?.error?.messages?.[0] || 'Upload failed' },
+      description: 'Could not upload file to MetaDefender.'
+    };
+  } catch(e) {
+    return {
+      engine: 'MetaDefender Cloud',
+      status: 'error',
+      confidence: 0,
+      details: { 'Error': e.message },
+      description: 'MetaDefender scan failed: ' + e.message
+    };
+  }
+}
+
+function parseMDResult(data) {
+  const sr = data.scan_results || {};
+  const totalEngines = sr.total_avs || 0;
+  const totalDetected = sr.total_detected_avs || 0;
+  const overallResult = sr.scan_all_result_a || 'Unknown';
+
+  // Parse individual engine results
+  const flagged = [];
+  const scanDetails = sr.scan_details || {};
+  for (const [engine, result] of Object.entries(scanDetails)) {
+    if (result.scan_result_i === 1) {
+      flagged.push(`${engine}: ${result.threat_found || 'detected'}`);
+    }
+  }
+
+  let status = 'clean';
+  if (totalDetected >= 3) status = 'malicious';
+  else if (totalDetected >= 1) status = 'suspicious';
+
+  const details = {
+    'Overall Result': overallResult,
+    'Detected': `${totalDetected}/${totalEngines}`,
+    'Total Engines': totalEngines,
+    'Scan Time': sr.total_time ? sr.total_time + 'ms' : 'N/A',
+  };
+
+  if (data.file_info) {
+    if (data.file_info.display_name) details['File Name'] = data.file_info.display_name;
+    if (data.file_info.file_type_description) details['File Type'] = data.file_info.file_type_description;
+  }
+
+  if (flagged.length > 0) {
+    details['Flagged By'] = flagged.slice(0, 8).join(', ') + (flagged.length > 8 ? ` (+${flagged.length-8} more)` : '');
+  }
+
+  let desc = `MetaDefender scanned with ${totalEngines} engines: ${totalDetected} detected threats.`;
+  if (flagged.length > 0) desc += ` Flagged by: ${flagged.slice(0,4).join(', ')}${flagged.length > 4 ? '...' : ''}.`;
+
+  return { engine: 'MetaDefender Cloud', status, confidence: 88, details, description: desc };
+}
+
 function analyzeFileName(name) {
   const f = {};
   let issues = [];
@@ -2013,14 +2144,17 @@ function calculateSIAVerdict(results) {
   let reasons = { safe: [], caution: [], danger: [] };
   let malCount = 0, susCount = 0, cleanCount = 0;
 
-  // Check if VirusTotal gave a clean result
-  const vtResult = results.find(r => r.engine.includes('VirusTotal'));
+  // Check if VirusTotal or MetaDefender gave a clean result
+  const vtResult = results.find(r => r.engine.includes('VirusTotal') && !r.skipped);
+  const mdResult = results.find(r => r.engine.includes('MetaDefender'));
   const vtClean = vtResult && vtResult.status === 'clean';
+  const mdClean = mdResult && mdResult.status === 'clean';
+  const anyEngineClean = vtClean || mdClean;
 
   for (const r of results) {
     // If VT says clean, downgrade file-type "suspicious" to "clean"
     // because VT scanning 70+ engines is more authoritative than a simple extension check
-    if (vtClean && r.engine === 'File Type Analysis' && r.status === 'suspicious') {
+    if (anyEngineClean && r.engine === 'File Type Analysis' && r.status === 'suspicious') {
       r.status = 'clean';
       r.description = r.description.replace('requires verification', 'verified clean by VirusTotal');
       reasons.safe.push({ engine: r.engine, text: r.description });
@@ -2034,14 +2168,14 @@ function calculateSIAVerdict(results) {
   }
 
   // If VT is clean and no other engine found anything malicious, heavily reduce threat score
-  if (vtClean && malCount === 0) {
+  if (anyEngineClean && malCount === 0) {
     threatScore = Math.max(0, threatScore * 0.2);
   }
 
   let title, subtitle, level;
   if (malCount >= 2 || threatScore >= 80) { title = 'DO NOT INSTALL'; subtitle = 'Multiple threat indicators detected in this file'; level = 'danger'; }
   else if (malCount >= 1 || (susCount >= 2 && threatScore >= 25)) { title = 'REVIEW REQUIRED'; subtitle = 'Suspicious indicators found — requires manual review before proceeding'; level = 'caution'; }
-  else if (susCount >= 1 && !vtClean) { title = 'PROCEED WITH CAUTION'; subtitle = 'Minor concerns detected — verify source and business justification'; level = 'caution'; }
+  else if (susCount >= 1 && !anyEngineClean) { title = 'PROCEED WITH CAUTION'; subtitle = 'Minor concerns detected — verify source and business justification'; level = 'caution'; }
   else { title = 'SAFE TO PROCEED'; subtitle = 'No significant threats detected in this file'; level = 'safe'; }
 
   return { title, subtitle, level, threatScore: Math.min(100, Math.round(threatScore)), reasons };
