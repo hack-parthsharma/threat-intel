@@ -3,245 +3,237 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SENTINEL — URL Threat Intelligence</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<title>TRISHUL — URL Threat Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #111118;
-  --bg-card: #16161f;
-  --bg-card-hover: #1c1c28;
-  --border: #2a2a3a;
-  --border-glow: #3a3a5a;
-  --text-primary: #e8e8f0;
-  --text-secondary: #8888a8;
-  --text-muted: #555570;
-  --accent-safe: #00e676;
-  --accent-safe-dim: #00e67620;
-  --accent-warn: #ffab00;
-  --accent-warn-dim: #ffab0020;
-  --accent-danger: #ff1744;
-  --accent-danger-dim: #ff174420;
-  --accent-info: #448aff;
-  --accent-info-dim: #448aff20;
-  --accent-purple: #b388ff;
-  --accent-purple-dim: #b388ff15;
-  --accent-cyan: #18ffff;
+  --bg: #F7F8FA;
+  --bg-white: #FFFFFF;
+  --bg-subtle: #EEF1F6;
+  --bg-dark: #0B1D3A;
+  --bg-dark-hover: #0F2548;
+  --border: #E2E6ED;
+  --border-light: #EEF1F6;
+  --text: #0B1D3A;
+  --text-secondary: #4A5568;
+  --text-muted: #8896AB;
+  --text-white: #FFFFFF;
+  --accent: #E85D26;
+  --accent-hover: #D14E1A;
+  --accent-light: #FEF0EB;
+  --safe: #0D9F6E;
+  --safe-bg: #ECFDF5;
+  --safe-border: #A7F3D0;
+  --warn: #D97706;
+  --warn-bg: #FFFBEB;
+  --warn-border: #FDE68A;
+  --danger: #DC2626;
+  --danger-bg: #FEF2F2;
+  --danger-border: #FECACA;
+  --info: #2563EB;
+  --info-bg: #EFF6FF;
+  --info-border: #BFDBFE;
   --radius: 12px;
   --radius-sm: 8px;
   --radius-lg: 16px;
-  --font-mono: 'JetBrains Mono', monospace;
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 2px rgba(11,29,58,0.05);
+  --shadow: 0 1px 3px rgba(11,29,58,0.08), 0 1px 2px rgba(11,29,58,0.04);
+  --shadow-md: 0 4px 6px -1px rgba(11,29,58,0.07), 0 2px 4px -1px rgba(11,29,58,0.04);
+  --shadow-lg: 0 10px 25px -3px rgba(11,29,58,0.08), 0 4px 6px -2px rgba(11,29,58,0.03);
+  --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
   min-height: 100vh;
-  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  top: -50%; left: -50%;
-  width: 200%; height: 200%;
-  background:
-    radial-gradient(ellipse at 20% 20%, #448aff08 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, #b388ff06 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, #18ffff04 0%, transparent 60%);
-  animation: ambientDrift 30s ease-in-out infinite alternate;
-  pointer-events: none; z-index: 0;
+/* ── Top Bar ── */
+.topbar {
+  background: var(--bg-dark);
+  padding: 0 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-@keyframes ambientDrift {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(-5%, -3%) rotate(3deg); }
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-body::after {
-  content: '';
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, #0a0a0f08 2px, #0a0a0f08 4px);
-  pointer-events: none; z-index: 9999;
+.topbar-logo {
+  font-family: var(--font);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-white);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
 }
 
+.topbar-logo span {
+  color: var(--accent);
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255,255,255,0.15);
+}
+
+.topbar-subtitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.5px;
+}
+
+.topbar-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 14px;
+  border-radius: 20px;
+}
+
+.topbar-status.connected {
+  background: rgba(13,159,110,0.15);
+  color: #34D399;
+  border: 1px solid rgba(13,159,110,0.2);
+}
+
+.topbar-status.disconnected {
+  background: rgba(217,119,6,0.15);
+  color: #FBBF24;
+  border: 1px solid rgba(217,119,6,0.2);
+}
+
+.topbar-status .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Container ── */
 .container {
-  max-width: 1100px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 40px 24px;
-  position: relative; z-index: 1;
+  padding: 32px 24px 60px;
 }
 
-/* Header */
-.header {
+/* ── Hero Section ── */
+.hero {
   text-align: center;
-  margin-bottom: 48px;
-  animation: fadeUp 0.8s ease;
+  padding: 48px 0 40px;
+  animation: fadeUp 0.6s ease;
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.header-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--accent-info-dim);
-  border: 1px solid #448aff30;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--accent-info);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: 20px;
-}
-
-.header-badge .pulse {
-  width: 6px; height: 6px;
-  background: var(--accent-info);
-  border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 #448aff80; }
-  50% { opacity: 0.6; box-shadow: 0 0 0 6px #448aff00; }
-}
-
-.header h1 {
-  font-family: var(--font-display);
-  font-size: 42px;
-  font-weight: 700;
-  letter-spacing: -1px;
-  background: linear-gradient(135deg, #e8e8f0 0%, #448aff 50%, #b388ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.hero h1 {
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--bg-dark);
   margin-bottom: 12px;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
 }
 
-.header p {
+.hero h1 span {
+  color: var(--accent);
+}
+
+.hero p {
   color: var(--text-secondary);
   font-size: 15px;
-  max-width: 550px;
+  max-width: 600px;
   margin: 0 auto;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
-/* Backend status indicator */
-.backend-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  padding: 4px 12px;
-  border-radius: 12px;
-  margin-top: 12px;
-}
-
-.backend-status.connected {
-  background: var(--accent-safe-dim);
-  color: var(--accent-safe);
-  border: 1px solid #00e67625;
-}
-
-.backend-status.disconnected {
-  background: var(--accent-warn-dim);
-  color: var(--accent-warn);
-  border: 1px solid #ffab0025;
-}
-
-.backend-status .status-dot {
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-/* Input Section */
-.input-section {
-  background: var(--bg-card);
+/* ── Input Card ── */
+.input-card {
+  background: var(--bg-white);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding: 32px;
-  margin-bottom: 32px;
-  animation: fadeUp 0.8s ease 0.1s both;
-  position: relative; overflow: hidden;
-}
-
-.input-section::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #448aff40, #b388ff40, transparent);
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-lg);
+  animation: fadeUp 0.6s ease 0.1s both;
 }
 
 .input-label {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-family: var(--font-mono);
+  gap: 8px;
   font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: 700;
+  color: var(--text-muted);
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
-.input-label svg { width: 16px; height: 16px; color: var(--accent-info); }
+.input-label svg { width: 15px; height: 15px; color: var(--accent); }
 
-.url-input-wrapper {
+.url-row {
   display: flex;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .url-input {
   flex: 1;
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: var(--radius);
   padding: 14px 18px;
   font-family: var(--font-mono);
   font-size: 14px;
-  color: var(--text-primary);
+  color: var(--text);
   outline: none;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
 }
 
 .url-input::placeholder { color: var(--text-muted); }
 
 .url-input:focus {
-  border-color: var(--accent-info);
-  box-shadow: 0 0 0 3px #448aff15, inset 0 0 20px #448aff05;
+  border-color: var(--accent);
+  background: var(--bg-white);
+  box-shadow: 0 0 0 3px rgba(232,93,38,0.1);
 }
 
 .scan-btn {
-  background: linear-gradient(135deg, #448aff, #5c6bc0);
+  background: var(--accent);
   border: none;
   border-radius: var(--radius);
-  padding: 14px 28px;
-  font-family: var(--font-display);
+  padding: 14px 32px;
+  font-family: var(--font);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: white;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -249,474 +241,476 @@ body::after {
 }
 
 .scan-btn:hover {
+  background: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 20px #448aff40;
+  box-shadow: 0 4px 12px rgba(232,93,38,0.3);
 }
 
 .scan-btn:active { transform: translateY(0); }
 
 .scan-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
 }
 
 .scan-btn.scanning {
-  background: linear-gradient(135deg, #5c6bc0, #7c4dff);
-  animation: scanPulse 1.5s ease-in-out infinite;
+  background: var(--bg-dark);
 }
 
-@keyframes scanPulse {
-  0%, 100% { box-shadow: 0 0 0 0 #448aff40; }
-  50% { box-shadow: 0 0 0 8px #448aff00; }
-}
-
-/* Config row */
-.config-row {
+/* Engine tags */
+.engine-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.config-input {
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 8px 14px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-secondary);
-  outline: none;
-  width: 280px;
-  transition: border-color 0.3s;
-}
-
-.config-input:focus { border-color: var(--accent-purple); }
-
-.config-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-muted);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-/* Engine chips */
-.engines-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 6px;
   padding-top: 16px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-light);
 }
 
-.engine-chip {
+.engine-tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: var(--bg-primary);
+  gap: 5px;
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 5px 12px;
-  font-family: var(--font-mono);
+  padding: 4px 10px;
   font-size: 10px;
-  color: var(--text-secondary);
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
 }
 
-.engine-chip .dot {
-  width: 5px; height: 5px;
+.engine-tag .tag-dot {
+  width: 4px; height: 4px;
   border-radius: 50%;
-  background: var(--accent-safe);
+  background: var(--safe);
 }
 
-.engine-chip .dot.api { background: var(--accent-purple); }
+.engine-tag .tag-dot.api { background: var(--accent); }
 
-/* Progress */
+/* ── Progress ── */
 .scan-progress {
-  margin-top: 20px;
+  margin-top: 24px;
   display: none;
 }
 
 .scan-progress.active { display: block; }
 
-.progress-bar-track {
-  height: 3px;
-  background: var(--border);
-  border-radius: 2px;
+.progress-track {
+  height: 4px;
+  background: var(--bg-subtle);
+  border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
-.progress-bar-fill {
+.progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent-info), var(--accent-purple));
-  border-radius: 2px;
-  transition: width 0.5s ease;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent), #F59E0B);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   width: 0%;
+  position: relative;
+  overflow: hidden;
 }
 
-.progress-status {
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.4) 50%,
+    transparent 100%
+  );
+  animation: progressShimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.progress-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .progress-text {
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-secondary);
 }
 
 .progress-engine {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--accent-info);
+  font-weight: 500;
+  color: var(--accent);
 }
 
-/* Verdict Banner */
-.verdict-banner {
-  border-radius: var(--radius-lg);
-  padding: 32px;
+/* ── VT Status ── */
+.vt-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.vt-status span { font-family: var(--font-mono); }
+
+/* ── Results ── */
+.results-container { animation: fadeUp 0.5s ease; }
+
+/* Verdict */
+.verdict-card {
+  border-radius: var(--radius-xl);
+  padding: 28px 32px;
   margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
   position: relative;
   overflow: hidden;
 }
 
-.verdict-banner::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  opacity: 0.05;
-  background: repeating-linear-gradient(-45deg, transparent, transparent 10px, currentColor 10px, currentColor 11px);
-}
-
-.verdict-safe { background: linear-gradient(135deg, #0a1a0f, #0f1f15); border: 1px solid #00e67630; color: var(--accent-safe); }
-.verdict-caution { background: linear-gradient(135deg, #1a1505, #1f1a08); border: 1px solid #ffab0030; color: var(--accent-warn); }
-.verdict-danger { background: linear-gradient(135deg, #1a0508, #1f080a); border: 1px solid #ff174430; color: var(--accent-danger); }
-
-.verdict-top {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-  position: relative; z-index: 1;
-}
+.verdict-safe { background: var(--safe-bg); border: 1px solid var(--safe-border); }
+.verdict-caution { background: var(--warn-bg); border: 1px solid var(--warn-border); }
+.verdict-danger { background: var(--danger-bg); border: 1px solid var(--danger-border); }
 
 .verdict-icon {
-  width: 56px; height: 56px;
+  width: 52px; height: 52px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
+  font-size: 24px;
   flex-shrink: 0;
 }
 
-.verdict-safe .verdict-icon { background: #00e67615; }
-.verdict-caution .verdict-icon { background: #ffab0015; }
-.verdict-danger .verdict-icon { background: #ff174415; }
+.verdict-safe .verdict-icon { background: rgba(13,159,110,0.12); }
+.verdict-caution .verdict-icon { background: rgba(217,119,6,0.12); }
+.verdict-danger .verdict-icon { background: rgba(220,38,38,0.12); }
+
+.verdict-text { flex: 1; }
 
 .verdict-title {
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 3px;
 }
+
+.verdict-safe .verdict-title { color: var(--safe); }
+.verdict-caution .verdict-title { color: var(--warn); }
+.verdict-danger .verdict-title { color: var(--danger); }
 
 .verdict-subtitle {
   font-size: 13px;
-  opacity: 0.7;
-  margin-top: 2px;
-  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .verdict-url {
   font-family: var(--font-mono);
   font-size: 12px;
-  padding: 10px 16px;
-  background: #00000030;
+  padding: 8px 14px;
+  background: rgba(11,29,58,0.04);
   border-radius: var(--radius-sm);
-  word-break: break-all;
   color: var(--text-secondary);
-  position: relative; z-index: 1;
+  word-break: break-all;
+  max-width: 320px;
+  flex-shrink: 0;
 }
 
-/* Score */
-.score-section {
-  display: flex;
-  gap: 20px;
+/* Scores */
+.scores-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
   margin-bottom: 24px;
-  flex-wrap: wrap;
 }
 
 .score-card {
-  background: var(--bg-card);
+  background: var(--bg-white);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: 24px;
-  flex: 1;
-  min-width: 200px;
   text-align: center;
+  box-shadow: var(--shadow-sm);
 }
 
-.score-ring-container {
-  width: 100px; height: 100px;
-  margin: 0 auto 16px;
+.score-ring-wrap {
+  width: 90px; height: 90px;
+  margin: 0 auto 14px;
   position: relative;
 }
 
-.score-ring-container svg {
+.score-ring-wrap svg {
   width: 100%; height: 100%;
   transform: rotate(-90deg);
 }
 
-.score-ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
-.score-ring-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1.5s ease; }
+.score-ring-bg { fill: none; stroke: var(--bg-subtle); stroke-width: 6; }
+.score-ring-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
 
-.score-value {
+.score-num {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
 }
 
 .score-label {
-  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text-secondary);
+  font-weight: 700;
+  color: var(--text-muted);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
 
-/* Engine Results */
-.engines-section { margin-bottom: 24px; }
-
-.section-title {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 16px;
+/* Export */
+.export-row {
   display: flex;
-  align-items: center;
   gap: 10px;
+  margin-bottom: 24px;
 }
 
-.section-title .icon { width: 20px; height: 20px; color: var(--accent-info); }
-
-.engine-result {
-  background: var(--bg-card);
+.export-btn {
+  background: var(--bg-white);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 10px;
-  transition: all 0.3s ease;
-}
-
-.engine-result:hover {
-  border-color: var(--border-glow);
-  background: var(--bg-card-hover);
-}
-
-.engine-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.engine-name {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.engine-status {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-weight: 500;
-}
-
-.status-clean { background: var(--accent-safe-dim); color: var(--accent-safe); border: 1px solid #00e67625; }
-.status-suspicious { background: var(--accent-warn-dim); color: var(--accent-warn); border: 1px solid #ffab0025; }
-.status-malicious { background: var(--accent-danger-dim); color: var(--accent-danger); border: 1px solid #ff174425; }
-.status-unknown { background: var(--accent-info-dim); color: var(--accent-info); border: 1px solid #448aff25; }
-.status-error { background: #ffffff08; color: var(--text-muted); border: 1px solid var(--border); }
-
-.engine-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 8px;
-}
-
-.detail-item {
-  display: flex;
-  justify-content: space-between;
+  border-radius: var(--radius-sm);
+  padding: 9px 16px;
+  font-family: var(--font);
   font-size: 12px;
-  padding: 6px 0;
-  border-bottom: 1px solid #ffffff05;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.detail-key { color: var(--text-muted); font-family: var(--font-mono); font-size: 11px; }
-.detail-value { color: var(--text-secondary); font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
+.export-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 /* Analysis */
-.analysis-section {
-  background: var(--bg-card);
+.analysis-card {
+  background: var(--bg-white);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 28px;
   margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
 }
 
-.analysis-section h3 {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 600;
+.section-heading {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
+.section-heading svg { width: 18px; height: 18px; color: var(--accent); }
+
 .analysis-item {
   display: flex;
   gap: 14px;
-  padding: 14px 0;
-  border-bottom: 1px solid #ffffff06;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .analysis-item:last-child { border-bottom: none; }
 
-.analysis-indicator { width: 6px; border-radius: 3px; flex-shrink: 0; }
+.analysis-bar {
+  width: 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
 
-.indicator-safe { background: var(--accent-safe); }
-.indicator-warn { background: var(--accent-warn); }
-.indicator-danger { background: var(--accent-danger); }
+.bar-safe { background: var(--safe); }
+.bar-warn { background: var(--warn); }
+.bar-danger { background: var(--danger); }
 
-.analysis-content h4 { font-family: var(--font-display); font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-.analysis-content p { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+.analysis-content h4 {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 3px;
+  color: var(--text);
+}
 
-/* Export */
-.export-bar { display: flex; gap: 10px; margin-bottom: 24px; }
-
-.export-btn {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px 18px;
-  font-family: var(--font-mono);
-  font-size: 11px;
+.analysis-content p {
+  font-size: 12px;
   color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.3s ease;
+  line-height: 1.6;
+}
+
+/* Engines */
+.engine-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.engine-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+}
+
+.engine-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.engine-name {
+  font-size: 13px;
+  font-weight: 700;
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.engine-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+.badge-clean { background: var(--safe-bg); color: var(--safe); border: 1px solid var(--safe-border); }
+.badge-suspicious { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
+.badge-malicious { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+.badge-unknown { background: var(--info-bg); color: var(--info); border: 1px solid var(--info-border); }
+.badge-error { background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border); }
+
+.engine-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.engine-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 6px;
 }
 
-.export-btn:hover { border-color: var(--accent-info); color: var(--accent-info); }
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.detail-key { color: var(--text-muted); font-family: var(--font-mono); }
+.detail-val { color: var(--text-secondary); font-family: var(--font-mono); font-weight: 600; }
 
 /* History */
-.history-section {
-  margin-top: 32px;
-  animation: fadeUp 0.8s ease 0.2s both;
-}
+.history-section { margin-top: 32px; }
 
 .history-item {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: var(--bg-card);
+  background: var(--bg-white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px 18px;
-  margin-bottom: 8px;
+  padding: 12px 18px;
+  margin-bottom: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
-.history-item:hover { border-color: var(--border-glow); background: var(--bg-card-hover); }
+.history-item:hover { border-color: var(--accent); box-shadow: var(--shadow); }
 
-.history-verdict-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-
-.history-url {
-  flex: 1;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.history-time { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
-.history-verdict-label { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.5px; flex-shrink: 0; }
+.history-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.history-url { flex: 1; font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-label { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; flex-shrink: 0; }
+.history-time { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
 
 /* Toast */
 .toast {
   position: fixed;
   bottom: 24px; right: 24px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--bg-dark);
   border-radius: var(--radius);
-  padding: 14px 20px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-secondary);
+  padding: 14px 22px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-white);
   z-index: 10000;
   transform: translateY(100px);
   opacity: 0;
   transition: all 0.4s ease;
+  box-shadow: var(--shadow-lg);
 }
 
 .toast.show { transform: translateY(0); opacity: 1; }
 
 /* Responsive */
-@media (max-width: 640px) {
-  .header h1 { font-size: 28px; }
-  .url-input-wrapper { flex-direction: column; }
+@media (max-width: 768px) {
+  .hero h1 { font-size: 28px; }
+  .url-row { flex-direction: column; }
   .scan-btn { justify-content: center; }
-  .score-section { flex-direction: column; }
-  .config-input { width: 100%; }
+  .scores-row { grid-template-columns: 1fr; }
+  .verdict-card { flex-direction: column; text-align: center; }
+  .verdict-url { max-width: 100%; }
+  .topbar { padding: 0 16px; }
+  .topbar-subtitle { display: none; }
 }
 </style>
 </head>
 <body>
 
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo"><span>TRI</span>SHUL</div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-subtitle">URL Threat Intelligence</div>
+  </div>
+  <div class="topbar-status disconnected" id="backendStatus">
+    <span class="dot"></span>
+    <span id="backendStatusText">Checking...</span>
+  </div>
+</div>
+
 <div class="container">
-  <!-- Header -->
-  <div class="header">
-    <div class="header-badge">
-      <span class="pulse"></span>
-      Threat Intelligence Platform
-    </div>
-    <h1>🛡️ SENTINEL</h1>
-    <p>Multi-engine URL threat analysis across 14 engines — VirusTotal, URLhaus, ThreatFox, WHOIS/RDAP, DNS, Wayback Machine, and 8 advanced heuristic analyzers.</p>
-    <div class="backend-status disconnected" id="backendStatus">
-      <span class="status-dot"></span>
-      <span id="backendStatusText">Checking backend...</span>
-    </div>
+  <!-- Hero -->
+  <div class="hero">
+    <h1>Multi-Engine <span>URL Threat</span> Analysis</h1>
+    <p>Scan any URL across 14 intelligence engines — VirusTotal, URLhaus, ThreatFox, WHOIS, DNS, Wayback Machine, and 8 advanced heuristic analyzers.</p>
   </div>
 
-  <!-- Input Section -->
-  <div class="input-section">
+  <!-- Input -->
+  <div class="input-card">
     <div class="input-label">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       Target URL
     </div>
-    <div class="url-input-wrapper">
+    <div class="url-row">
       <input type="text" class="url-input" id="urlInput" placeholder="https://example.com/suspicious-page" spellcheck="false">
       <button class="scan-btn" id="scanBtn" onclick="startScan()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -724,46 +718,45 @@ body::after {
       </button>
     </div>
 
-    <div class="config-row" id="vtStatusRow">
-      <span class="config-label">VirusTotal:</span>
-      <span id="vtStatus" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">Checking...</span>
+    <div class="vt-status">
+      VirusTotal: <span id="vtStatus">Checking...</span>
     </div>
 
-    <div class="engines-info">
-      <div class="engine-chip"><span class="dot api"></span>VirusTotal (70+ engines)</div>
-      <div class="engine-chip"><span class="dot api"></span>URLhaus (abuse.ch)</div>
-      <div class="engine-chip"><span class="dot api"></span>ThreatFox IOC</div>
-      <div class="engine-chip"><span class="dot api"></span>Wayback Machine</div>
-      <div class="engine-chip"><span class="dot api"></span>DNS (Google DoH)</div>
-      <div class="engine-chip"><span class="dot api"></span>WHOIS / RDAP</div>
-      <div class="engine-chip"><span class="dot"></span>Redirect & Headers</div>
-      <div class="engine-chip"><span class="dot"></span>SSL/TLS Check</div>
-      <div class="engine-chip"><span class="dot"></span>Phishing Detection</div>
-      <div class="engine-chip"><span class="dot"></span>Safe Browsing</div>
-      <div class="engine-chip"><span class="dot"></span>Domain Heuristics</div>
-      <div class="engine-chip"><span class="dot"></span>Entropy/DGA Analysis</div>
-      <div class="engine-chip"><span class="dot"></span>Exploit Patterns</div>
-      <div class="engine-chip"><span class="dot"></span>Download Risk</div>
+    <div class="engine-tags">
+      <div class="engine-tag"><span class="tag-dot api"></span>VirusTotal (70+)</div>
+      <div class="engine-tag"><span class="tag-dot api"></span>URLhaus</div>
+      <div class="engine-tag"><span class="tag-dot api"></span>ThreatFox IOC</div>
+      <div class="engine-tag"><span class="tag-dot api"></span>Wayback Machine</div>
+      <div class="engine-tag"><span class="tag-dot api"></span>DNS (Google DoH)</div>
+      <div class="engine-tag"><span class="tag-dot api"></span>WHOIS / RDAP</div>
+      <div class="engine-tag"><span class="tag-dot"></span>Redirect & Headers</div>
+      <div class="engine-tag"><span class="tag-dot"></span>SSL/TLS</div>
+      <div class="engine-tag"><span class="tag-dot"></span>Phishing Detection</div>
+      <div class="engine-tag"><span class="tag-dot"></span>Safe Browsing</div>
+      <div class="engine-tag"><span class="tag-dot"></span>Domain Heuristics</div>
+      <div class="engine-tag"><span class="tag-dot"></span>Entropy/DGA</div>
+      <div class="engine-tag"><span class="tag-dot"></span>Exploit Patterns</div>
+      <div class="engine-tag"><span class="tag-dot"></span>Download Risk</div>
     </div>
 
     <div class="scan-progress" id="scanProgress">
-      <div class="progress-bar-track">
-        <div class="progress-bar-fill" id="progressFill"></div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
       </div>
-      <div class="progress-status">
+      <div class="progress-info">
         <span class="progress-text" id="progressText">Initializing scan...</span>
         <span class="progress-engine" id="progressEngine"></span>
       </div>
     </div>
   </div>
 
-  <!-- Results Container -->
+  <!-- Results -->
   <div id="resultsContainer"></div>
 
-  <!-- Scan History -->
+  <!-- History -->
   <div class="history-section" id="historySection" style="display:none;">
-    <div class="section-title">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <div class="section-heading">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Scan History
     </div>
     <div id="historyList"></div>
@@ -774,10 +767,9 @@ body::after {
 
 <script>
 // ================================================================
-// SENTINEL v2.0 — URL Threat Intelligence
+// TRISHUL v3.0 — URL Threat Intelligence
 // ================================================================
 
-// ========== CONFIGURATION ==========
 const PROXY_BASE = 'https://threatintel.ps191240.workers.dev';
 const VT_API_KEY = '7b1cbfe4e28992636ac7a75fcdb8cc3f17b17987e29f7837cba48c63c32196e3';
 let backendAvailable = false;
@@ -802,1014 +794,109 @@ const KNOWN_SAFE_DOMAINS = [
   'stackoverflow.com','stackexchange.com','w3.org','iana.org',
   'debian.org','ubuntu.com','fedoraproject.org','kernel.org',
   'developer.mozilla.org','docs.python.org','docs.npmjs.com',
-  'en.wikipedia.org','commons.wikimedia.org'
+  'en.wikipedia.org','commons.wikimedia.org','casepoint.com'
 ];
 
 const SUSPICIOUS_TLDS = ['.tk','.ml','.ga','.cf','.gq','.xyz','.top','.work','.click','.link','.loan','.win','.bid','.stream','.racing','.download','.date','.faith','.party','.review','.science','.trade','.accountant','.cricket','.webcam','.zip','.mov'];
-
 const SUSPICIOUS_KEYWORDS = ['login','verify','account','secure','update','confirm','banking','paypal','amazon','apple','microsoft','google','facebook','netflix','signin','password','credential','suspend','urgent','alert','invoice','payment','wallet','crypto','prize','winner','free','offer','click-here','bit.ly','tinyurl'];
-
 const URL_SHORTENERS = ['bit.ly','tinyurl.com','t.co','goo.gl','is.gd','buff.ly','ow.ly','rebrand.ly','bl.ink','short.io','cutt.ly','lnkd.in'];
 
 let scanHistory = [];
 
-// ========== BACKEND DETECTION ==========
+// ── Backend Check ──
 async function checkBackend() {
   const statusEl = document.getElementById('backendStatus');
   const statusText = document.getElementById('backendStatusText');
   const vtStatusEl = document.getElementById('vtStatus');
-
   try {
-    const resp = await fetch(PROXY_BASE + '/health', {
-      method: 'GET',
-      signal: AbortSignal.timeout(5000),
-    });
+    const resp = await fetch(PROXY_BASE + '/health', { method: 'GET', signal: AbortSignal.timeout(5000) });
     const data = await resp.json();
     if (data.status === 'ok') {
       backendAvailable = true;
-      statusEl.className = 'backend-status connected';
-      statusText.textContent = 'Backend connected — full API mode';
-      if (data.vtConfigured) {
-        vtStatusEl.textContent = '✓ API key configured server-side';
-        vtStatusEl.style.color = 'var(--accent-safe)';
-      } else {
-        vtStatusEl.textContent = '⚠ Server key missing — using client key';
-        vtStatusEl.style.color = 'var(--accent-warn)';
-      }
-    } else {
-      throw new Error('Bad response');
-    }
+      statusEl.className = 'topbar-status connected';
+      statusText.textContent = 'Backend Connected';
+      vtStatusEl.textContent = data.vtConfigured ? '✓ Server-side key active' : '⚠ Using client key';
+      vtStatusEl.style.color = data.vtConfigured ? 'var(--safe)' : 'var(--warn)';
+    } else throw new Error();
   } catch(e) {
     backendAvailable = false;
-    statusEl.className = 'backend-status disconnected';
-    statusText.textContent = 'Backend unreachable — using direct API mode';
-    vtStatusEl.textContent = '✓ Using client-side API key';
-    vtStatusEl.style.color = 'var(--accent-info)';
+    statusEl.className = 'topbar-status disconnected';
+    statusText.textContent = 'Direct API Mode';
+    vtStatusEl.textContent = '✓ Client key active';
+    vtStatusEl.style.color = 'var(--info)';
   }
 }
 
-// Backend check runs on load
-
-// ========== FETCH HELPERS ==========
-const CORS_PROXIES = [
-  'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?',
-];
+// ── Fetch Helpers ──
+const CORS_PROXIES = ['https://api.allorigins.win/raw?url=','https://corsproxy.io/?'];
 
 async function fetchViaBackend(endpoint, options = {}) {
-  const url = PROXY_BASE + endpoint;
-  return fetch(url, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-  });
+  return fetch(PROXY_BASE + endpoint, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
 }
 
 async function fetchWithCORSFallback(url, options = {}) {
-  // Try direct first
-  try {
-    const resp = await fetch(url, { ...options, signal: AbortSignal.timeout(8000) });
-    if (resp.ok || resp.status < 500) return resp;
-  } catch(e) { /* CORS blocked */ }
-
-  for (const proxy of CORS_PROXIES) {
-    try {
-      const proxyUrl = proxy + encodeURIComponent(url);
-      const resp = await fetch(proxyUrl, { ...options, signal: AbortSignal.timeout(10000) });
-      if (resp.ok || resp.status < 500) return resp;
-    } catch(e) { continue; }
-  }
-
-  throw new Error('All requests failed (CORS). Deploy the backend proxy for reliable results.');
+  try { const r = await fetch(url, { ...options, signal: AbortSignal.timeout(8000) }); if (r.ok || r.status < 500) return r; } catch(e) {}
+  for (const proxy of CORS_PROXIES) { try { const r = await fetch(proxy + encodeURIComponent(url), { ...options, signal: AbortSignal.timeout(10000) }); if (r.ok || r.status < 500) return r; } catch(e) { continue; } }
+  throw new Error('All requests failed');
 }
 
-function safeParse(text) {
-  try { return JSON.parse(text); } catch(e) {
-    const m = text.match(/\{[\s\S]*\}/);
-    return m ? JSON.parse(m[0]) : null;
-  }
-}
+function safeParse(text) { try { return JSON.parse(text); } catch(e) { const m = text.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : null; } }
 
-// ========== URL PARSING ==========
+// ── URL Parse ──
 function parseURL(urlStr) {
   try {
     if (!/^https?:\/\//i.test(urlStr)) urlStr = 'https://' + urlStr;
     const u = new URL(urlStr);
-    return {
-      full: u.href,
-      protocol: u.protocol,
-      hostname: u.hostname,
-      pathname: u.pathname,
-      search: u.search,
-      port: u.port,
-      tld: '.' + u.hostname.split('.').slice(-1)[0],
-      domain: u.hostname.split('.').slice(-2).join('.'),
-      subdomain: u.hostname.split('.').length > 2 ? u.hostname.split('.').slice(0, -2).join('.') : '',
-      isIP: /^\d{1,3}(\.\d{1,3}){3}$/.test(u.hostname),
-      isHTTPS: u.protocol === 'https:',
-      hasPort: !!u.port,
-      fullDomain: u.hostname
-    };
-  } catch(e) {
-    return null;
-  }
+    return { full: u.href, protocol: u.protocol, hostname: u.hostname, pathname: u.pathname, search: u.search, port: u.port, tld: '.' + u.hostname.split('.').slice(-1)[0], domain: u.hostname.split('.').slice(-2).join('.'), subdomain: u.hostname.split('.').length > 2 ? u.hostname.split('.').slice(0, -2).join('.') : '', isIP: /^\d{1,3}(\.\d{1,3}){3}$/.test(u.hostname), isHTTPS: u.protocol === 'https:', hasPort: !!u.port, fullDomain: u.hostname };
+  } catch(e) { return null; }
 }
 
-// ========== HELPER: is this a known safe domain? ==========
-function isKnownSafe(parsed) {
-  return KNOWN_SAFE_DOMAINS.some(d =>
-    parsed.domain === d || parsed.fullDomain === d || parsed.fullDomain.endsWith('.' + d)
-  );
-}
+function isKnownSafe(parsed) { return KNOWN_SAFE_DOMAINS.some(d => parsed.domain === d || parsed.fullDomain === d || parsed.fullDomain.endsWith('.' + d)); }
 
-// ========== ENGINE 1: URLhaus ==========
-async function checkURLhaus(url) {
-  try {
-    let data;
-    if (backendAvailable) {
-      const resp = await fetchViaBackend('/api/urlhaus', {
-        method: 'POST',
-        body: JSON.stringify({ url }),
-      });
-      data = await resp.json();
-    } else {
-      const resp = await fetchWithCORSFallback('https://urlhaus-api.abuse.ch/v1/url/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'url=' + encodeURIComponent(url),
-      });
-      data = safeParse(await resp.text());
-    }
+// ═══════════════ ENGINES (same logic as before) ═══════════════
 
-    if (!data) throw new Error('Invalid response');
+async function checkURLhaus(url) { try { let data; if (backendAvailable) { const resp = await fetchViaBackend('/api/urlhaus', { method: 'POST', body: JSON.stringify({ url }) }); data = await resp.json(); } else { const resp = await fetchWithCORSFallback('https://urlhaus-api.abuse.ch/v1/url/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'url=' + encodeURIComponent(url) }); data = safeParse(await resp.text()); } if (!data) throw new Error('Invalid response'); if (data.query_status === 'ok' && data.id) { return { engine: 'URLhaus (abuse.ch)', status: 'malicious', confidence: 95, details: { 'Threat Type': data.threat || 'malware', 'Date Added': data.date_added || 'Unknown', 'Tags': (data.tags || []).join(', ') || 'None', 'URLhaus ID': data.id, 'Reporter': data.reporter || 'N/A', 'Status': data.url_status || 'active' }, description: `Reported to URLhaus as distributing ${data.threat || 'malware'}. Flagged by "${data.reporter || 'anonymous'}".` }; } return { engine: 'URLhaus (abuse.ch)', status: 'clean', confidence: 70, details: { 'Result': 'Not found in database', 'Database': 'URLhaus Malware URL Exchange' }, description: 'Not present in URLhaus malware database. Positive signal.' }; } catch(e) { return { engine: 'URLhaus (abuse.ch)', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'Could not reach URLhaus API.' }; } }
 
-    if (data.query_status === 'ok' && data.id) {
-      return {
-        engine: 'URLhaus (abuse.ch)',
-        status: 'malicious',
-        confidence: 95,
-        details: {
-          'Threat Type': data.threat || 'malware',
-          'Date Added': data.date_added || 'Unknown',
-          'Tags': (data.tags || []).join(', ') || 'None',
-          'URLhaus ID': data.id,
-          'Reporter': data.reporter || 'N/A',
-          'Status': data.url_status || 'active'
-        },
-        description: `This URL has been reported to URLhaus as distributing ${data.threat || 'malware'}. Flagged by "${data.reporter || 'anonymous'}" — currently ${data.url_status || 'listed'}.`
-      };
-    }
+async function checkVirusTotal(url) { try { let analysisData = null; const urlId = btoa(url).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_'); try { if (backendAvailable) { const resp = await fetchViaBackend('/api/virustotal/lookup', { method: 'POST', body: JSON.stringify({ url }) }); analysisData = await resp.json(); } else { const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/urls/${urlId}`, { headers: { 'x-apikey': VT_API_KEY } }); analysisData = safeParse(await resp.text()); } if (analysisData?.error) analysisData = null; } catch(e) { analysisData = null; } if (!analysisData?.data?.attributes?.last_analysis_stats) { try { if (backendAvailable) { await fetchViaBackend('/api/virustotal/submit', { method: 'POST', body: JSON.stringify({ url }) }); } else { await fetchWithCORSFallback('https://www.virustotal.com/api/v3/urls', { method: 'POST', headers: { 'x-apikey': VT_API_KEY, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'url=' + encodeURIComponent(url) }); } } catch(e) {} await new Promise(r => setTimeout(r, 15000)); try { if (backendAvailable) { const resp = await fetchViaBackend('/api/virustotal/lookup', { method: 'POST', body: JSON.stringify({ url }) }); analysisData = await resp.json(); } else { const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/urls/${urlId}`, { headers: { 'x-apikey': VT_API_KEY } }); analysisData = safeParse(await resp.text()); } } catch(e) { analysisData = null; } } if (analysisData?.data?.attributes) { const attrs = analysisData.data.attributes; const stats = attrs.last_analysis_stats || {}; const mal = stats.malicious||0, sus = stats.suspicious||0, harm = stats.harmless||0, undet = stats.undetected||0, tout = stats.timeout||0, total = mal+sus+harm+undet+tout; const flagged = []; for (const [v,r] of Object.entries(attrs.last_analysis_results||{})) { if (r.category==='malicious'||r.category==='suspicious') flagged.push(`${v}: ${r.result||r.category}`); } let status='clean'; if(mal>=3) status='malicious'; else if(mal>=1||sus>=2) status='suspicious'; const details = { 'Malicious': `${mal}/${total}`, 'Suspicious': `${sus}/${total}`, 'Harmless': `${harm}/${total}`, 'Total Engines': total, 'Reputation': attrs.reputation??'N/A' }; if(flagged.length>0) details['Flagged By']=flagged.join(', '); if(attrs.last_analysis_date) details['Last Scanned']=new Date(attrs.last_analysis_date*1000).toLocaleString(); let desc=`Scanned with ${total} engines. ${mal} malicious, ${sus} suspicious.`; if(flagged.length>0) desc+=` Flagged by: ${flagged.join(', ')}.`; return { engine:'VirusTotal', status, confidence:92, details, vtStats:stats, description:desc }; } return { engine:'VirusTotal', status:'unknown', confidence:50, details:{'Result':'No analysis available'}, description:'No VirusTotal analysis results.' }; } catch(e) { return { engine:'VirusTotal', status:'error', confidence:0, details:{'Error':e.message}, description:`VirusTotal failed: ${e.message}` }; } }
 
-    return {
-      engine: 'URLhaus (abuse.ch)',
-      status: 'clean',
-      confidence: 70,
-      details: { 'Result': 'Not found in database', 'Database': 'URLhaus Malware URL Exchange' },
-      description: 'This URL is not present in the URLhaus malware URL database. Positive signal, but does not guarantee safety.'
-    };
-  } catch(e) {
-    return {
-      engine: 'URLhaus (abuse.ch)',
-      status: 'error',
-      confidence: 0,
-      details: { 'Error': e.message },
-      description: 'Could not reach URLhaus API. ' + (backendAvailable ? '' : 'Deploy backend proxy for reliable results.')
-    };
-  }
-}
+function checkSSL(parsed) { const f={}; let s='clean',i=[]; if(!parsed.isHTTPS){s='suspicious';i.push('No HTTPS — plaintext');f['Protocol']='HTTP (Insecure)';} else f['Protocol']='HTTPS'; if(parsed.hasPort&&!['443','80','8080','8443'].includes(parsed.port)){i.push(`Non-standard port ${parsed.port}`);if(s==='clean')s='suspicious';f['Port']=parsed.port+' (Non-standard)';} else f['Port']=parsed.port||'Standard'; f['Transport']=parsed.isHTTPS?'TLS Encrypted':'None'; return {engine:'SSL/TLS Analysis',status:s,confidence:75,details:f,issues:i,description:i.length>0?`Concerns: ${i.join('. ')}.`:'HTTPS with standard config.'}; }
 
-// ========== ENGINE 2: VirusTotal ==========
-async function checkVirusTotal(url) {
-  try {
-    let analysisData = null;
-    const urlId = btoa(url).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+function checkDomainReputation(parsed) { const f={}; let score=100,i=[],p=[]; if(isKnownSafe(parsed)){return{engine:'Domain & URL Heuristics',status:'clean',confidence:90,details:{'Known Domain':'Verified safe','Reputation Score':'100/100'},issues:[],positives:['Trusted domain'],reputationScore:100,description:`${parsed.domain} is a trusted domain.`};} if(SUSPICIOUS_TLDS.includes(parsed.tld.toLowerCase())){f['TLD Risk']=parsed.tld+' — High risk';i.push(`Suspicious TLD "${parsed.tld}"`);score-=30;} if(parsed.isIP){i.push('Raw IP address');score-=35;} if(URL_SHORTENERS.includes(parsed.fullDomain)){i.push('URL shortener');score-=15;} const sub=parsed.subdomain.split('.').filter(Boolean); if(sub.length>=3){i.push(`Deep subdomains (${sub.length} levels)`);score-=20;} const kw=SUSPICIOUS_KEYWORDS.filter(k=>parsed.full.toLowerCase().includes(k)); if(kw.length>=2){i.push(`Phishing keywords: ${kw.join(', ')}`);score-=20*Math.min(kw.length,3);} if(parsed.pathname.length>100){i.push('Long path');score-=10;} if(/xn--/.test(parsed.hostname)){i.push('IDN/Punycode');score-=25;} if(parsed.full.includes('@')){i.push('@ symbol');score-=30;} score=Math.max(0,Math.min(100,score)); let s='clean';if(score<40)s='malicious';else if(score<70)s='suspicious'; f['Reputation Score']=score+'/100'; return{engine:'Domain & URL Heuristics',status:s,confidence:65,details:f,issues:i,positives:p,reputationScore:score,description:i.length>0?`Found ${i.length} concern(s): ${i[0]}.`:'No suspicious patterns.'}; }
 
-    // Step 1: Try existing report (backend or direct)
-    try {
-      if (backendAvailable) {
-        const resp = await fetchViaBackend('/api/virustotal/lookup', {
-          method: 'POST',
-          body: JSON.stringify({ url }),
-        });
-        analysisData = await resp.json();
-      } else {
-        const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/urls/${urlId}`, {
-          headers: { 'x-apikey': VT_API_KEY },
-        });
-        analysisData = safeParse(await resp.text());
-      }
-      if (analysisData?.error) analysisData = null;
-    } catch(e) { analysisData = null; }
+function checkPhishing(parsed) { if(isKnownSafe(parsed)) return{engine:'Phishing Pattern Detection',status:'clean',confidence:90,details:{'Phish Score':'0 / 100'},issues:[],phishScore:0,description:'Official domain — no phishing risk.'}; let i=[],f={},ps=0; const brands=['paypal','amazon','apple','google','microsoft','facebook','netflix','instagram','twitter','linkedin','chase','wellsfargo','bankofamerica','citibank','dropbox','spotify']; const h=parsed.hostname.toLowerCase(); for(const b of brands){if(h.includes(b)&&!h.endsWith(b+'.com')&&!h.endsWith(b+'.org')&&!h.endsWith(b+'.net')){i.push(`Possible ${b} impersonation`);ps+=40;break;}} const pp=['login','signin','verify','secure','account','auth','confirm','update','validate','recover','password','credential','billing']; const mp=pp.filter(p=>parsed.pathname.toLowerCase().includes(p)); if(mp.length>=2&&!isKnownSafe(parsed)){i.push('Credential keywords in path');ps+=25;} if(/\d{4,}/.test(parsed.hostname)){ps+=15;i.push('Numeric sequences');} const hc=(parsed.hostname.match(/-/g)||[]).length; if(hc>=3){ps+=15;i.push('Excessive hyphens');} let s='clean';if(ps>=40)s='malicious';else if(ps>=15)s='suspicious'; f['Phish Score']=ps+' / 100'; return{engine:'Phishing Pattern Detection',status:s,confidence:60,details:f,issues:i,phishScore:ps,description:i.length>0?`${i.length} concern(s). Risk: ${ps>=40?'HIGH':'MODERATE'}.`:'No phishing patterns.'}; }
 
-    // Step 2: Submit if no existing report
-    if (!analysisData?.data?.attributes?.last_analysis_stats) {
-      try {
-        if (backendAvailable) {
-          await fetchViaBackend('/api/virustotal/submit', {
-            method: 'POST',
-            body: JSON.stringify({ url }),
-          });
-        } else {
-          await fetchWithCORSFallback('https://www.virustotal.com/api/v3/urls', {
-            method: 'POST',
-            headers: {
-              'x-apikey': VT_API_KEY,
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'url=' + encodeURIComponent(url),
-          });
-        }
-      } catch(e) {}
+function checkSafeBrowsingHeuristic(parsed) { if(isKnownSafe(parsed)) return{engine:'Safe Browsing Heuristics',status:'clean',confidence:80,details:{'Heuristic Risk':'0 / 100'},issues:[],description:'Known safe domain.'}; let r=0,f={},i=[]; if(parsed.isIP){r+=30;i.push('IP-based URL');} if(!parsed.isHTTPS){r+=15;i.push('No HTTPS');} if(SUSPICIOUS_TLDS.includes(parsed.tld)){r+=25;i.push('High-abuse TLD');} if(parsed.pathname.includes('..')||parsed.pathname.includes('%2e%2e')){r+=30;i.push('Path traversal');} if(/<script|javascript:|onerror=|onload=/i.test(parsed.full)){r+=50;i.push('XSS payload');} if(parsed.full.length>500){r+=10;i.push('Very long URL');} let s='clean';if(r>=40)s='malicious';else if(r>=15)s='suspicious'; f['Heuristic Risk']=r+' / 100'; return{engine:'Safe Browsing Heuristics',status:s,confidence:55,details:f,issues:i,description:i.length>0?`${i.length} risk signal(s).`:'Passes all checks.'}; }
 
-      await new Promise(r => setTimeout(r, 15000));
+async function checkThreatFox(url,parsed) { try { let data; if(backendAvailable){const resp=await fetchViaBackend('/api/threatfox',{method:'POST',body:JSON.stringify({domain:parsed.fullDomain})});data=await resp.json();} else{const resp=await fetchWithCORSFallback('https://threatfox-api.abuse.ch/api/v1/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:'search_ioc',search_term:parsed.fullDomain})});data=safeParse(await resp.text());} if(!data) throw new Error('Invalid'); if(data.query_status==='ok'&&data.data&&data.data.length>0){const ioc=data.data[0];return{engine:'ThreatFox (abuse.ch)',status:'malicious',confidence:90,details:{'IOC Type':ioc.ioc_type||'domain','Threat Type':ioc.threat_type||'Unknown','Malware':ioc.malware_printable||'N/A','Confidence':(ioc.confidence_level||'?')+'%'},description:`Found in ThreatFox! ${ioc.threat_type||'malware'} — "${ioc.malware_printable||'unknown'}".`};} return{engine:'ThreatFox (abuse.ch)',status:'clean',confidence:65,details:{'Result':'Not found in IOC database'},description:'Not in ThreatFox. No malware C2 association.'}; } catch(e){return{engine:'ThreatFox (abuse.ch)',status:'error',confidence:0,details:{'Error':e.message},description:'Could not reach ThreatFox.'};} }
 
-      try {
-        if (backendAvailable) {
-          const resp = await fetchViaBackend('/api/virustotal/lookup', {
-            method: 'POST',
-            body: JSON.stringify({ url }),
-          });
-          analysisData = await resp.json();
-        } else {
-          const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/urls/${urlId}`, {
-            headers: { 'x-apikey': VT_API_KEY },
-          });
-          analysisData = safeParse(await resp.text());
-        }
-      } catch(e) { analysisData = null; }
-    }
+async function checkWaybackExistence(parsed) { try { let data; if(backendAvailable){const resp=await fetchViaBackend(`/api/wayback?domain=${encodeURIComponent(parsed.fullDomain)}`);data=await resp.json();} else{const resp=await fetchWithCORSFallback(`https://archive.org/wayback/available?url=${encodeURIComponent(parsed.fullDomain)}`);data=safeParse(await resp.text());} const f={};let i=[],s='clean'; if(data?.archived_snapshots?.closest){const snap=data.archived_snapshots.closest;f['Archived']='Yes';const year=parseInt(snap.timestamp?.substring(0,4));const age=new Date().getFullYear()-year;if(age>=5)f['Maturity']=age+'+ years';else if(age>=1)f['Maturity']=age+' year(s)';else{f['Maturity']='<1 year';if(!isKnownSafe(parsed)){i.push('Limited archive history');s='suspicious';}}} else{f['Archived']='No';if(!isKnownSafe(parsed)){i.push('No archive history');s='suspicious';}else f['Note']='Known safe domain';} return{engine:'Wayback Machine (Archive.org)',status:s,confidence:45,details:f,issues:i,description:i.length>0?`${i[0]}.`:'Has archive presence or known safe.'}; } catch(e){return{engine:'Wayback Machine (Archive.org)',status:'error',confidence:0,details:{'Error':e.message},description:'Could not query Wayback Machine.'};} }
 
-    // Step 3: Parse
-    if (analysisData?.data?.attributes) {
-      const attrs = analysisData.data.attributes;
-      const stats = attrs.last_analysis_stats || {};
-      const malicious = stats.malicious || 0;
-      const suspicious = stats.suspicious || 0;
-      const harmless = stats.harmless || 0;
-      const undetected = stats.undetected || 0;
-      const timeout = stats.timeout || 0;
-      const total = malicious + suspicious + harmless + undetected + timeout;
+async function checkDNS(parsed) { const f={};let i=[],s='clean'; try{let data;if(backendAvailable){const resp=await fetchViaBackend(`/api/dns?domain=${encodeURIComponent(parsed.fullDomain)}&type=A`);data=await resp.json();}else{const resp=await fetchWithCORSFallback(`https://dns.google/resolve?name=${encodeURIComponent(parsed.fullDomain)}&type=A`);data=safeParse(await resp.text());} if(data){f['DNS Status']=data.Status===0?'Resolved ✓':'Status: '+data.Status;if(data.Answer&&data.Answer.length>0){const ips=data.Answer.filter(a=>a.type===1).map(a=>a.data);f['IPs']=ips.join(', ')||'None';for(const ip of ips){if(ip.startsWith('127.')||ip==='0.0.0.0'){i.push(`Loopback IP (${ip})`);s='suspicious';}}if(ips.length>3)f['Infra']=ips.length+' IPs — CDN';}else if(data.Status===3){f['DNS']='NXDOMAIN';i.push('Domain does not resolve');s='suspicious';}f['DNSSEC']=data.AD?'Validated ✓':'Not validated';}} catch(e){f['Error']=e.message;} try{let mx;if(backendAvailable){const r=await fetchViaBackend(`/api/dns?domain=${encodeURIComponent(parsed.fullDomain)}&type=MX`);mx=await r.json();}else{const r=await fetchWithCORSFallback(`https://dns.google/resolve?name=${encodeURIComponent(parsed.fullDomain)}&type=MX`);mx=safeParse(await r.text());}f['Mail']=(mx?.Answer?.length>0)?mx.Answer.length+' MX records':'None';}catch(e){} return{engine:'DNS & Infrastructure',status:s,confidence:60,details:f,issues:i,description:i.length>0?`DNS: ${i[0]}.`:'DNS resolves normally.'}; }
 
-      const flaggedVendors = [];
-      for (const [vendor, result] of Object.entries(attrs.last_analysis_results || {})) {
-        if (result.category === 'malicious' || result.category === 'suspicious') {
-          flaggedVendors.push(`${vendor}: ${result.result || result.category}`);
-        }
-      }
+async function checkRedirects(url,parsed) { const f={};let i=[],s='clean'; try{let rd;if(backendAvailable){const resp=await fetchViaBackend('/api/headers',{method:'POST',body:JSON.stringify({url})});rd=await resp.json();f['HTTP Status']=rd.status+' '+(rd.statusText||'');f['Final URL']=rd.finalUrl||'Same';if(rd.redirected||(rd.finalUrl&&rd.finalUrl!==url)){const fp=parseURL(rd.finalUrl);if(fp&&fp.domain!==parsed.domain){f['Redirected']='Different domain!';i.push(`Redirects to ${fp.domain}`);s='suspicious';}else f['Redirected']='Same domain (normal)';}else f['Redirected']='No';const h=rd.headers||{};f['HSTS']=h['strict-transport-security']?'Enabled ✓':'Not set';f['CSP']=h['content-security-policy']?'Present ✓':'Not set';if(rd.status>=400)i.push(`HTTP ${rd.status}`);}else{try{const resp=await fetch(url,{method:'HEAD',redirect:'follow',signal:AbortSignal.timeout(8000)});f['HTTP Status']=resp.status+' '+resp.statusText;f['Redirected']=resp.redirected?'Yes':'No';}catch(e){f['Note']='CORS blocked — use backend for full analysis';}}}catch(e){f['Error']=e.message;} if(i.length>0&&s==='clean')s='suspicious'; return{engine:'Redirect & Header Analysis',status:s,confidence:50,details:f,issues:i,description:i.length>0?`${i.length} concern(s): ${i[0]}.`:'No issues detected.'}; }
 
-      let status = 'clean';
-      if (malicious >= 3) status = 'malicious';
-      else if (malicious >= 1 || suspicious >= 2) status = 'suspicious';
+function checkEntropy(parsed) { const f={};let i=[],s='clean'; function se(str){const fr={};for(const c of str)fr[c]=(fr[c]||0)+1;const l=str.length;let e=0;for(const c in fr){const p=fr[c]/l;e-=p*Math.log2(p);}return e;} const he=se(parsed.hostname);f['Hostname Entropy']=he.toFixed(2)+' bits/char';if(he>4.0&&parsed.hostname.length>15&&!isKnownSafe(parsed)){i.push(`High entropy (${he.toFixed(2)})`);s='suspicious';f['DGA Risk']='High';}else f['DGA Risk']='Low'; if(parsed.pathname.length>10){const pe=se(parsed.pathname);f['Path Entropy']=pe.toFixed(2);if(pe>4.5&&!isKnownSafe(parsed)){i.push('High path entropy');if(s==='clean')s='suspicious';}} const enc=(parsed.full.match(/%[0-9a-f]{2}/gi)||[]).length;if(enc>10){f['URL Encoding']=enc+' encoded chars';i.push('Excessive encoding');if(s==='clean')s='suspicious';} return{engine:'Entropy & Obfuscation Analysis',status:s,confidence:55,details:f,issues:i,description:i.length>0?`${i.length} anomaly(ies): ${i[0]}.`:'Normal entropy.'}; }
 
-      const details = {
-        'Malicious': `${malicious}/${total}`,
-        'Suspicious': `${suspicious}/${total}`,
-        'Harmless': `${harmless}/${total}`,
-        'Undetected': `${undetected}/${total}`,
-        'Total Engines': total,
-        'Reputation': attrs.reputation ?? 'N/A',
-        'Community Votes': `👍 ${attrs.total_votes?.harmless || 0}  👎 ${attrs.total_votes?.malicious || 0}`
-      };
-      if (flaggedVendors.length > 0) details['Flagged By'] = flaggedVendors.join(', ');
-      if (attrs.last_analysis_date) details['Last Scanned'] = new Date(attrs.last_analysis_date * 1000).toLocaleString();
+function checkOpenRedirect(parsed) { const f={};let i=[],s='clean';const fl=parsed.full.toLowerCase(),sl=parsed.search.toLowerCase(),pl=parsed.pathname.toLowerCase(); const rp=['url=','redirect=','next=','rurl=','dest=','destination=','redir=','redirect_url=','redirect_uri=','return=','go=','goto=','target=','link=','forward=','continue=']; const mr=rp.filter(p=>sl.includes(p)||pl.includes(p));if(mr.length>0){const ext=/(?:url|redirect|next|dest|goto|target|link|forward|continue)=(?:https?(?:%3a|:)(?:%2f|\/){2}|\/\/)/i.test(parsed.full);if(ext){f['Open Redirect']='External!';i.push('External redirect');s='malicious';}else{f['Redirect Params']=mr.join(', ');i.push(`Redirect params: ${mr.join(', ')}`);s='suspicious';}} if(/javascript\s*:/i.test(parsed.full)||/data\s*:/i.test(parsed.full)){i.push('javascript:/data: protocol');s='malicious';} if(/(\.\.[\/\\]){2,}/i.test(parsed.full)){i.push('Path traversal');s='malicious';} if(/('|%27|--|%23|union\s+select|or\s+1\s*=\s*1)/i.test(parsed.search)){i.push('SQL injection pattern');s='malicious';} if(i.length===0)f['Exploit Patterns']='None'; return{engine:'Open Redirect & Exploit Detection',status:s,confidence:70,details:f,issues:i,description:i.length>0?`Detected: ${i[0]}.`:'No exploit patterns.'}; }
 
-      let desc = `VirusTotal scanned with ${total} engines. ${malicious} malicious, ${suspicious} suspicious.`;
-      if (flaggedVendors.length > 0) desc += ` Flagged by: ${flaggedVendors.join(', ')}.`;
+async function checkDomainAge(parsed) { if(isKnownSafe(parsed)) return{engine:'WHOIS / Domain Age (RDAP)',status:'clean',confidence:85,details:{'Known Domain':'Established'},issues:[],description:`${parsed.domain} is established.`}; const f={};let i=[],s='clean'; try{let data;if(backendAvailable){const resp=await fetchViaBackend(`/api/rdap?domain=${encodeURIComponent(parsed.domain)}`);data=await resp.json();}else{const resp=await fetchWithCORSFallback(`https://rdap.org/domain/${encodeURIComponent(parsed.domain)}`);data=safeParse(await resp.text());} if(data){const ev=data.events||[];let reg=null,exp=null;for(const e of ev){if(e.eventAction==='registration')reg=e.eventDate;if(e.eventAction==='expiration')exp=e.eventDate;}if(reg){const rd=new Date(reg);const days=Math.floor((Date.now()-rd.getTime())/(864e5));f['Registered']=rd.toLocaleDateString();f['Age']=days<365?days+' days':(days/365).toFixed(1)+' years';if(days<30){i.push(`Only ${days} days old`);s='malicious';f['Risk']='CRITICAL';}else if(days<90){i.push(`${days} days old`);s='suspicious';f['Risk']='HIGH';}else if(days<365)f['Risk']='Moderate';else f['Risk']='Low';}if(exp)f['Expires']=new Date(exp).toLocaleDateString();}} catch(e){f['RDAP']='Not available';} return{engine:'WHOIS / Domain Age (RDAP)',status:s,confidence:70,details:f,issues:i,description:i.length>0?`Domain age: ${i[0]}.`:'Domain appears established.'}; }
 
-      return { engine: 'VirusTotal', status, confidence: 92, details, vtStats: stats, description: desc };
-    }
+function checkContentRisk(parsed) { const f={};let i=[],s='clean';const pl=parsed.pathname.toLowerCase(); const de=['.exe','.msi','.bat','.cmd','.ps1','.vbs','.js','.wsf','.scr','.pif','.com','.hta','.cpl','.jar','.apk','.dmg','.pkg','.deb','.rpm','.sh','.app','.iso','.img']; const se2=['.zip','.rar','.7z','.tar','.gz','.doc','.docm','.xlsm','.pptm','.pdf','.rtf']; const md=de.filter(e=>pl.endsWith(e));const ms=se2.filter(e=>pl.endsWith(e)); if(md.length>0){f['File Type']=md[0]+' — Executable';i.push(`Dangerous file (${md[0]})`);s='malicious';}else if(ms.length>0){f['File Type']=ms[0]+' — Archive/doc';i.push(`${ms[0]} file`);s='suspicious';}else f['File Type']='Web page'; if(/\.\w{2,4}\.\w{2,4}$/.test(pl)&&/\.(exe|bat|cmd|scr|pif|js|vbs|ps1)$/i.test(pl)){i.push('Double extension trick');s='malicious';} return{engine:'Content & Download Risk',status:s,confidence:75,details:f,issues:i,description:i.length>0?`${i[0]}.`:'No dangerous files.'}; }
 
-    return {
-      engine: 'VirusTotal',
-      status: 'unknown',
-      confidence: 50,
-      details: { 'Result': 'No analysis available' },
-      description: 'VirusTotal has no analysis results for this URL.'
-    };
-  } catch(e) {
-    return {
-      engine: 'VirusTotal',
-      status: 'error',
-      confidence: 0,
-      details: { 'Error': e.message },
-      description: `VirusTotal check failed: ${e.message}`
-    };
-  }
-}
+// ═══════════════ MAIN SCAN ═══════════════
 
-// ========== ENGINE 3: SSL/TLS ==========
-function checkSSL(parsed) {
-  const findings = {};
-  let status = 'clean';
-  let issues = [];
-
-  if (!parsed.isHTTPS) {
-    status = 'suspicious';
-    issues.push('No HTTPS encryption — data transmitted in plaintext');
-    findings['Protocol'] = 'HTTP (Insecure)';
-  } else {
-    findings['Protocol'] = 'HTTPS (Encrypted)';
-  }
-
-  if (parsed.hasPort && !['443','80','8080','8443'].includes(parsed.port)) {
-    issues.push(`Non-standard port ${parsed.port} detected`);
-    if (status === 'clean') status = 'suspicious';
-    findings['Port'] = parsed.port + ' (Non-standard)';
-  } else {
-    findings['Port'] = parsed.port || 'Standard';
-  }
-
-  findings['Transport Security'] = parsed.isHTTPS ? 'TLS Encrypted' : 'None';
-
-  return {
-    engine: 'SSL/TLS Analysis',
-    status, confidence: 75, details: findings, issues,
-    description: issues.length > 0
-      ? `Security concerns: ${issues.join('. ')}.`
-      : 'HTTPS with standard configuration. Transport layer appears secure.'
-  };
-}
-
-// ========== ENGINE 4: Domain Heuristics ==========
-function checkDomainReputation(parsed) {
-  const findings = {};
-  let score = 100;
-  let issues = [];
-  let positives = [];
-
-  if (isKnownSafe(parsed)) {
-    findings['Known Domain'] = 'Yes — Verified safe domain';
-    positives.push('Domain is a well-known, trusted service');
-    return {
-      engine: 'Domain & URL Heuristics',
-      status: 'clean',
-      confidence: 90,
-      details: { ...findings, 'Reputation Score': '100/100' },
-      issues: [],
-      positives,
-      reputationScore: 100,
-      description: `${parsed.domain} is a well-known, trusted domain. No heuristic concerns.`
-    };
-  }
-
-  if (SUSPICIOUS_TLDS.includes(parsed.tld.toLowerCase())) {
-    findings['TLD Risk'] = `${parsed.tld} — High risk TLD`;
-    issues.push(`Uses suspicious TLD "${parsed.tld}" commonly associated with abuse`);
-    score -= 30;
-  } else {
-    findings['TLD'] = parsed.tld;
-  }
-
-  if (parsed.isIP) {
-    findings['Host Type'] = 'IP Address (No domain name)';
-    issues.push('Uses raw IP address instead of domain — common in phishing');
-    score -= 35;
-  }
-
-  if (URL_SHORTENERS.includes(parsed.fullDomain)) {
-    findings['URL Shortener'] = 'Yes — Destination unknown';
-    issues.push('URL shortener masks the true destination');
-    score -= 15;
-  }
-
-  const subParts = parsed.subdomain.split('.').filter(Boolean);
-  if (subParts.length >= 3) {
-    findings['Subdomain Depth'] = `${subParts.length} levels deep`;
-    issues.push(`Unusually deep subdomain nesting (${subParts.length} levels)`);
-    score -= 20;
-  }
-
-  const urlLower = parsed.full.toLowerCase();
-  const matchedKeywords = SUSPICIOUS_KEYWORDS.filter(kw => urlLower.includes(kw));
-  if (matchedKeywords.length >= 2) {
-    findings['Suspicious Keywords'] = matchedKeywords.join(', ');
-    issues.push(`Multiple phishing keywords: ${matchedKeywords.join(', ')}`);
-    score -= 20 * Math.min(matchedKeywords.length, 3);
-  }
-
-  if (parsed.pathname.length > 100) { issues.push('Unusually long URL path'); score -= 10; }
-  if (/xn--/.test(parsed.hostname)) { issues.push('IDN/Punycode domain — possible homograph attack'); score -= 25; }
-  if (parsed.search && parsed.search.length > 200) { issues.push('Very long query string'); score -= 10; }
-  if (parsed.full.includes('@')) { issues.push('Contains @ symbol — may trick browsers'); score -= 30; }
-
-  score = Math.max(0, Math.min(100, score));
-  let status = 'clean';
-  if (score < 40) status = 'malicious';
-  else if (score < 70) status = 'suspicious';
-
-  findings['Reputation Score'] = score + '/100';
-
-  return {
-    engine: 'Domain & URL Heuristics',
-    status, confidence: 65, details: findings, issues, positives, reputationScore: score,
-    description: issues.length > 0
-      ? `Heuristic analysis found ${issues.length} concern(s): ${issues[0]}${issues.length > 1 ? ` and ${issues.length - 1} more` : ''}.`
-      : 'No suspicious patterns in domain or URL structure.'
-  };
-}
-
-// ========== ENGINE 5: Phishing Detection ==========
-function checkPhishing(parsed) {
-  if (isKnownSafe(parsed)) {
-    return {
-      engine: 'Phishing Pattern Detection',
-      status: 'clean', confidence: 90,
-      details: { 'Phish Score': '0 / 100', 'Known Domain': 'Verified safe' },
-      issues: [], phishScore: 0,
-      description: 'Official domain — no phishing risk.'
-    };
-  }
-
-  let issues = [];
-  let findings = {};
-  let phishScore = 0;
-
-  const brands = ['paypal','amazon','apple','google','microsoft','facebook','netflix','instagram','twitter','linkedin','chase','wellsfargo','bankofamerica','citibank','dropbox','spotify'];
-  const hostLower = parsed.hostname.toLowerCase();
-  const pathLower = parsed.pathname.toLowerCase();
-
-  for (const brand of brands) {
-    if (hostLower.includes(brand) && !hostLower.endsWith(brand + '.com') && !hostLower.endsWith(brand + '.org') && !hostLower.endsWith(brand + '.net')) {
-      findings['Brand Impersonation'] = `Contains "${brand}" but is not official`;
-      issues.push(`Possible ${brand} impersonation`);
-      phishScore += 40;
-      break;
-    }
-  }
-
-  const phishPaths = ['login','signin','verify','secure','account','auth','confirm','update','validate','recover','password','credential','billing'];
-  const matchedPaths = phishPaths.filter(p => pathLower.includes(p));
-  if (matchedPaths.length >= 2 && !isKnownSafe(parsed)) {
-    findings['Credential Harvesting'] = matchedPaths.join(', ');
-    issues.push('Multiple credential-related keywords in path');
-    phishScore += 25;
-  }
-
-  if (/\d{4,}/.test(parsed.hostname)) { phishScore += 15; issues.push('Long numeric sequences in hostname'); }
-
-  const hyphenCount = (parsed.hostname.match(/-/g) || []).length;
-  if (hyphenCount >= 3) { phishScore += 15; issues.push('Excessive hyphens in hostname'); }
-
-  let status = 'clean';
-  if (phishScore >= 40) status = 'malicious';
-  else if (phishScore >= 15) status = 'suspicious';
-
-  findings['Phish Score'] = phishScore + ' / 100';
-
-  return {
-    engine: 'Phishing Pattern Detection',
-    status, confidence: 60, details: findings, issues, phishScore,
-    description: issues.length > 0
-      ? `Phishing heuristics: ${issues.length} concern(s). Risk: ${phishScore >= 40 ? 'HIGH' : 'MODERATE'}.`
-      : 'No phishing patterns detected.'
-  };
-}
-
-// ========== ENGINE 6: Safe Browsing Heuristic ==========
-function checkSafeBrowsingHeuristic(parsed) {
-  if (isKnownSafe(parsed)) {
-    return {
-      engine: 'Safe Browsing Heuristics',
-      status: 'clean', confidence: 80,
-      details: { 'Heuristic Risk': '0 / 100', 'Method': 'Pattern-based' },
-      issues: [],
-      description: 'Known safe domain — passes all heuristic checks.'
-    };
-  }
-
-  let risk = 0;
-  let findings = {};
-  let issues = [];
-
-  if (parsed.isIP) { risk += 30; issues.push('IP-based URL'); }
-  if (!parsed.isHTTPS) { risk += 15; issues.push('Unencrypted connection'); }
-  if (SUSPICIOUS_TLDS.includes(parsed.tld)) { risk += 25; issues.push('High-abuse TLD'); }
-  if (parsed.pathname.includes('..') || parsed.pathname.includes('%2e%2e')) { risk += 30; issues.push('Path traversal pattern'); }
-  if (/<script|javascript:|onerror=|onload=/i.test(parsed.full)) { risk += 50; issues.push('XSS/injection payload'); }
-  if (parsed.full.length > 500) { risk += 10; issues.push('Extremely long URL'); }
-
-  let status = 'clean';
-  if (risk >= 40) status = 'malicious';
-  else if (risk >= 15) status = 'suspicious';
-
-  findings['Heuristic Risk'] = risk + ' / 100';
-  findings['Method'] = 'Pattern-based (no API)';
-
-  return {
-    engine: 'Safe Browsing Heuristics',
-    status, confidence: 55, details: findings, issues,
-    description: issues.length > 0
-      ? `Pattern analysis: ${issues.length} risk signal(s).`
-      : 'No unsafe patterns. Passes heuristic checks.'
-  };
-}
-
-// ========== ENGINE 7: ThreatFox ==========
-async function checkThreatFox(url, parsed) {
-  try {
-    let data;
-    if (backendAvailable) {
-      const resp = await fetchViaBackend('/api/threatfox', {
-        method: 'POST',
-        body: JSON.stringify({ domain: parsed.fullDomain }),
-      });
-      data = await resp.json();
-    } else {
-      const resp = await fetchWithCORSFallback('https://threatfox-api.abuse.ch/api/v1/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: 'search_ioc', search_term: parsed.fullDomain }),
-      });
-      data = safeParse(await resp.text());
-    }
-
-    if (!data) throw new Error('Invalid response');
-
-    if (data.query_status === 'ok' && data.data && data.data.length > 0) {
-      const ioc = data.data[0];
-      return {
-        engine: 'ThreatFox (abuse.ch)',
-        status: 'malicious', confidence: 90,
-        details: {
-          'IOC Type': ioc.ioc_type || 'domain',
-          'Threat Type': ioc.threat_type || 'Unknown',
-          'Malware': ioc.malware_printable || 'N/A',
-          'Confidence': (ioc.confidence_level || '?') + '%',
-          'First Seen': ioc.first_seen || 'N/A',
-          'Reporter': ioc.reporter || 'anonymous',
-        },
-        description: `Found in ThreatFox IOC database! Associated with ${ioc.threat_type || 'malware'} — "${ioc.malware_printable || 'unknown'}".`
-      };
-    }
-
-    return {
-      engine: 'ThreatFox (abuse.ch)',
-      status: 'clean', confidence: 65,
-      details: { 'Result': 'Not found in IOC database' },
-      description: 'Domain not in ThreatFox. No known malware C2 association.'
-    };
-  } catch(e) {
-    return {
-      engine: 'ThreatFox (abuse.ch)',
-      status: 'error', confidence: 0,
-      details: { 'Error': e.message },
-      description: 'Could not reach ThreatFox API.'
-    };
-  }
-}
-
-// ========== ENGINE 8: Wayback Machine ==========
-async function checkWaybackExistence(parsed) {
-  try {
-    let data;
-    if (backendAvailable) {
-      const resp = await fetchViaBackend(`/api/wayback?domain=${encodeURIComponent(parsed.fullDomain)}`);
-      data = await resp.json();
-    } else {
-      const resp = await fetchWithCORSFallback(`https://archive.org/wayback/available?url=${encodeURIComponent(parsed.fullDomain)}`);
-      data = safeParse(await resp.text());
-    }
-
-    const findings = {};
-    let issues = [];
-    let status = 'clean';
-
-    if (data?.archived_snapshots?.closest) {
-      const snap = data.archived_snapshots.closest;
-      const snapDate = snap.timestamp ? snap.timestamp.substring(0, 4) + '-' + snap.timestamp.substring(4, 6) + '-' + snap.timestamp.substring(6, 8) : 'Unknown';
-      findings['Archived'] = 'Yes — found in Wayback Machine';
-      findings['Earliest Snapshot'] = snapDate;
-
-      const year = parseInt(snap.timestamp?.substring(0, 4));
-      const age = new Date().getFullYear() - year;
-      if (age >= 5) findings['Domain Maturity'] = `${age}+ years — Established`;
-      else if (age >= 1) findings['Domain Maturity'] = `${age} year(s) archived`;
-      else {
-        findings['Domain Maturity'] = 'Less than 1 year';
-        // Only flag as suspicious if NOT known safe
-        if (!isKnownSafe(parsed)) {
-          issues.push('Domain has very limited archive history');
-          status = 'suspicious';
-        }
-      }
-    } else {
-      findings['Archived'] = 'No — not in Wayback Machine';
-      // Only flag if NOT known safe
-      if (!isKnownSafe(parsed)) {
-        issues.push('No archive history — domain may be very new');
-        status = 'suspicious';
-      } else {
-        findings['Note'] = 'Known safe domain — archive absence is not concerning';
-      }
-    }
-
-    return {
-      engine: 'Wayback Machine (Archive.org)',
-      status, confidence: 45, details: findings, issues,
-      description: issues.length > 0
-        ? `Archive analysis: ${issues[0]}. Lack of history can indicate disposable domains.`
-        : 'Domain has archive presence or is a known safe domain.'
-    };
-  } catch(e) {
-    return {
-      engine: 'Wayback Machine (Archive.org)',
-      status: 'error', confidence: 0,
-      details: { 'Error': e.message },
-      description: 'Could not query Wayback Machine.'
-    };
-  }
-}
-
-// ========== ENGINE 9: DNS ==========
-async function checkDNS(parsed) {
-  const findings = {};
-  let issues = [];
-  let status = 'clean';
-
-  try {
-    let data;
-    if (backendAvailable) {
-      const resp = await fetchViaBackend(`/api/dns?domain=${encodeURIComponent(parsed.fullDomain)}&type=A`);
-      data = await resp.json();
-    } else {
-      const resp = await fetchWithCORSFallback(`https://dns.google/resolve?name=${encodeURIComponent(parsed.fullDomain)}&type=A`);
-      data = safeParse(await resp.text());
-    }
-
-    if (data) {
-      findings['DNS Status'] = data.Status === 0 ? 'Resolved ✓' : `Status: ${data.Status}`;
-
-      if (data.Answer && data.Answer.length > 0) {
-        const ips = data.Answer.filter(a => a.type === 1).map(a => a.data);
-        findings['Resolved IPs'] = ips.join(', ') || 'None';
-        findings['TTL'] = data.Answer[0].TTL + 's';
-
-        for (const ip of ips) {
-          if (ip.startsWith('127.') || ip === '0.0.0.0') {
-            issues.push(`Resolves to loopback/null IP (${ip})`);
-            status = 'suspicious';
-          }
-        }
-
-        if (ips.length > 3) findings['Infrastructure'] = `${ips.length} IPs — likely CDN`;
-      } else if (data.Status === 3) {
-        findings['DNS Status'] = 'NXDOMAIN — Does not exist';
-        issues.push('Domain does not resolve');
-        status = 'suspicious';
-      }
-
-      findings['DNSSEC'] = data.AD ? 'Validated ✓' : 'Not validated';
-    }
-  } catch(e) {
-    findings['Error'] = e.message;
-  }
-
-  // MX check
-  try {
-    let mxData;
-    if (backendAvailable) {
-      const resp = await fetchViaBackend(`/api/dns?domain=${encodeURIComponent(parsed.fullDomain)}&type=MX`);
-      mxData = await resp.json();
-    } else {
-      const resp = await fetchWithCORSFallback(`https://dns.google/resolve?name=${encodeURIComponent(parsed.fullDomain)}&type=MX`);
-      mxData = safeParse(await resp.text());
-    }
-    findings['Mail Servers'] = (mxData?.Answer?.length > 0) ? mxData.Answer.length + ' MX records' : 'None';
-  } catch(e) {}
-
-  return {
-    engine: 'DNS & Infrastructure',
-    status, confidence: 60, details: findings, issues,
-    description: issues.length > 0
-      ? `DNS concerns: ${issues[0]}.`
-      : 'DNS resolves normally. Active infrastructure.'
-  };
-}
-
-// ========== ENGINE 10: Redirect & Headers ==========
-async function checkRedirects(url, parsed) {
-  const findings = {};
-  let issues = [];
-  let status = 'clean';
-
-  try {
-    let responseData;
-
-    if (backendAvailable) {
-      // Use backend — gets REAL headers, no CORS proxy artifacts
-      const resp = await fetchViaBackend('/api/headers', {
-        method: 'POST',
-        body: JSON.stringify({ url }),
-      });
-      responseData = await resp.json();
-
-      findings['HTTP Status'] = responseData.status + ' ' + (responseData.statusText || '');
-      findings['Final URL'] = responseData.finalUrl || 'Same as input';
-
-      if (responseData.redirected || (responseData.finalUrl && responseData.finalUrl !== url)) {
-        // Only flag as suspicious if redirect goes to a DIFFERENT domain
-        const finalParsed = parseURL(responseData.finalUrl);
-        if (finalParsed && finalParsed.domain !== parsed.domain) {
-          findings['Redirected'] = 'Yes — to different domain!';
-          issues.push(`Redirects to different domain: ${finalParsed.domain}`);
-          status = 'suspicious';
-        } else {
-          findings['Redirected'] = 'Yes — same domain (normal)';
-        }
-      } else {
-        findings['Redirected'] = 'No — direct access';
-      }
-
-      const headers = responseData.headers || {};
-      findings['HSTS'] = headers['strict-transport-security'] ? 'Enabled ✓' : 'Not set';
-      findings['CSP'] = headers['content-security-policy'] ? 'Present ✓' : 'Not set';
-      if (headers['server']) findings['Server'] = headers['server'];
-      if (headers['x-frame-options']) findings['X-Frame-Options'] = headers['x-frame-options'];
-
-      if (responseData.status >= 400 && responseData.status < 500) {
-        issues.push(`HTTP ${responseData.status} — Client error`);
-      } else if (responseData.status >= 500) {
-        issues.push(`HTTP ${responseData.status} — Server error`);
-      }
-    } else {
-      // Fallback: try direct fetch (limited by CORS)
-      try {
-        const resp = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(8000) });
-        findings['HTTP Status'] = resp.status + ' ' + resp.statusText;
-        findings['Redirected'] = resp.redirected ? 'Yes' : 'No';
-        if (resp.redirected && resp.url) {
-          const finalParsed = parseURL(resp.url);
-          if (finalParsed && finalParsed.domain !== parsed.domain) {
-            issues.push(`Redirects to: ${resp.url}`);
-            status = 'suspicious';
-          }
-        }
-      } catch(e) {
-        findings['Note'] = 'Direct header check blocked by CORS — deploy backend for full analysis';
-      }
-    }
-  } catch(e) {
-    findings['Error'] = e.message;
-  }
-
-  if (issues.length > 0 && status === 'clean') status = 'suspicious';
-
-  return {
-    engine: 'Redirect & Header Analysis',
-    status, confidence: 50, details: findings, issues,
-    description: issues.length > 0
-      ? `HTTP analysis: ${issues.length} concern(s): ${issues[0]}.`
-      : 'No redirect chains detected. Headers look standard.'
-  };
-}
-
-// ========== ENGINE 11: Entropy ==========
-function checkEntropy(parsed) {
-  const findings = {};
-  let issues = [];
-  let status = 'clean';
-
-  function shannonEntropy(str) {
-    const freq = {};
-    for (const c of str) freq[c] = (freq[c] || 0) + 1;
-    const len = str.length;
-    let entropy = 0;
-    for (const c in freq) {
-      const p = freq[c] / len;
-      entropy -= p * Math.log2(p);
-    }
-    return entropy;
-  }
-
-  const hostEntropy = shannonEntropy(parsed.hostname);
-  findings['Hostname Entropy'] = hostEntropy.toFixed(2) + ' bits/char';
-
-  if (hostEntropy > 4.0 && parsed.hostname.length > 15 && !isKnownSafe(parsed)) {
-    issues.push(`High entropy (${hostEntropy.toFixed(2)}) — possible DGA domain`);
-    status = 'suspicious';
-    findings['DGA Risk'] = 'High';
-  } else {
-    findings['DGA Risk'] = 'Low';
-  }
-
-  if (parsed.pathname.length > 10) {
-    const pathEntropy = shannonEntropy(parsed.pathname);
-    findings['Path Entropy'] = pathEntropy.toFixed(2) + ' bits/char';
-    if (pathEntropy > 4.5 && !isKnownSafe(parsed)) {
-      issues.push('High path entropy — possible obfuscation');
-      if (status === 'clean') status = 'suspicious';
-    }
-  }
-
-  const encodedChars = (parsed.full.match(/%[0-9a-f]{2}/gi) || []).length;
-  if (encodedChars > 10) {
-    findings['URL Encoding'] = `${encodedChars} encoded chars`;
-    issues.push('Excessive URL encoding');
-    if (status === 'clean') status = 'suspicious';
-  }
-
-  return {
-    engine: 'Entropy & Obfuscation Analysis',
-    status, confidence: 55, details: findings, issues,
-    description: issues.length > 0
-      ? `Entropy: ${issues.length} anomaly(ies): ${issues[0]}.`
-      : 'Normal entropy. Domain appears human-readable.'
-  };
-}
-
-// ========== ENGINE 12: Open Redirect & Exploit ==========
-function checkOpenRedirect(parsed) {
-  const findings = {};
-  let issues = [];
-  let status = 'clean';
-  const fullLower = parsed.full.toLowerCase();
-  const searchLower = parsed.search.toLowerCase();
-  const pathLower = parsed.pathname.toLowerCase();
-
-  const redirectParams = ['url=','redirect=','next=','rurl=','dest=','destination=','redir=','redirect_url=','redirect_uri=','return=','return_to=','go=','goto=','target=','link=','forward=','continue='];
-  const matchedRedirects = redirectParams.filter(p => searchLower.includes(p) || pathLower.includes(p));
-
-  if (matchedRedirects.length > 0) {
-    const hasExternalRedirect = /(?:url|redirect|next|dest|goto|target|link|forward|continue)=(?:https?(?:%3a|:)(?:%2f|\/){2}|\/\/)/i.test(parsed.full);
-    if (hasExternalRedirect) {
-      findings['Open Redirect'] = 'External redirect detected!';
-      issues.push('External redirect parameter — open redirect abuse');
-      status = 'malicious';
-    } else {
-      findings['Redirect Params'] = matchedRedirects.join(', ');
-      issues.push(`Redirect parameters: ${matchedRedirects.join(', ')}`);
-      status = 'suspicious';
-    }
-  }
-
-  if (/javascript\s*:/i.test(parsed.full) || /data\s*:/i.test(parsed.full)) {
-    issues.push('javascript:/data: protocol detected');
-    status = 'malicious';
-  }
-
-  if (/(\.\.[\/\\]){2,}/i.test(parsed.full)) {
-    issues.push('Path traversal attack pattern');
-    status = 'malicious';
-  }
-
-  if (/('|%27|--|%23|union\s+select|or\s+1\s*=\s*1)/i.test(parsed.search)) {
-    issues.push('SQL injection pattern in query');
-    status = 'malicious';
-  }
-
-  if (/(\.php\?.*=https?:|include|require|file=)/i.test(parsed.full)) {
-    issues.push('Remote file inclusion pattern');
-    status = 'malicious';
-  }
-
-  if (issues.length === 0) findings['Abuse Patterns'] = 'None detected';
-
-  return {
-    engine: 'Open Redirect & Exploit Detection',
-    status, confidence: 70, details: findings, issues,
-    description: issues.length > 0
-      ? `Exploit detection: ${issues[0]}.`
-      : 'No exploit patterns detected.'
-  };
-}
-
-// ========== ENGINE 13: WHOIS/RDAP ==========
-async function checkDomainAge(parsed) {
-  if (isKnownSafe(parsed)) {
-    return {
-      engine: 'WHOIS / Domain Age (RDAP)',
-      status: 'clean', confidence: 85,
-      details: { 'Known Domain': 'Established & trusted', 'Age Risk': 'None' },
-      issues: [],
-      description: `${parsed.domain} is a well-known, established domain.`
-    };
-  }
-
-  const findings = {};
-  let issues = [];
-  let status = 'clean';
-
-  try {
-    let data;
-    if (backendAvailable) {
-      const resp = await fetchViaBackend(`/api/rdap?domain=${encodeURIComponent(parsed.domain)}`);
-      data = await resp.json();
-    } else {
-      const resp = await fetchWithCORSFallback(`https://rdap.org/domain/${encodeURIComponent(parsed.domain)}`);
-      data = safeParse(await resp.text());
-    }
-
-    if (data) {
-      const events = data.events || [];
-      let registrationDate = null;
-      let expirationDate = null;
-
-      for (const ev of events) {
-        if (ev.eventAction === 'registration') registrationDate = ev.eventDate;
-        if (ev.eventAction === 'expiration') expirationDate = ev.eventDate;
-      }
-
-      if (registrationDate) {
-        const regDate = new Date(registrationDate);
-        const ageDays = Math.floor((Date.now() - regDate.getTime()) / (1000 * 60 * 60 * 24));
-        findings['Registered'] = regDate.toLocaleDateString();
-        findings['Domain Age'] = ageDays < 365 ? `${ageDays} days` : `${(ageDays / 365).toFixed(1)} years`;
-
-        if (ageDays < 30) {
-          issues.push(`Only ${ageDays} days old — very new`);
-          status = 'malicious';
-          findings['Age Risk'] = 'CRITICAL';
-        } else if (ageDays < 90) {
-          issues.push(`Only ${ageDays} days old`);
-          status = 'suspicious';
-          findings['Age Risk'] = 'HIGH';
-        } else if (ageDays < 365) {
-          findings['Age Risk'] = 'Moderate';
-        } else {
-          findings['Age Risk'] = 'Low — Established';
-        }
-      }
-
-      if (expirationDate) findings['Expires'] = new Date(expirationDate).toLocaleDateString();
-
-      const entities = data.entities || [];
-      for (const entity of entities) {
-        if (entity.roles?.includes('registrar')) {
-          const vcard = entity.vcardArray?.[1];
-          if (vcard) {
-            for (const field of vcard) {
-              if (field[0] === 'fn') findings['Registrar'] = field[3];
-            }
-          }
-        }
-      }
-    }
-  } catch(e) {
-    findings['RDAP Lookup'] = 'Not available for this TLD';
-  }
-
-  return {
-    engine: 'WHOIS / Domain Age (RDAP)',
-    status, confidence: 70, details: findings, issues,
-    description: issues.length > 0
-      ? `Domain age: ${issues[0]}.`
-      : 'Domain appears established.'
-  };
-}
-
-// ========== ENGINE 14: Download Risk ==========
-function checkContentRisk(parsed) {
-  const findings = {};
-  let issues = [];
-  let status = 'clean';
-  const pathLower = parsed.pathname.toLowerCase();
-
-  const dangerousExt = ['.exe','.msi','.bat','.cmd','.ps1','.vbs','.js','.wsf','.scr','.pif','.com','.hta','.cpl','.jar','.apk','.dmg','.pkg','.deb','.rpm','.sh','.app','.iso','.img'];
-  const suspiciousExt = ['.zip','.rar','.7z','.tar','.gz','.doc','.docm','.xlsm','.pptm','.pdf','.rtf'];
-
-  const matchedDangerous = dangerousExt.filter(ext => pathLower.endsWith(ext));
-  const matchedSuspicious = suspiciousExt.filter(ext => pathLower.endsWith(ext));
-
-  if (matchedDangerous.length > 0) {
-    findings['File Type'] = matchedDangerous[0] + ' — Executable';
-    issues.push(`Dangerous file type (${matchedDangerous[0]})`);
-    status = 'malicious';
-  } else if (matchedSuspicious.length > 0) {
-    findings['File Type'] = matchedSuspicious[0] + ' — Archive/doc';
-    issues.push(`${matchedSuspicious[0]} file — could contain embedded threats`);
-    status = 'suspicious';
-  } else {
-    findings['File Type'] = 'Web page (no download)';
-  }
-
-  if (/\.\w{2,4}\.\w{2,4}$/.test(pathLower) && /\.(exe|bat|cmd|scr|pif|js|vbs|ps1)$/i.test(pathLower)) {
-    issues.push('Double extension trick detected');
-    status = 'malicious';
-  }
-
-  return {
-    engine: 'Content & Download Risk',
-    status, confidence: 75, details: findings, issues,
-    description: issues.length > 0 ? `Download risk: ${issues[0]}.` : 'No dangerous file types detected.'
-  };
-}
-
-// ========== MAIN SCAN ==========
 async function startScan() {
   const urlInput = document.getElementById('urlInput').value.trim();
-
   if (!urlInput) { showToast('Please enter a URL'); return; }
-
   const parsed = parseURL(urlInput);
   if (!parsed) { showToast('Invalid URL format'); return; }
-
-  // Re-check backend before scanning
   await checkBackend();
 
   const btn = document.getElementById('scanBtn');
   const progress = document.getElementById('scanProgress');
-  const progressFill = document.getElementById('progressFill');
-  const progressText = document.getElementById('progressText');
-  const progressEngine = document.getElementById('progressEngine');
+  const pFill = document.getElementById('progressFill');
+  const pText = document.getElementById('progressText');
+  const pEngine = document.getElementById('progressEngine');
 
   btn.disabled = true;
   btn.classList.add('scanning');
@@ -1818,37 +905,36 @@ async function startScan() {
 
   const results = [];
   const engines = [
-    { name: 'Domain & URL Heuristics', fn: () => checkDomainReputation(parsed) },
-    { name: 'Phishing Pattern Detection', fn: () => checkPhishing(parsed) },
+    { name: 'Domain Heuristics', fn: () => checkDomainReputation(parsed) },
+    { name: 'Phishing Detection', fn: () => checkPhishing(parsed) },
     { name: 'SSL/TLS Analysis', fn: () => checkSSL(parsed) },
-    { name: 'Safe Browsing Heuristics', fn: () => checkSafeBrowsingHeuristic(parsed) },
-    { name: 'Entropy & Obfuscation', fn: () => checkEntropy(parsed) },
-    { name: 'Open Redirect & Exploit', fn: () => checkOpenRedirect(parsed) },
-    { name: 'Content & Download Risk', fn: () => checkContentRisk(parsed) },
+    { name: 'Safe Browsing', fn: () => checkSafeBrowsingHeuristic(parsed) },
+    { name: 'Entropy Analysis', fn: () => checkEntropy(parsed) },
+    { name: 'Exploit Detection', fn: () => checkOpenRedirect(parsed) },
+    { name: 'Download Risk', fn: () => checkContentRisk(parsed) },
     { name: 'DNS & Infrastructure', fn: () => checkDNS(parsed) },
-    { name: 'WHOIS / Domain Age (RDAP)', fn: () => checkDomainAge(parsed) },
+    { name: 'WHOIS / RDAP', fn: () => checkDomainAge(parsed) },
     { name: 'Wayback Machine', fn: () => checkWaybackExistence(parsed) },
-    { name: 'Redirect & Header Analysis', fn: () => checkRedirects(parsed.full, parsed) },
-    { name: 'URLhaus (abuse.ch)', fn: () => checkURLhaus(parsed.full) },
-    { name: 'ThreatFox (abuse.ch)', fn: () => checkThreatFox(parsed.full, parsed) },
-    { name: 'VirusTotal (70+ engines)', fn: () => checkVirusTotal(parsed.full) },
+    { name: 'Redirect & Headers', fn: () => checkRedirects(parsed.full, parsed) },
+    { name: 'URLhaus', fn: () => checkURLhaus(parsed.full) },
+    { name: 'ThreatFox', fn: () => checkThreatFox(parsed.full, parsed) },
+    { name: 'VirusTotal', fn: () => checkVirusTotal(parsed.full) },
   ];
 
   for (let i = 0; i < engines.length; i++) {
-    progressFill.style.width = ((i + 1) / engines.length * 100) + '%';
-    progressText.textContent = `Scanning engine ${i + 1} of ${engines.length}...`;
-    progressEngine.textContent = engines[i].name;
+    pFill.style.width = ((i + 1) / engines.length * 100) + '%';
+    pText.textContent = `Scanning engine ${i + 1} of ${engines.length}`;
+    pEngine.textContent = engines[i].name;
     results.push(await engines[i].fn());
     await new Promise(r => setTimeout(r, 300));
   }
 
-  progressFill.style.width = '100%';
-  progressText.textContent = 'Analysis complete';
-  progressEngine.textContent = '';
+  pFill.style.width = '100%';
+  pText.textContent = 'Analysis complete';
+  pEngine.textContent = '✓';
 
   const verdict = calculateVerdict(results, parsed);
   renderResults(parsed, results, verdict);
-
   scanHistory.unshift({ url: parsed.full, verdict, time: new Date(), results, parsed });
   renderHistory();
 
@@ -1858,193 +944,74 @@ async function startScan() {
   setTimeout(() => progress.classList.remove('active'), 2000);
 }
 
-// ========== IMPROVED VERDICT CALCULATION ==========
 function calculateVerdict(results, parsed) {
   let threatScore = 0;
   let reasons = { safe: [], caution: [], danger: [] };
-
-  // Count how many engines gave real malicious results (not errors/unknown)
-  let maliciousCount = 0;
-  let suspiciousCount = 0;
-  let cleanCount = 0;
-  let errorCount = 0;
-
+  let maliciousCount = 0, suspiciousCount = 0, cleanCount = 0, errorCount = 0;
   for (const r of results) {
     if (r.skipped) continue;
-
-    if (r.status === 'malicious') {
-      maliciousCount++;
-      threatScore += r.confidence * 0.8;
-      reasons.danger.push({ engine: r.engine, text: r.description });
-    } else if (r.status === 'suspicious') {
-      suspiciousCount++;
-      threatScore += r.confidence * 0.3; // Reduced from 0.4
-      reasons.caution.push({ engine: r.engine, text: r.description });
-    } else if (r.status === 'clean') {
-      cleanCount++;
-      reasons.safe.push({ engine: r.engine, text: r.description });
-    } else if (r.status === 'error') {
-      errorCount++;
-      // Errors do NOT contribute to threat score
-    }
+    if (r.status === 'malicious') { maliciousCount++; threatScore += r.confidence * 0.8; reasons.danger.push({ engine: r.engine, text: r.description }); }
+    else if (r.status === 'suspicious') { suspiciousCount++; threatScore += r.confidence * 0.3; reasons.caution.push({ engine: r.engine, text: r.description }); }
+    else if (r.status === 'clean') { cleanCount++; reasons.safe.push({ engine: r.engine, text: r.description }); }
+    else if (r.status === 'error') errorCount++;
   }
-
-  // Known safe domain bonus — massive reduction
-  if (isKnownSafe(parsed)) {
-    threatScore = Math.max(0, threatScore - 80);
-  }
-
-  // If ONLY suspicious (no malicious) and most engines are clean, reduce score
-  if (maliciousCount === 0 && cleanCount > suspiciousCount * 2) {
-    threatScore *= 0.5;
-  }
-
-  // Don't let error-heavy results inflate verdicts
-  if (errorCount > 3 && maliciousCount === 0) {
-    threatScore *= 0.7;
-  }
+  if (isKnownSafe(parsed)) threatScore = Math.max(0, threatScore - 80);
+  if (maliciousCount === 0 && cleanCount > suspiciousCount * 2) threatScore *= 0.5;
+  if (errorCount > 3 && maliciousCount === 0) threatScore *= 0.7;
 
   let title, subtitle, level;
-
-  // Require STRONGER evidence for danger verdict
-  if (maliciousCount >= 2 && threatScore >= 80) {
-    title = 'DANGEROUS — Do Not Proceed';
-    subtitle = 'Multiple engines flagged this URL as malicious';
-    level = 'danger';
-  } else if (maliciousCount >= 1 || (suspiciousCount >= 3 && threatScore >= 30)) {
-    title = 'CAUTION — Proceed With Care';
-    subtitle = 'Suspicious signals detected — verify the source';
-    level = 'caution';
-  } else if (suspiciousCount >= 1 && threatScore >= 15) {
-    title = 'CAUTION — Proceed With Care';
-    subtitle = 'Minor concerns detected — likely safe but verify';
-    level = 'caution';
-  } else {
-    title = 'SAFE — Okay to Proceed';
-    subtitle = 'No significant threats detected across all engines';
-    level = 'safe';
-  }
-
+  if (maliciousCount >= 2 && threatScore >= 80) { title = 'DANGEROUS — Do Not Proceed'; subtitle = 'Multiple engines flagged this URL as malicious'; level = 'danger'; }
+  else if (maliciousCount >= 1 || (suspiciousCount >= 3 && threatScore >= 30)) { title = 'CAUTION — Proceed With Care'; subtitle = 'Suspicious signals detected — verify the source'; level = 'caution'; }
+  else if (suspiciousCount >= 1 && threatScore >= 15) { title = 'CAUTION — Proceed With Care'; subtitle = 'Minor concerns — likely safe but verify'; level = 'caution'; }
+  else { title = 'SAFE — Okay to Proceed'; subtitle = 'No significant threats detected'; level = 'safe'; }
   return { title, subtitle, level, threatScore: Math.min(100, Math.round(threatScore)), reasons };
 }
 
-// ========== RENDERING ==========
+// ═══════════════ RENDERING ═══════════════
+
 function renderResults(parsed, results, verdict) {
   const container = document.getElementById('resultsContainer');
-  const safetyScore = 100 - verdict.threatScore;
+  const safety = 100 - verdict.threatScore;
+  const vc = verdict.level === 'safe' ? 'var(--safe)' : verdict.level === 'caution' ? 'var(--warn)' : 'var(--danger)';
+  const circ = 2 * Math.PI * 42;
+  const safeOff = circ - (safety / 100) * circ;
+  const threatOff = circ - (verdict.threatScore / 100) * circ;
+  const emoji = verdict.level === 'safe' ? '✅' : verdict.level === 'caution' ? '⚠️' : '🚨';
 
-  let enginesHTML = '';
+  let engHTML = '';
   for (const r of results) {
-    const statusClass = r.status === 'clean' ? 'status-clean' : r.status === 'suspicious' ? 'status-suspicious' : r.status === 'malicious' ? 'status-malicious' : r.status === 'error' ? 'status-error' : 'status-unknown';
-    const statusLabel = r.status === 'clean' ? '✓ Clean' : r.status === 'suspicious' ? '⚠ Suspicious' : r.status === 'malicious' ? '✕ Malicious' : r.status === 'error' ? '⚡ Error' : '? Unknown';
-    const statusEmoji = r.status === 'clean' ? '🟢' : r.status === 'suspicious' ? '🟡' : r.status === 'malicious' ? '🔴' : '⚪';
-
-    let detailsHTML = '';
-    for (const [k, v] of Object.entries(r.details)) {
-      detailsHTML += `<div class="detail-item"><span class="detail-key">${k}</span><span class="detail-value">${v}</span></div>`;
-    }
-
-    enginesHTML += `
-      <div class="engine-result">
-        <div class="engine-header">
-          <span class="engine-name">${statusEmoji} ${r.engine}</span>
-          <span class="engine-status ${statusClass}">${statusLabel}</span>
-        </div>
-        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5">${r.description}</p>
-        <div class="engine-details">${detailsHTML}</div>
-      </div>`;
+    const bc = r.status==='clean'?'badge-clean':r.status==='suspicious'?'badge-suspicious':r.status==='malicious'?'badge-malicious':r.status==='error'?'badge-error':'badge-unknown';
+    const bl = r.status==='clean'?'✓ Clean':r.status==='suspicious'?'⚠ Suspicious':r.status==='malicious'?'✕ Malicious':r.status==='error'?'⚡ Error':'? Unknown';
+    const em = r.status==='clean'?'🟢':r.status==='suspicious'?'🟡':r.status==='malicious'?'🔴':'⚪';
+    let dHTML='';for(const[k,v]of Object.entries(r.details))dHTML+=`<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`;
+    engHTML+=`<div class="engine-card"><div class="engine-header"><span class="engine-name">${em} ${r.engine}</span><span class="engine-badge ${bc}">${bl}</span></div><p class="engine-desc">${r.description}</p><div class="engine-details">${dHTML}</div></div>`;
   }
 
-  let analysisHTML = '';
-  for (const r of verdict.reasons.safe) {
-    analysisHTML += `<div class="analysis-item"><div class="analysis-indicator indicator-safe"></div><div class="analysis-content"><h4>✓ ${r.engine}</h4><p>${r.text}</p></div></div>`;
-  }
-  for (const r of verdict.reasons.caution) {
-    analysisHTML += `<div class="analysis-item"><div class="analysis-indicator indicator-warn"></div><div class="analysis-content"><h4>⚠ ${r.engine}</h4><p>${r.text}</p></div></div>`;
-  }
-  for (const r of verdict.reasons.danger) {
-    analysisHTML += `<div class="analysis-item"><div class="analysis-indicator indicator-danger"></div><div class="analysis-content"><h4>✕ ${r.engine}</h4><p>${r.text}</p></div></div>`;
-  }
-
-  const verdictEmoji = verdict.level === 'safe' ? '✅' : verdict.level === 'caution' ? '⚠️' : '🚨';
-  const ringColor = verdict.level === 'safe' ? 'var(--accent-safe)' : verdict.level === 'caution' ? 'var(--accent-warn)' : 'var(--accent-danger)';
-  const circumference = 2 * Math.PI * 42;
-  const safeOffset = circumference - (safetyScore / 100) * circumference;
-  const threatOffset = circumference - (verdict.threatScore / 100) * circumference;
+  let aHTML='';
+  for(const r of verdict.reasons.safe) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-safe"></div><div class="analysis-content"><h4>✓ ${r.engine}</h4><p>${r.text}</p></div></div>`;
+  for(const r of verdict.reasons.caution) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-warn"></div><div class="analysis-content"><h4>⚠ ${r.engine}</h4><p>${r.text}</p></div></div>`;
+  for(const r of verdict.reasons.danger) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>✕ ${r.engine}</h4><p>${r.text}</p></div></div>`;
 
   container.innerHTML = `
-    <div class="verdict-banner verdict-${verdict.level}" style="animation:fadeUp 0.5s ease">
-      <div class="verdict-top">
-        <div class="verdict-icon">${verdictEmoji}</div>
-        <div>
-          <div class="verdict-title">${verdict.title}</div>
-          <div class="verdict-subtitle">${verdict.subtitle}</div>
-        </div>
+    <div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease">
+      <div class="verdict-icon">${emoji}</div>
+      <div class="verdict-text">
+        <div class="verdict-title">${verdict.title}</div>
+        <div class="verdict-subtitle">${verdict.subtitle}</div>
       </div>
       <div class="verdict-url">${parsed.full}</div>
     </div>
-
-    <div class="score-section">
-      <div class="score-card">
-        <div class="score-ring-container">
-          <svg viewBox="0 0 100 100">
-            <circle class="score-ring-bg" cx="50" cy="50" r="42"/>
-            <circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${ringColor}" stroke-dasharray="${circumference}" stroke-dashoffset="${safeOffset}"/>
-          </svg>
-          <div class="score-value" style="color:${ringColor}">${safetyScore}</div>
-        </div>
-        <div class="score-label">Safety Score</div>
-      </div>
-      <div class="score-card">
-        <div class="score-ring-container">
-          <svg viewBox="0 0 100 100">
-            <circle class="score-ring-bg" cx="50" cy="50" r="42"/>
-            <circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${ringColor}" stroke-dasharray="${circumference}" stroke-dashoffset="${threatOffset}"/>
-          </svg>
-          <div class="score-value" style="color:${ringColor}">${verdict.threatScore}</div>
-        </div>
-        <div class="score-label">Threat Level</div>
-      </div>
-      <div class="score-card" style="display:flex;flex-direction:column;justify-content:center">
-        <div style="text-align:left">
-          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:8px">SCAN SUMMARY</div>
-          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7">
-            <div>🔍 <strong>${results.length}</strong> engines checked</div>
-            <div>🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean</div>
-            <div>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious</div>
-            <div>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious</div>
-            <div>⚪ <strong>${results.filter(r=>r.status==='error'||r.status==='unknown').length}</strong> error/unknown</div>
-          </div>
-        </div>
-      </div>
+    <div class="scores-row">
+      <div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${safeOff}"/></svg><div class="score-num" style="color:${vc}">${safety}</div></div><div class="score-label">Safety Score</div></div>
+      <div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${threatOff}"/></svg><div class="score-num" style="color:${vc}">${verdict.threatScore}</div></div><div class="score-label">Threat Level</div></div>
+      <div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Scan Summary</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🔍 <strong>${results.length}</strong> engines checked<br>🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious<br>⚪ <strong>${results.filter(r=>r.status==='error'||r.status==='unknown').length}</strong> other</div></div></div>
     </div>
-
-    <div class="export-bar">
-      <button class="export-btn" onclick="copyReport()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-        Copy Report
-      </button>
-      <button class="export-btn" onclick="downloadReport()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download HTML
-      </button>
+    <div class="export-row">
+      <button class="export-btn" onclick="copyReport()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Report</button>
+      <button class="export-btn" onclick="downloadReport()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download HTML</button>
     </div>
-
-    <div class="analysis-section" style="animation:fadeUp 0.5s ease 0.2s both">
-      <h3>
-        <svg style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="var(--accent-info)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        Detailed Analysis — Why This Verdict?
-      </h3>
-      ${analysisHTML}
-    </div>
-
-    <div class="engines-section" style="animation:fadeUp 0.5s ease 0.3s both">
-      <div class="section-title">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        Engine-by-Engine Results
-      </div>
-      ${enginesHTML}
-    </div>
+    <div class="analysis-card" style="animation:fadeUp 0.5s ease 0.15s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Why This Verdict?</div>${aHTML}</div>
+    <div style="animation:fadeUp 0.5s ease 0.25s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Engine Results</div>${engHTML}</div>
   `;
 }
 
@@ -2053,80 +1020,23 @@ function renderHistory() {
   const list = document.getElementById('historyList');
   if (scanHistory.length === 0) { section.style.display = 'none'; return; }
   section.style.display = 'block';
-
   list.innerHTML = scanHistory.slice(0, 10).map((h, i) => {
-    const dotColor = h.verdict.level === 'safe' ? 'var(--accent-safe)' : h.verdict.level === 'caution' ? 'var(--accent-warn)' : 'var(--accent-danger)';
-    return `
-      <div class="history-item" onclick="reloadScan(${i})">
-        <div class="history-verdict-dot" style="background:${dotColor}"></div>
-        <div class="history-url">${h.url}</div>
-        <div class="history-verdict-label" style="color:${dotColor}">${h.verdict.level.toUpperCase()}</div>
-        <div class="history-time">${h.time.toLocaleTimeString()}</div>
-      </div>`;
+    const c = h.verdict.level === 'safe' ? 'var(--safe)' : h.verdict.level === 'caution' ? 'var(--warn)' : 'var(--danger)';
+    return `<div class="history-item" onclick="reloadScan(${i})"><div class="history-dot" style="background:${c}"></div><div class="history-url">${h.url}</div><div class="history-label" style="color:${c}">${h.verdict.level.toUpperCase()}</div><div class="history-time">${h.time.toLocaleTimeString()}</div></div>`;
   }).join('');
 }
 
-function reloadScan(index) {
-  const h = scanHistory[index];
-  renderResults(h.parsed, h.results, h.verdict);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+function reloadScan(i) { const h = scanHistory[i]; renderResults(h.parsed, h.results, h.verdict); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-// ========== EXPORT ==========
-function copyReport() {
-  if (scanHistory.length === 0) return;
-  const h = scanHistory[0];
-  let text = `SENTINEL URL THREAT REPORT\n${'='.repeat(40)}\n`;
-  text += `URL: ${h.url}\nVerdict: ${h.verdict.title}\nSafety Score: ${100 - h.verdict.threatScore}/100\nThreat Score: ${h.verdict.threatScore}/100\n\nENGINE RESULTS:\n${'-'.repeat(30)}\n`;
-  for (const r of h.results) {
-    text += `\n${r.engine}: ${r.status.toUpperCase()}\n  ${r.description}\n`;
-    for (const [k, v] of Object.entries(r.details)) text += `  ${k}: ${v}\n`;
-  }
-  text += `\nGenerated by SENTINEL — ${new Date().toISOString()}\n`;
-  navigator.clipboard.writeText(text).then(() => showToast('Report copied'));
-}
+// ── Export ──
+function copyReport() { if(!scanHistory.length)return;const h=scanHistory[0];let t=`TRISHUL URL THREAT REPORT\n${'='.repeat(40)}\nURL: ${h.url}\nVerdict: ${h.verdict.title}\nSafety: ${100-h.verdict.threatScore}/100\nThreat: ${h.verdict.threatScore}/100\n\nENGINES:\n${'-'.repeat(30)}\n`;for(const r of h.results){t+=`\n${r.engine}: ${r.status.toUpperCase()}\n  ${r.description}\n`;for(const[k,v]of Object.entries(r.details))t+=`  ${k}: ${v}\n`;}t+=`\nGenerated by TRISHUL — ${new Date().toISOString()}\n`;navigator.clipboard.writeText(t).then(()=>showToast('Report copied'));  }
 
-function downloadReport() {
-  if (scanHistory.length === 0) return;
-  const h = scanHistory[0];
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SENTINEL Report — ${h.url}</title>
-    <style>body{font-family:monospace;background:#0a0a0f;color:#e8e8f0;padding:40px;max-width:800px;margin:auto}
-    h1{color:#448aff}h2{color:#b388ff;margin-top:24px}.safe{color:#00e676}.warn{color:#ffab00}.danger{color:#ff1744}
-    .card{background:#16161f;border:1px solid #2a2a3a;border-radius:8px;padding:16px;margin:10px 0}
-    table{width:100%;border-collapse:collapse}td{padding:6px 12px;border-bottom:1px solid #2a2a3a;font-size:13px}</style></head>
-    <body><h1>🛡️ SENTINEL — Threat Report</h1>
-    <div class="card"><strong>Target:</strong> ${h.url}<br><strong>Verdict:</strong> <span class="${h.verdict.level === 'safe' ? 'safe' : h.verdict.level === 'caution' ? 'warn' : 'danger'}">${h.verdict.title}</span><br>
-    <strong>Safety Score:</strong> ${100 - h.verdict.threatScore}/100 | <strong>Threat:</strong> ${h.verdict.threatScore}/100<br>
-    <strong>Time:</strong> ${h.time.toISOString()}</div>
-    <h2>Results</h2>` +
-    h.results.map(r => `<div class="card"><strong>${r.engine}</strong> — <span class="${r.status==='clean'?'safe':r.status==='suspicious'?'warn':'danger'}">${r.status.toUpperCase()}</span>
-      <p>${r.description}</p><table>${Object.entries(r.details).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table></div>`).join('') +
-    `<p style="margin-top:30px;color:#555">Generated by SENTINEL v2.0</p></body></html>`;
+function downloadReport() { if(!scanHistory.length)return;const h=scanHistory[0];const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>TRISHUL Report — ${h.url}</title><style>body{font-family:system-ui;background:#F7F8FA;color:#0B1D3A;padding:40px;max-width:800px;margin:auto}h1{color:#E85D26}h2{color:#0B1D3A;margin-top:24px}.safe{color:#0D9F6E}.warn{color:#D97706}.danger{color:#DC2626}.card{background:#fff;border:1px solid #E2E6ED;border-radius:12px;padding:16px;margin:10px 0}table{width:100%;border-collapse:collapse}td{padding:6px 12px;border-bottom:1px solid #EEF1F6;font-size:13px}</style></head><body><h1>🔱 TRISHUL — Threat Report</h1><div class="card"><strong>Target:</strong> ${h.url}<br><strong>Verdict:</strong> <span class="${h.verdict.level==='safe'?'safe':h.verdict.level==='caution'?'warn':'danger'}">${h.verdict.title}</span><br><strong>Safety:</strong> ${100-h.verdict.threatScore}/100 | <strong>Threat:</strong> ${h.verdict.threatScore}/100<br><strong>Time:</strong> ${h.time.toISOString()}</div><h2>Results</h2>`+h.results.map(r=>`<div class="card"><strong>${r.engine}</strong> — <span class="${r.status==='clean'?'safe':r.status==='suspicious'?'warn':'danger'}">${r.status.toUpperCase()}</span><p>${r.description}</p><table>${Object.entries(r.details).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table></div>`).join('')+`<p style="margin-top:30px;color:#8896AB">Generated by TRISHUL v3.0</p></body></html>`;const blob=new Blob([html],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`trishul-report-${Date.now()}.html`;a.click();showToast('Report downloaded'); }
 
-  const blob = new Blob([html], { type: 'text/html' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `sentinel-report-${Date.now()}.html`;
-  a.click();
-  showToast('Report downloaded');
-}
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 
-// ========== UTILITIES ==========
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-document.getElementById('urlInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') startScan();
-});
-
-// Auto-check backend on load
-window.addEventListener('DOMContentLoaded', () => {
-  checkBackend();
-});
+document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') startScan(); });
+window.addEventListener('DOMContentLoaded', () => checkBackend());
 </script>
 </body>
 </html>
