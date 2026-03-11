@@ -965,6 +965,9 @@ async function startScan() {
   scanHistory.unshift({ url: parsed.full, verdict, time: new Date(), results, parsed });
   renderHistory();
 
+  // Update URL hash for shareable link
+  window.history.replaceState(null, '', '#' + encodeURIComponent(parsed.full));
+
   btn.disabled = false;
   btn.classList.remove('scanning');
   btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> ANALYZE';
@@ -1034,6 +1037,7 @@ function renderResults(parsed, results, verdict) {
       <div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Scan Summary</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🔍 <strong>${results.length}</strong> engines checked<br>🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious<br>⚪ <strong>${results.filter(r=>r.status==='error'||r.status==='unknown').length}</strong> other</div></div></div>
     </div>
     <div class="export-row">
+      <button class="export-btn" onclick="shareLink()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share Link</button>
       <button class="export-btn" onclick="copyReport()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy</button>
       <button class="export-btn" onclick="downloadReport('html')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> HTML</button>
       <button class="export-btn" onclick="downloadReport('pdf')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PDF</button>
@@ -1061,11 +1065,18 @@ function reloadScan(i) {
   if (h.parsed && h.results && h.verdict) {
     renderResults(h.parsed, h.results, h.verdict);
     document.getElementById('urlInput').value = h.url;
-    window.scrollTo({ top: document.getElementById('resultsContainer').offsetTop - 20, behavior: 'smooth' });
+    window.history.replaceState(null, '', '#' + encodeURIComponent(h.url));
+    document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
 // ── Export ──
+function shareLink() {
+  if(!scanHistory.length)return;
+  const url = window.location.origin + window.location.pathname + '#' + encodeURIComponent(scanHistory[0].url);
+  navigator.clipboard.writeText(url).then(() => showToast('Shareable link copied!'));
+}
+
 function copyReport() {
   if(!scanHistory.length)return;
   const h=scanHistory[0];
@@ -1172,7 +1183,20 @@ function downloadReport(format) {
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 
 document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') startScan(); });
-window.addEventListener('DOMContentLoaded', () => { loadTheme(); checkBackend(); });
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadTheme();
+  checkBackend();
+
+  // Auto-scan from URL hash
+  const hash = window.location.hash.slice(1);
+  if (hash) {
+    const targetUrl = decodeURIComponent(hash);
+    document.getElementById('urlInput').value = targetUrl;
+    // Small delay to let backend check finish
+    setTimeout(() => startScan(), 800);
+  }
+});
 </script>
 </body>
 </html>
