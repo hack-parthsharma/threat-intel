@@ -700,8 +700,338 @@ body.dark .hero h1 span {
 
 .toast.show { transform: translateY(0); opacity: 1; }
 
+/* ── Landing Page ── */
+.landing {
+  min-height: calc(100vh - 56px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.landing-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.landing-title span { color: var(--accent); }
+
+.landing-subtitle {
+  color: var(--text-secondary);
+  font-size: 15px;
+  text-align: center;
+  margin-bottom: 48px;
+  max-width: 500px;
+}
+
+.module-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 720px;
+  width: 100%;
+}
+
+.module-card {
+  background: var(--bg-white);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 36px 28px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.module-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.module-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+.module-card:hover::before {
+  transform: scaleX(1);
+}
+
+.module-card:active {
+  transform: translateY(-2px);
+}
+
+.module-icon {
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin: 0 auto 20px;
+  background: var(--accent-light);
+}
+
+body.dark .module-icon {
+  background: rgba(232,93,38,0.15);
+}
+
+.module-card h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.module-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.module-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-top: 16px;
+}
+
+.badge-live {
+  background: var(--safe-bg);
+  color: var(--safe);
+  border: 1px solid var(--safe-border);
+}
+
+.badge-new {
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid rgba(232,93,38,0.2);
+}
+
+/* ── Back Button ── */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  transition: color 0.2s;
+  font-family: var(--font);
+}
+
+.back-btn:hover { color: var(--accent); }
+
+/* ── SIA Module ── */
+.sia-hero {
+  text-align: center;
+  padding: 36px 0 32px;
+}
+
+.sia-hero h1 {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.sia-hero h1 span { color: var(--accent); }
+
+.sia-hero p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  max-width: 550px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.upload-zone {
+  background: var(--bg-white);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-xl);
+  padding: 48px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+body.dark .upload-zone:hover,
+body.dark .upload-zone.dragover {
+  background: rgba(232,93,38,0.05);
+}
+
+.upload-zone input[type="file"] {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-icon {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+body.dark .upload-icon {
+  background: rgba(232,93,38,0.15);
+}
+
+.upload-icon svg { color: var(--accent); }
+
+.upload-zone h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.upload-zone p {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.upload-zone .supported {
+  margin-top: 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* File info card after upload */
+.file-info {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.file-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: var(--bg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.file-meta { flex: 1; }
+
+.file-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 3px;
+  word-break: break-all;
+}
+
+.file-details {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.file-remove {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font);
+}
+
+.file-remove:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.sia-scan-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px 32px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+.sia-scan-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(232,93,38,0.3);
+}
+
+.sia-scan-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Page visibility */
+.page { display: none; }
+.page.active { display: block; }
+
+.landing-page { display: none; }
+.landing-page.active {
+  display: flex;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+  .module-cards { grid-template-columns: 1fr; }
+  .landing-title { font-size: 24px; }
   .hero h1 { font-size: 28px; }
   .url-row { flex-direction: column; }
   .scan-btn { justify-content: center; }
@@ -726,7 +1056,34 @@ body.dark .hero h1 span {
   </button>
 </div>
 
+<!-- Landing Page -->
+<div class="landing landing-page active" id="landingPage">
+  <h1 class="landing-title">🔱 Welcome to <span>Trishul</span></h1>
+  <p class="landing-subtitle">Choose a module to get started with your security analysis.</p>
+  <div class="module-cards">
+    <div class="module-card" onclick="showModule('security')">
+      <div class="module-icon">🛡️</div>
+      <h3>Security Check</h3>
+      <p>Multi-engine URL threat analysis across 14 intelligence engines including VirusTotal, URLhaus, and ThreatFox.</p>
+      <span class="module-badge badge-live">Live</span>
+    </div>
+    <div class="module-card" onclick="showModule('sia')">
+      <div class="module-icon">🔬</div>
+      <h3>Security Impact Analysis</h3>
+      <p>Upload executables, installers, or any file to scan for threats and generate a verdict report before installation.</p>
+      <span class="module-badge badge-new">New</span>
+    </div>
+  </div>
+</div>
+
+<!-- Security Check Module -->
+<div class="page" id="securityPage">
 <div class="container">
+  <button class="back-btn" onclick="showModule('landing')">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to modules
+  </button>
+
   <!-- Hero -->
   <div class="hero">
     <h1>Multi-Engine <span>URL Threat</span> Analysis</h1>
@@ -787,6 +1144,57 @@ body.dark .hero h1 span {
     <div id="historyList"></div>
   </div>
 </div>
+</div><!-- end securityPage -->
+
+<!-- SIA Module -->
+<div class="page" id="siaPage">
+<div class="container">
+  <button class="back-btn" onclick="showModule('landing')">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to modules
+  </button>
+
+  <div class="sia-hero">
+    <h1>Security <span>Impact Analysis</span></h1>
+    <p>Upload any file — executables, installers, archives, or documents — to scan for threats and generate a security verdict before allowing installation.</p>
+  </div>
+
+  <!-- Upload Zone -->
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="siaFileInput" onchange="handleFileSelect(event)">
+    <div class="upload-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <h3>Drop your file here or click to browse</h3>
+    <p>Upload the file you want to analyze before installation</p>
+    <div class="supported">.exe .msi .dmg .pkg .deb .apk .jar .zip .rar .7z .tar.gz .pdf .doc .docx .xls .xlsx .ps1 .bat .sh</div>
+  </div>
+
+  <!-- File Info (shown after upload) -->
+  <div id="siaFileInfo" style="display:none;"></div>
+
+  <!-- Scan Button -->
+  <button class="sia-scan-btn" id="siaScanBtn" onclick="startSIAScan()" disabled>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    ANALYZE FILE
+  </button>
+
+  <!-- SIA Progress -->
+  <div class="scan-progress" id="siaProgress">
+    <div class="progress-track">
+      <div class="progress-fill" id="siaProgressFill"></div>
+    </div>
+    <div class="progress-info">
+      <span class="progress-text" id="siaProgressText">Analyzing file...</span>
+      <span class="progress-engine" id="siaProgressEngine"></span>
+    </div>
+  </div>
+
+  <!-- SIA Results -->
+  <div id="siaResultsContainer"></div>
+
+</div>
+</div><!-- end siaPage -->
 
 <div class="toast" id="toast"></div>
 
@@ -1182,20 +1590,411 @@ function downloadReport(format) {
 
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 
+// ═══════════════ MODULE NAVIGATION ═══════════════
+
+function showModule(module) {
+  document.getElementById('landingPage').classList.remove('active');
+  document.getElementById('securityPage').classList.remove('active');
+  document.getElementById('siaPage').classList.remove('active');
+
+  if (module === 'landing') {
+    document.getElementById('landingPage').classList.add('active');
+    window.history.replaceState(null, '', window.location.pathname);
+  } else if (module === 'security') {
+    document.getElementById('securityPage').classList.add('active');
+  } else if (module === 'sia') {
+    document.getElementById('siaPage').classList.add('active');
+  }
+
+  window.scrollTo({ top: 0 });
+}
+
+// ═══════════════ SIA MODULE ═══════════════
+
+let siaFile = null;
+
+// Drag & drop
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = document.getElementById('uploadZone');
+  if (!zone) return;
+
+  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => { zone.classList.remove('dragover'); });
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+});
+
+function handleFileSelect(event) {
+  if (event.target.files.length > 0) {
+    handleFile(event.target.files[0]);
+  }
+}
+
+function handleFile(file) {
+  siaFile = file;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const sizeStr = file.size < 1024 ? file.size + ' B'
+    : file.size < 1048576 ? (file.size / 1024).toFixed(1) + ' KB'
+    : (file.size / 1048576).toFixed(2) + ' MB';
+
+  const icons = {
+    exe: '⚙️', msi: '📦', dmg: '💿', pkg: '📦', deb: '🐧', apk: '📱',
+    jar: '☕', zip: '🗜️', rar: '🗜️', '7z': '🗜️', tar: '🗜️', gz: '🗜️',
+    pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊',
+    ps1: '💻', bat: '💻', sh: '💻', py: '🐍', js: '📜'
+  };
+  const icon = icons[ext] || '📁';
+
+  document.getElementById('uploadZone').style.display = 'none';
+  document.getElementById('siaFileInfo').style.display = 'flex';
+  document.getElementById('siaFileInfo').innerHTML = `
+    <div class="file-info">
+      <div class="file-icon">${icon}</div>
+      <div class="file-meta">
+        <div class="file-name">${file.name}</div>
+        <div class="file-details">${sizeStr} · ${file.type || ext.toUpperCase()} · Last modified: ${new Date(file.lastModified).toLocaleDateString()}</div>
+      </div>
+      <button class="file-remove" onclick="removeFile()">Remove</button>
+    </div>
+  `;
+
+  document.getElementById('siaScanBtn').disabled = false;
+}
+
+function removeFile() {
+  siaFile = null;
+  document.getElementById('uploadZone').style.display = 'block';
+  document.getElementById('siaFileInfo').style.display = 'none';
+  document.getElementById('siaFileInfo').innerHTML = '';
+  document.getElementById('siaScanBtn').disabled = true;
+  document.getElementById('siaFileInput').value = '';
+  document.getElementById('siaResultsContainer').innerHTML = '';
+}
+
+async function startSIAScan() {
+  if (!siaFile) { showToast('Please upload a file first'); return; }
+
+  const btn = document.getElementById('siaScanBtn');
+  const progress = document.getElementById('siaProgress');
+  const pFill = document.getElementById('siaProgressFill');
+  const pText = document.getElementById('siaProgressText');
+  const pEngine = document.getElementById('siaProgressEngine');
+
+  btn.disabled = true;
+  btn.textContent = 'SCANNING...';
+  progress.classList.add('active');
+
+  // Compute file hash (SHA-256) for VirusTotal lookup
+  pFill.style.width = '10%';
+  pText.textContent = 'Computing file hash...';
+  pEngine.textContent = 'SHA-256';
+
+  let fileHash = '';
+  try {
+    const buffer = await siaFile.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    fileHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch(e) {
+    fileHash = '';
+  }
+
+  const results = [];
+  const fileExt = siaFile.name.split('.').pop().toLowerCase();
+  const fileName = siaFile.name;
+  const fileSize = siaFile.size;
+
+  // Engine 1: File Type Analysis
+  pFill.style.width = '20%';
+  pText.textContent = 'Analyzing file type...';
+  pEngine.textContent = 'File Heuristics';
+  await new Promise(r => setTimeout(r, 400));
+  results.push(analyzeFileType(fileName, fileExt, fileSize));
+
+  // Engine 2: Extension Risk
+  pFill.style.width = '35%';
+  pText.textContent = 'Checking extension risk...';
+  pEngine.textContent = 'Extension Analysis';
+  await new Promise(r => setTimeout(r, 400));
+  results.push(analyzeExtensionRisk(fileName, fileExt));
+
+  // Engine 3: File Size Analysis
+  pFill.style.width = '50%';
+  pText.textContent = 'Analyzing file characteristics...';
+  pEngine.textContent = 'Size & Metadata';
+  await new Promise(r => setTimeout(r, 400));
+  results.push(analyzeFileSize(fileSize, fileExt));
+
+  // Engine 4: VirusTotal Hash Lookup
+  pFill.style.width = '65%';
+  pText.textContent = 'Querying VirusTotal...';
+  pEngine.textContent = 'VirusTotal';
+  if (fileHash) {
+    results.push(await checkVTHash(fileHash));
+  } else {
+    results.push({ engine: 'VirusTotal (Hash Lookup)', status: 'error', confidence: 0, details: { 'Error': 'Could not compute hash' }, description: 'File hash computation failed.' });
+  }
+
+  // Engine 5: Name Pattern Analysis
+  pFill.style.width = '80%';
+  pText.textContent = 'Checking filename patterns...';
+  pEngine.textContent = 'Name Analysis';
+  await new Promise(r => setTimeout(r, 400));
+  results.push(analyzeFileName(fileName));
+
+  // Engine 6: Overall Risk Score
+  pFill.style.width = '95%';
+  pText.textContent = 'Calculating verdict...';
+  pEngine.textContent = 'Risk Engine';
+  await new Promise(r => setTimeout(r, 400));
+
+  pFill.style.width = '100%';
+  pText.textContent = 'Analysis complete';
+  pEngine.textContent = '✓';
+
+  const verdict = calculateSIAVerdict(results);
+  renderSIAResults(fileName, fileHash, fileSize, fileExt, results, verdict);
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> ANALYZE FILE';
+  setTimeout(() => progress.classList.remove('active'), 2000);
+}
+
+// ── SIA Engines ──
+
+function analyzeFileType(name, ext, size) {
+  const dangerous = ['exe','msi','bat','cmd','ps1','vbs','wsf','scr','pif','com','hta','cpl','jar','apk','sh'];
+  const archives = ['zip','rar','7z','tar','gz','tgz'];
+  const documents = ['pdf','doc','docx','xls','xlsx','ppt','pptx','rtf'];
+  const safe = ['txt','csv','json','xml','yml','yaml','md','png','jpg','jpeg','gif','svg','mp4','mp3'];
+
+  if (dangerous.includes(ext)) {
+    return { engine: 'File Type Analysis', status: 'malicious', confidence: 80, details: { 'Type': 'Executable / Script', 'Extension': '.' + ext, 'Risk': 'HIGH — Can execute code on system' }, description: `This is an executable/script file (.${ext}) that can run code directly on the system. Requires thorough review before allowing.` };
+  } else if (archives.includes(ext)) {
+    return { engine: 'File Type Analysis', status: 'suspicious', confidence: 60, details: { 'Type': 'Archive', 'Extension': '.' + ext, 'Risk': 'MODERATE — May contain hidden executables' }, description: `Archive file (.${ext}) can contain any file type inside, including executables. Contents should be inspected.` };
+  } else if (documents.includes(ext)) {
+    return { engine: 'File Type Analysis', status: 'suspicious', confidence: 40, details: { 'Type': 'Document', 'Extension': '.' + ext, 'Risk': 'LOW-MODERATE — Can contain macros' }, description: `Document file (.${ext}) could contain macros or embedded content. Verify source before opening.` };
+  } else if (safe.includes(ext)) {
+    return { engine: 'File Type Analysis', status: 'clean', confidence: 85, details: { 'Type': 'Data / Media', 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `Data/media file (.${ext}) with low inherent risk.` };
+  }
+  return { engine: 'File Type Analysis', status: 'suspicious', confidence: 50, details: { 'Type': 'Unknown', 'Extension': '.' + ext, 'Risk': 'UNKNOWN' }, description: `Unknown file type (.${ext}). Exercise caution.` };
+}
+
+function analyzeExtensionRisk(name, ext) {
+  const f = {};
+  let issues = [];
+  let status = 'clean';
+
+  // Double extension check
+  const parts = name.split('.');
+  if (parts.length > 2) {
+    const dangerousExts = ['exe','bat','cmd','scr','pif','js','vbs','ps1','msi'];
+    if (dangerousExts.includes(ext)) {
+      issues.push(`Double extension detected: appears as .${parts[parts.length-2]} but is actually .${ext}`);
+      f['Double Extension'] = 'Yes — masquerading file type!';
+      status = 'malicious';
+    }
+  }
+
+  // Very long filename (obfuscation)
+  if (name.length > 100) {
+    issues.push('Extremely long filename — possible obfuscation');
+    f['Name Length'] = name.length + ' characters';
+    if (status === 'clean') status = 'suspicious';
+  }
+
+  // Unicode/special chars in name
+  if (/[^\x20-\x7E]/.test(name)) {
+    issues.push('Contains non-ASCII characters — possible spoofing');
+    if (status === 'clean') status = 'suspicious';
+  }
+
+  if (issues.length === 0) f['Extension'] = 'Normal — no tricks detected';
+
+  return { engine: 'Extension & Name Analysis', status, confidence: 70, details: f, issues, description: issues.length > 0 ? `Found ${issues.length} concern(s): ${issues[0]}.` : 'Filename and extension appear normal.' };
+}
+
+function analyzeFileSize(size, ext) {
+  const f = {};
+  let issues = [];
+  let status = 'clean';
+  const sizeMB = size / 1048576;
+
+  f['File Size'] = sizeMB < 1 ? (size / 1024).toFixed(1) + ' KB' : sizeMB.toFixed(2) + ' MB';
+
+  // Unusually small executables (could be dropper/stager)
+  if (['exe','msi','dmg'].includes(ext) && size < 50000) {
+    issues.push('Very small executable — could be a dropper or stager');
+    f['Size Risk'] = 'Suspiciously small for this file type';
+    status = 'suspicious';
+  }
+
+  // Very large files
+  if (sizeMB > 500) {
+    issues.push('Very large file (>500MB) — verify this is expected');
+    f['Size Risk'] = 'Unusually large';
+    if (status === 'clean') status = 'suspicious';
+  }
+
+  if (issues.length === 0) f['Size Risk'] = 'Normal';
+
+  return { engine: 'File Size Analysis', status, confidence: 40, details: f, issues, description: issues.length > 0 ? `${issues[0]}.` : 'File size is within normal range for this type.' };
+}
+
+async function checkVTHash(hash) {
+  try {
+    let data;
+    if (backendAvailable) {
+      // Use a generic fetch through backend — we'd need a new endpoint
+      // For now, try direct with CORS fallback
+      const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/files/${hash}`, {
+        headers: { 'x-apikey': VT_API_KEY }
+      });
+      data = safeParse(await resp.text());
+    } else {
+      const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/files/${hash}`, {
+        headers: { 'x-apikey': VT_API_KEY }
+      });
+      data = safeParse(await resp.text());
+    }
+
+    if (data?.data?.attributes) {
+      const attrs = data.data.attributes;
+      const stats = attrs.last_analysis_stats || {};
+      const mal = stats.malicious || 0;
+      const sus = stats.suspicious || 0;
+      const total = mal + sus + (stats.harmless||0) + (stats.undetected||0);
+
+      let status = 'clean';
+      if (mal >= 3) status = 'malicious';
+      else if (mal >= 1 || sus >= 2) status = 'suspicious';
+
+      const details = {
+        'SHA-256': hash.substring(0, 16) + '...',
+        'Malicious': `${mal}/${total}`,
+        'Suspicious': `${sus}/${total}`,
+        'Total Engines': total,
+        'File Names': (attrs.names || []).slice(0, 3).join(', ') || 'N/A'
+      };
+
+      return { engine: 'VirusTotal (Hash Lookup)', status, confidence: 92, details, description: `VirusTotal: ${mal} engines flagged as malicious, ${sus} as suspicious out of ${total}.` };
+    }
+
+    return { engine: 'VirusTotal (Hash Lookup)', status: 'unknown', confidence: 40, details: { 'SHA-256': hash.substring(0, 16) + '...', 'Result': 'File not found in VirusTotal database' }, description: 'This file hash is not in VirusTotal\'s database. It may be new or uncommon.' };
+  } catch(e) {
+    return { engine: 'VirusTotal (Hash Lookup)', status: 'error', confidence: 0, details: { 'Error': e.message, 'SHA-256': hash.substring(0, 16) + '...' }, description: 'Could not query VirusTotal for file hash.' };
+  }
+}
+
+function analyzeFileName(name) {
+  const f = {};
+  let issues = [];
+  let status = 'clean';
+  const lower = name.toLowerCase();
+
+  // Known suspicious patterns
+  const suspiciousPatterns = ['crack','keygen','patch','activator','loader','inject','hack','exploit','payload','backdoor','trojan','worm','ransomware','miner','cryptominer'];
+  const matched = suspiciousPatterns.filter(p => lower.includes(p));
+  if (matched.length > 0) {
+    issues.push(`Filename contains suspicious keywords: ${matched.join(', ')}`);
+    f['Suspicious Keywords'] = matched.join(', ');
+    status = 'malicious';
+  }
+
+  // Generic/random names (could be generated by malware)
+  if (/^[a-f0-9]{8,}\./.test(lower)) {
+    issues.push('Filename appears to be a hex hash — could be auto-generated');
+    f['Name Pattern'] = 'Hex hash pattern';
+    if (status === 'clean') status = 'suspicious';
+  }
+
+  if (issues.length === 0) f['Name Pattern'] = 'Normal';
+
+  return { engine: 'Filename Pattern Analysis', status, confidence: 55, details: f, issues, description: issues.length > 0 ? `${issues[0]}.` : 'Filename does not match known malicious patterns.' };
+}
+
+function calculateSIAVerdict(results) {
+  let threatScore = 0;
+  let reasons = { safe: [], caution: [], danger: [] };
+  let malCount = 0, susCount = 0, cleanCount = 0;
+
+  for (const r of results) {
+    if (r.status === 'malicious') { malCount++; threatScore += r.confidence * 0.8; reasons.danger.push({ engine: r.engine, text: r.description }); }
+    else if (r.status === 'suspicious') { susCount++; threatScore += r.confidence * 0.3; reasons.caution.push({ engine: r.engine, text: r.description }); }
+    else if (r.status === 'clean') { cleanCount++; reasons.safe.push({ engine: r.engine, text: r.description }); }
+  }
+
+  let title, subtitle, level;
+  if (malCount >= 2 || threatScore >= 80) { title = 'DO NOT INSTALL'; subtitle = 'Multiple threat indicators detected in this file'; level = 'danger'; }
+  else if (malCount >= 1 || (susCount >= 2 && threatScore >= 25)) { title = 'REVIEW REQUIRED'; subtitle = 'Suspicious indicators found — requires manual review before proceeding'; level = 'caution'; }
+  else if (susCount >= 1) { title = 'PROCEED WITH CAUTION'; subtitle = 'Minor concerns detected — verify source and business justification'; level = 'caution'; }
+  else { title = 'SAFE TO PROCEED'; subtitle = 'No significant threats detected in this file'; level = 'safe'; }
+
+  return { title, subtitle, level, threatScore: Math.min(100, Math.round(threatScore)), reasons };
+}
+
+function renderSIAResults(fileName, hash, fileSize, ext, results, verdict) {
+  const container = document.getElementById('siaResultsContainer');
+  const safety = 100 - verdict.threatScore;
+  const vc = verdict.level === 'safe' ? 'var(--safe)' : verdict.level === 'caution' ? 'var(--warn)' : 'var(--danger)';
+  const circ = 2 * Math.PI * 42;
+  const safeOff = circ - (safety / 100) * circ;
+  const emoji = verdict.level === 'safe' ? '✅' : verdict.level === 'caution' ? '⚠️' : '🚨';
+
+  let engHTML = '';
+  for (const r of results) {
+    const bc = r.status==='clean'?'badge-clean':r.status==='suspicious'?'badge-suspicious':r.status==='malicious'?'badge-malicious':r.status==='error'?'badge-error':'badge-unknown';
+    const bl = r.status==='clean'?'✓ Clean':r.status==='suspicious'?'⚠ Suspicious':r.status==='malicious'?'✕ Malicious':r.status==='error'?'⚡ Error':'? Unknown';
+    const em = r.status==='clean'?'🟢':r.status==='suspicious'?'🟡':r.status==='malicious'?'🔴':'⚪';
+    let dHTML='';for(const[k,v]of Object.entries(r.details))dHTML+=`<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`;
+    engHTML+=`<div class="engine-card"><div class="engine-header"><span class="engine-name">${em} ${r.engine}</span><span class="engine-badge ${bc}">${bl}</span></div><p class="engine-desc">${r.description}</p><div class="engine-details">${dHTML}</div></div>`;
+  }
+
+  let aHTML='';
+  for(const r of verdict.reasons.safe) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-safe"></div><div class="analysis-content"><h4>✓ ${r.engine}</h4><p>${r.text}</p></div></div>`;
+  for(const r of verdict.reasons.caution) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-warn"></div><div class="analysis-content"><h4>⚠ ${r.engine}</h4><p>${r.text}</p></div></div>`;
+  for(const r of verdict.reasons.danger) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>✕ ${r.engine}</h4><p>${r.text}</p></div></div>`;
+
+  const sizeMB = fileSize < 1048576 ? (fileSize/1024).toFixed(1) + ' KB' : (fileSize/1048576).toFixed(2) + ' MB';
+
+  container.innerHTML = `
+    <div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease;margin-top:24px">
+      <div class="verdict-icon">${emoji}</div>
+      <div class="verdict-text">
+        <div class="verdict-title">${verdict.title}</div>
+        <div class="verdict-subtitle">${verdict.subtitle}</div>
+      </div>
+      <div class="verdict-url">${fileName}<br><span style="font-size:10px;opacity:0.7">${sizeMB} · .${ext}</span></div>
+    </div>
+    <div class="scores-row">
+      <div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${safeOff}"/></svg><div class="score-num" style="color:${vc}">${safety}</div></div><div class="score-label">Safety Score</div></div>
+      <div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">File Summary</div><div style="font-size:12px;color:var(--text-secondary);line-height:2;font-family:var(--font-mono)">📁 ${fileName}<br>📏 ${sizeMB}<br>🔑 SHA-256: ${hash ? hash.substring(0,20)+'...' : 'N/A'}<br>🔍 ${results.length} checks performed</div></div></div>
+      <div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Results</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious<br>⚪ <strong>${results.filter(r=>r.status==='error'||r.status==='unknown').length}</strong> other</div></div></div>
+    </div>
+    <div class="analysis-card" style="animation:fadeUp 0.5s ease 0.15s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Analysis Summary</div>${aHTML}</div>
+    <div style="animation:fadeUp 0.5s ease 0.25s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Detailed Results</div>${engHTML}</div>
+  `;
+}
+
 document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') startScan(); });
 
 window.addEventListener('DOMContentLoaded', () => {
   loadTheme();
   checkBackend();
 
-  // Auto-scan from URL hash
+  // Auto-route from URL hash
   const hash = window.location.hash.slice(1);
   if (hash) {
     const targetUrl = decodeURIComponent(hash);
+    showModule('security');
     document.getElementById('urlInput').value = targetUrl;
-    // Small delay to let backend check finish
     setTimeout(() => startScan(), 800);
   }
+  // Otherwise show landing page (already active by default)
 });
 </script>
 </body>
