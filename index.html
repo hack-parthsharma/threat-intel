@@ -670,9 +670,11 @@ body.dark .hero h1 span {
   margin-bottom: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
+  user-select: none;
 }
 
 .history-item:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+.history-item:active { transform: scale(0.99); }
 
 .history-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .history-url { flex: 1; font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1053,7 +1055,15 @@ function renderHistory() {
   }).join('');
 }
 
-function reloadScan(i) { const h = scanHistory[i]; renderResults(h.parsed, h.results, h.verdict); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function reloadScan(i) {
+  if (!scanHistory[i]) return;
+  const h = scanHistory[i];
+  if (h.parsed && h.results && h.verdict) {
+    renderResults(h.parsed, h.results, h.verdict);
+    document.getElementById('urlInput').value = h.url;
+    window.scrollTo({ top: document.getElementById('resultsContainer').offsetTop - 20, behavior: 'smooth' });
+  }
+}
 
 // ── Export ──
 function copyReport() {
