@@ -1850,14 +1850,11 @@ function analyzeFileSize(size, ext) {
 
 async function checkVTHash(hash) {
   try {
+    // Step 1: Check if VT already has this hash
     let data;
     if (backendAvailable) {
-      // Use a generic fetch through backend — we'd need a new endpoint
-      // For now, try direct with CORS fallback
-      const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/files/${hash}`, {
-        headers: { 'x-apikey': VT_API_KEY }
-      });
-      data = safeParse(await resp.text());
+      const resp = await fetch(PROXY_BASE + `/api/virustotal/file-report?hash=${hash}`);
+      data = await resp.json();
     } else {
       const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/files/${hash}`, {
         headers: { 'x-apikey': VT_API_KEY }
@@ -1865,32 +1862,123 @@ async function checkVTHash(hash) {
       data = safeParse(await resp.text());
     }
 
-    if (data?.data?.attributes) {
-      const attrs = data.data.attributes;
-      const stats = attrs.last_analysis_stats || {};
-      const mal = stats.malicious || 0;
-      const sus = stats.suspicious || 0;
-      const total = mal + sus + (stats.harmless||0) + (stats.undetected||0);
-
-      let status = 'clean';
-      if (mal >= 3) status = 'malicious';
-      else if (mal >= 1 || sus >= 2) status = 'suspicious';
-
-      const details = {
-        'SHA-256': hash.substring(0, 16) + '...',
-        'Malicious': `${mal}/${total}`,
-        'Suspicious': `${sus}/${total}`,
-        'Total Engines': total,
-        'File Names': (attrs.names || []).slice(0, 3).join(', ') || 'N/A'
-      };
-
-      return { engine: 'VirusTotal (Hash Lookup)', status, confidence: 92, details, description: `VirusTotal: ${mal} engines flagged as malicious, ${sus} as suspicious out of ${total}.` };
+    if (data?.data?.attributes?.last_analysis_stats) {
+      return parseVTFileResult(data, hash);
     }
 
-    return { engine: 'VirusTotal (Hash Lookup)', status: 'unknown', confidence: 40, details: { 'SHA-256': hash.substring(0, 16) + '...', 'Result': 'File not found in VirusTotal database' }, description: 'This file hash is not in VirusTotal\'s database. It may be new or uncommon.' };
+    // Step 2: File not found — upload it for scanning
+    if (siaFile && backendAvailable) {
+      const pText = document.getElementById('siaProgressText');
+      const pEngine = document.getElementById('siaProgressEngine');
+      pText.textContent = 'Uploading file to VirusTotal...';
+      pEngine.textContent = 'File Upload';
+
+      const uploadForm = new FormData();
+      uploadForm.append('file', siaFile, siaFile.name);
+
+      let uploadData;
+      try {
+        const uploadResp = await fetch(PROXY_BASE + '/api/virustotal/file-upload', {
+          method: 'POST',
+          body: uploadForm,
+        });
+        uploadData = await uploadResp.json();
+      } catch(e) { uploadData = null; }
+
+      if (uploadData?.data?.id) {
+        const analysisId = uploadData.data.id;
+        pText.textContent = 'Waiting for VirusTotal scan (70+ engines)...';
+        pEngine.textContent = 'Scanning...';
+
+        // Step 3: Poll for results (up to 60 seconds)
+        for (let attempt = 0; attempt < 6; attempt++) {
+          await new Promise(r => setTimeout(r, 10000));
+          pText.textContent = `VirusTotal scanning... (${(attempt+1)*10}s)`;
+
+          try {
+            const pollResp = await fetch(PROXY_BASE + `/api/virustotal/analysis?id=${encodeURIComponent(analysisId)}`);
+            const pollData = await pollResp.json();
+
+            if (pollData?.data?.attributes?.status === 'completed') {
+              // Fetch the full file report now
+              const finalResp = await fetch(PROXY_BASE + `/api/virustotal/file-report?hash=${hash}`);
+              const finalData = await finalResp.json();
+              if (finalData?.data?.attributes?.last_analysis_stats) {
+                return parseVTFileResult(finalData, hash);
+              }
+              break;
+            }
+          } catch(e) { continue; }
+        }
+
+        return {
+          engine: 'VirusTotal (File Scan)',
+          status: 'unknown',
+          confidence: 40,
+          details: { 'SHA-256': hash.substring(0,20)+'...', 'Result': 'Scan submitted but results still processing', 'Analysis ID': analysisId.substring(0,20)+'...' },
+          description: 'File uploaded to VirusTotal. Scan is still processing — check back in a few minutes or look up the hash on virustotal.com.'
+        };
+      }
+    }
+
+    // If we couldn't upload (no backend or upload failed)
+    return {
+      engine: 'VirusTotal (Hash Lookup)',
+      status: 'unknown',
+      confidence: 40,
+      details: { 'SHA-256': hash.substring(0,20)+'...', 'Result': 'Not found in VirusTotal database' },
+      description: 'This file hash is not in VirusTotal\'s database. ' + (backendAvailable ? 'File upload may have failed.' : 'Connect backend to enable file upload scanning.')
+    };
   } catch(e) {
-    return { engine: 'VirusTotal (Hash Lookup)', status: 'error', confidence: 0, details: { 'Error': e.message, 'SHA-256': hash.substring(0, 16) + '...' }, description: 'Could not query VirusTotal for file hash.' };
+    return {
+      engine: 'VirusTotal (File Scan)',
+      status: 'error',
+      confidence: 0,
+      details: { 'Error': e.message, 'SHA-256': hash.substring(0,20)+'...' },
+      description: 'Could not query VirusTotal for file.'
+    };
   }
+}
+
+function parseVTFileResult(data, hash) {
+  const attrs = data.data.attributes;
+  const stats = attrs.last_analysis_stats || {};
+  const mal = stats.malicious || 0;
+  const sus = stats.suspicious || 0;
+  const harm = stats.harmless || 0;
+  const undet = stats.undetected || 0;
+  const total = mal + sus + harm + undet + (stats.timeout||0);
+
+  const flagged = [];
+  for (const [v, r] of Object.entries(attrs.last_analysis_results || {})) {
+    if (r.category === 'malicious' || r.category === 'suspicious') {
+      flagged.push(`${v}: ${r.result || r.category}`);
+    }
+  }
+
+  let status = 'clean';
+  if (mal >= 3) status = 'malicious';
+  else if (mal >= 1 || sus >= 2) status = 'suspicious';
+
+  const details = {
+    'SHA-256': hash.substring(0,20)+'...',
+    'Malicious': `${mal}/${total}`,
+    'Suspicious': `${sus}/${total}`,
+    'Harmless': `${harm}/${total}`,
+    'Total Engines': total,
+    'File Names': (attrs.names || []).slice(0, 3).join(', ') || 'N/A',
+    'File Type': attrs.type_description || attrs.type_tag || 'N/A',
+    'File Size': attrs.size ? (attrs.size / 1048576).toFixed(2) + ' MB' : 'N/A'
+  };
+
+  if (flagged.length > 0) details['Flagged By'] = flagged.slice(0, 10).join(', ') + (flagged.length > 10 ? ` (+${flagged.length-10} more)` : '');
+  if (attrs.last_analysis_date) details['Last Scanned'] = new Date(attrs.last_analysis_date * 1000).toLocaleString();
+  if (attrs.reputation !== undefined) details['Reputation'] = attrs.reputation;
+
+  let desc = `VirusTotal scanned with ${total} engines: ${mal} malicious, ${sus} suspicious.`;
+  if (flagged.length > 0) desc += ` Flagged by: ${flagged.slice(0,5).join(', ')}${flagged.length > 5 ? '...' : ''}.`;
+
+  return { engine: 'VirusTotal (File Scan)', status, confidence: 92, details, description: desc };
 }
 
 function analyzeFileName(name) {
