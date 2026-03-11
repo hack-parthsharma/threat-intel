@@ -2013,16 +2013,35 @@ function calculateSIAVerdict(results) {
   let reasons = { safe: [], caution: [], danger: [] };
   let malCount = 0, susCount = 0, cleanCount = 0;
 
+  // Check if VirusTotal gave a clean result
+  const vtResult = results.find(r => r.engine.includes('VirusTotal'));
+  const vtClean = vtResult && vtResult.status === 'clean';
+
   for (const r of results) {
+    // If VT says clean, downgrade file-type "suspicious" to "clean"
+    // because VT scanning 70+ engines is more authoritative than a simple extension check
+    if (vtClean && r.engine === 'File Type Analysis' && r.status === 'suspicious') {
+      r.status = 'clean';
+      r.description = r.description.replace('requires verification', 'verified clean by VirusTotal');
+      reasons.safe.push({ engine: r.engine, text: r.description });
+      cleanCount++;
+      continue;
+    }
+
     if (r.status === 'malicious') { malCount++; threatScore += r.confidence * 0.8; reasons.danger.push({ engine: r.engine, text: r.description }); }
     else if (r.status === 'suspicious') { susCount++; threatScore += r.confidence * 0.3; reasons.caution.push({ engine: r.engine, text: r.description }); }
     else if (r.status === 'clean') { cleanCount++; reasons.safe.push({ engine: r.engine, text: r.description }); }
   }
 
+  // If VT is clean and no other engine found anything malicious, heavily reduce threat score
+  if (vtClean && malCount === 0) {
+    threatScore = Math.max(0, threatScore * 0.2);
+  }
+
   let title, subtitle, level;
   if (malCount >= 2 || threatScore >= 80) { title = 'DO NOT INSTALL'; subtitle = 'Multiple threat indicators detected in this file'; level = 'danger'; }
   else if (malCount >= 1 || (susCount >= 2 && threatScore >= 25)) { title = 'REVIEW REQUIRED'; subtitle = 'Suspicious indicators found — requires manual review before proceeding'; level = 'caution'; }
-  else if (susCount >= 1) { title = 'PROCEED WITH CAUTION'; subtitle = 'Minor concerns detected — verify source and business justification'; level = 'caution'; }
+  else if (susCount >= 1 && !vtClean) { title = 'PROCEED WITH CAUTION'; subtitle = 'Minor concerns detected — verify source and business justification'; level = 'caution'; }
   else { title = 'SAFE TO PROCEED'; subtitle = 'No significant threats detected in this file'; level = 'safe'; }
 
   return { title, subtitle, level, threatScore: Math.min(100, Math.round(threatScore)), reasons };
