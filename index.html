@@ -726,12 +726,12 @@ body::after {
 
     <div class="config-row">
       <span class="config-label">Backend Proxy URL:</span>
-      <input type="text" class="config-input" id="proxyUrl" value="https://threatintel.ps191240.workers.dev" style="width:340px">
+      <input type="text" class="config-input" id="proxyUrl" placeholder="https://your-worker.workers.dev" style="width:340px">
     </div>
 
-    <div class="config-row">
-      <span class="config-label">VT API Key (optional):</span>
-      <input type="password" class="config-input" id="vtApiKey" placeholder="Enter VirusTotal API key for deeper scans">
+    <div class="config-row" id="vtStatusRow">
+      <span class="config-label">VirusTotal:</span>
+      <span id="vtStatus" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">Checking...</span>
     </div>
 
     <div class="engines-info">
@@ -821,12 +821,15 @@ let scanHistory = [];
 async function checkBackend() {
   const statusEl = document.getElementById('backendStatus');
   const statusText = document.getElementById('backendStatusText');
+  const vtStatusEl = document.getElementById('vtStatus');
   const savedProxy = document.getElementById('proxyUrl').value.trim();
 
   if (!savedProxy) {
     statusEl.className = 'backend-status disconnected';
     statusText.textContent = 'No backend — using CORS fallback mode';
     backendAvailable = false;
+    vtStatusEl.textContent = 'Requires backend';
+    vtStatusEl.style.color = 'var(--text-muted)';
     return;
   }
 
@@ -838,6 +841,15 @@ async function checkBackend() {
       backendAvailable = true;
       statusEl.className = 'backend-status connected';
       statusText.textContent = 'Backend connected — full API mode';
+
+      // Check VT key status
+      if (data.vtConfigured) {
+        vtStatusEl.textContent = '✓ API key configured server-side';
+        vtStatusEl.style.color = 'var(--accent-safe)';
+      } else {
+        vtStatusEl.textContent = '✕ No API key — add VT_API_KEY secret in Cloudflare';
+        vtStatusEl.style.color = 'var(--accent-warn)';
+      }
     } else {
       throw new Error('Bad response');
     }
@@ -845,6 +857,8 @@ async function checkBackend() {
     backendAvailable = false;
     statusEl.className = 'backend-status disconnected';
     statusText.textContent = 'Backend unreachable — using CORS fallback mode';
+    vtStatusEl.textContent = 'Requires backend';
+    vtStatusEl.style.color = 'var(--text-muted)';
   }
 }
 
@@ -980,67 +994,61 @@ async function checkURLhaus(url) {
 }
 
 // ========== ENGINE 2: VirusTotal ==========
-async function checkVirusTotal(url, apiKey) {
-  if (!apiKey) {
+async function checkVirusTotal(url) {
+  if (!backendAvailable) {
     return {
       engine: 'VirusTotal',
       status: 'unknown',
       confidence: 0,
-      details: { 'Note': 'No API key provided' },
-      description: 'VirusTotal scan requires an API key. Get a free key at virustotal.com to enable 70+ engine scanning.',
+      details: { 'Note': 'Requires backend proxy with VT_API_KEY secret' },
+      description: 'VirusTotal requires the backend proxy. Deploy the Cloudflare Worker and add VT_API_KEY as a secret.',
       skipped: true
     };
   }
 
   try {
-    const urlId = btoa(url).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     let analysisData = null;
 
     // Step 1: Try existing report
-    if (backendAvailable) {
-      try {
-        const resp = await fetchViaBackend('/api/virustotal/lookup', {
-          method: 'POST',
-          headers: { 'X-Api-Key': apiKey },
-          body: JSON.stringify({ url, apiKey }),
-        });
-        analysisData = await resp.json();
-      } catch(e) { analysisData = null; }
-    } else {
-      try {
-        const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/urls/${urlId}`, {
-          headers: { 'x-apikey': apiKey },
-        });
-        analysisData = safeParse(await resp.text());
-      } catch(e) { analysisData = null; }
-    }
+    try {
+      const resp = await fetchViaBackend('/api/virustotal/lookup', {
+        method: 'POST',
+        body: JSON.stringify({ url }),
+      });
+      analysisData = await resp.json();
+      if (analysisData.error) {
+        return {
+          engine: 'VirusTotal',
+          status: 'error',
+          confidence: 0,
+          details: { 'Error': analysisData.error },
+          description: analysisData.error.includes('not configured') 
+            ? 'VT_API_KEY secret not set in Cloudflare Worker. Go to Worker Settings → Variables and Secrets → Add VT_API_KEY.'
+            : `VirusTotal error: ${analysisData.error}`
+        };
+      }
+    } catch(e) { analysisData = null; }
 
     // Step 2: Submit if no existing report
     if (!analysisData?.data?.attributes?.last_analysis_stats) {
-      if (backendAvailable) {
-        try {
-          await fetchViaBackend('/api/virustotal/submit', {
-            method: 'POST',
-            headers: { 'X-Api-Key': apiKey },
-            body: JSON.stringify({ url, apiKey }),
-          });
-        } catch(e) {}
-      }
+      try {
+        await fetchViaBackend('/api/virustotal/submit', {
+          method: 'POST',
+          body: JSON.stringify({ url }),
+        });
+      } catch(e) {}
 
       // Wait for scan
       await new Promise(r => setTimeout(r, 15000));
 
       // Re-fetch
-      if (backendAvailable) {
-        try {
-          const resp = await fetchViaBackend('/api/virustotal/lookup', {
-            method: 'POST',
-            headers: { 'X-Api-Key': apiKey },
-            body: JSON.stringify({ url, apiKey }),
-          });
-          analysisData = await resp.json();
-        } catch(e) { analysisData = null; }
-      }
+      try {
+        const resp = await fetchViaBackend('/api/virustotal/lookup', {
+          method: 'POST',
+          body: JSON.stringify({ url }),
+        });
+        analysisData = await resp.json();
+      } catch(e) { analysisData = null; }
     }
 
     // Step 3: Parse
@@ -1801,7 +1809,6 @@ function checkContentRisk(parsed) {
 // ========== MAIN SCAN ==========
 async function startScan() {
   const urlInput = document.getElementById('urlInput').value.trim();
-  const vtKey = document.getElementById('vtApiKey').value.trim();
 
   if (!urlInput) { showToast('Please enter a URL'); return; }
 
@@ -1837,7 +1844,7 @@ async function startScan() {
     { name: 'Redirect & Header Analysis', fn: () => checkRedirects(parsed.full, parsed) },
     { name: 'URLhaus (abuse.ch)', fn: () => checkURLhaus(parsed.full) },
     { name: 'ThreatFox (abuse.ch)', fn: () => checkThreatFox(parsed.full, parsed) },
-    { name: 'VirusTotal (70+ engines)', fn: () => checkVirusTotal(parsed.full, vtKey) },
+    { name: 'VirusTotal (70+ engines)', fn: () => checkVirusTotal(parsed.full) },
   ];
 
   for (let i = 0; i < engines.length; i++) {
