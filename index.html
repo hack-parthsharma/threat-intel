@@ -1731,6 +1731,10 @@ async function startSIAScan() {
   await new Promise(r => setTimeout(r, 400));
   results.push(analyzeFileName(fileName));
 
+  // App Intelligence — search the web for real application context
+  pFill.style.width = '90%'; pText.textContent = 'Researching application details...'; pEngine.textContent = 'App Intelligence';
+  const appIntel = await fetchAppIntelligence(fileName, fileExt);
+
   pFill.style.width = '95%'; pText.textContent = 'Calculating verdict...'; pEngine.textContent = 'Risk Engine';
   await new Promise(r => setTimeout(r, 300));
 
@@ -1738,9 +1742,12 @@ async function startSIAScan() {
 
   const verdict = calculateSIAVerdict(results);
 
+  // Build intelligent controls using real app context
+  const controls = buildIntelligentControls(appIntel, verdict, fileHash, results);
+
   // Store scan data for report generation
   lastSIAScanData = {
-    fileName, fileHash, fileSize, fileExt, results, verdict,
+    fileName, fileHash, fileSize, fileExt, results, verdict, controls, appIntel,
     scanDate: new Date(),
     assessmentAgent: document.getElementById('assessmentAgent').value.trim() || 'N/A'
   };
@@ -1750,6 +1757,406 @@ async function startSIAScan() {
   btn.disabled = false;
   btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> ANALYZE FILE';
   setTimeout(() => progress.classList.remove('active'), 2000);
+}
+
+// ── App Intelligence Engine (Free web search) ──
+
+function extractAppName(fileName) {
+  // Strip common patterns: version numbers, platform tags, setup keywords, extensions
+  let name = fileName
+    .replace(/\.[^.]+$/, '')  // remove extension
+    .replace(/[-_](windows|win|win32|win64|mac|macos|linux|x64|x86|x86_64|amd64|arm|arm64|setup|user|installer|portable|full|latest|stable|release|beta|alpha|rc\d*|v?\d+[\d.]*\d*)[-_]?/gi, ' ')
+    .replace(/[-_](?:user[-_])?setup/gi, ' ')
+    .replace(/\d+\.\d+[\d.]*/g, '')  // remove version like 1.38.0
+    .replace(/[-_]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  // If nothing left, use original minus extension
+  if (!name || name.length < 2) name = fileName.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
+  return name;
+}
+
+async function fetchAppIntelligence(fileName, ext) {
+  const appName = extractAppName(fileName);
+  const intel = {
+    name: appName,
+    description: '',
+    developer: '',
+    license: '',
+    category: '',
+    ports: [],
+    protocols: [],
+    authMethods: [],
+    dataHandling: '',
+    networkAccess: '',
+    isOpenSource: false,
+    isDatabase: false,
+    isServer: false,
+    isCLI: false,
+    isDesktopApp: false,
+    isDriver: false,
+    usesEncryption: false,
+    requiresAdmin: false,
+    storesData: false,
+    hasWebInterface: false,
+    raw: '',
+    found: false
+  };
+
+  // Try multiple free APIs in parallel
+  const searches = [
+    fetchWikipedia(appName),
+    fetchDuckDuckGo(appName + ' software'),
+    fetchDuckDuckGo(appName + ' application security ports protocols'),
+  ];
+
+  try {
+    const results = await Promise.allSettled(searches);
+
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value) {
+        const data = result.value;
+        if (data.description && data.description.length > intel.description.length) {
+          intel.description = data.description;
+          intel.found = true;
+        }
+        if (data.developer) intel.developer = data.developer;
+        if (data.license) intel.license = data.license;
+        if (data.category) intel.category = data.category;
+        if (data.raw) intel.raw += ' ' + data.raw;
+      }
+    }
+  } catch(e) {
+    // Continue with filename-based intelligence
+  }
+
+  // Analyze gathered text for technical details
+  const rawLower = (intel.description + ' ' + intel.raw + ' ' + appName).toLowerCase();
+
+  // Detect ports
+  const portPatterns = [
+    { pattern: /(?:port|listen(?:s|ing)?(?:\s+on)?)\s*[:=]?\s*(\d{2,5})/gi, extract: 1 },
+    { pattern: /(?:default\s+port|tcp|udp)\s*[:=]?\s*(\d{2,5})/gi, extract: 1 },
+  ];
+  for (const pp of portPatterns) {
+    let match;
+    while ((match = pp.pattern.exec(rawLower)) !== null) {
+      const port = parseInt(match[pp.extract]);
+      if (port > 0 && port < 65536 && !intel.ports.includes(port)) intel.ports.push(port);
+    }
+  }
+
+  // Known app port/protocol mappings
+  const knownApps = {
+    'redis': { ports: [6379], protocols: ['TCP', 'RESP'], isDatabase: true, isServer: true, authMethods: ['Password (requirepass)', 'ACL'], dataHandling: 'In-memory key-value data store with optional disk persistence (RDB/AOF). Stores data locally on the host.', networkAccess: 'Listens on TCP port 6379 by default. Binds to localhost; can be configured for remote access.', usesEncryption: true, storesData: true },
+    'mysql': { ports: [3306], protocols: ['TCP', 'MySQL Protocol'], isDatabase: true, isServer: true, authMethods: ['Native password', 'caching_sha2_password', 'LDAP'], dataHandling: 'Relational database storing structured data on disk. Supports encryption at rest via InnoDB tablespace encryption.', networkAccess: 'Listens on TCP port 3306. Supports SSL/TLS for encrypted connections.', usesEncryption: true, storesData: true },
+    'postgres': { ports: [5432], protocols: ['TCP', 'PostgreSQL Protocol'], isDatabase: true, isServer: true, authMethods: ['md5', 'scram-sha-256', 'LDAP', 'Kerberos/GSSAPI', 'Certificate'], dataHandling: 'Relational database with on-disk storage. Supports Transparent Data Encryption.', networkAccess: 'Listens on TCP port 5432. SSL/TLS supported via pg_hba.conf.', usesEncryption: true, storesData: true },
+    'postgresql': { ports: [5432], protocols: ['TCP', 'PostgreSQL Protocol'], isDatabase: true, isServer: true, authMethods: ['md5', 'scram-sha-256', 'LDAP', 'Kerberos/GSSAPI'], dataHandling: 'Relational database with on-disk storage.', networkAccess: 'TCP port 5432 with SSL/TLS support.', usesEncryption: true, storesData: true },
+    'mongodb': { ports: [27017], protocols: ['TCP', 'MongoDB Wire Protocol'], isDatabase: true, isServer: true, authMethods: ['SCRAM', 'x.509', 'LDAP', 'Kerberos'], dataHandling: 'NoSQL document database storing BSON data on disk.', networkAccess: 'TCP port 27017. Supports TLS/SSL.', usesEncryption: true, storesData: true },
+    'apache': { ports: [80, 443], protocols: ['HTTP', 'HTTPS', 'TCP'], isServer: true, authMethods: ['Basic', 'Digest', 'mod_auth_form'], networkAccess: 'Web server on ports 80/443.', hasWebInterface: true },
+    'nginx': { ports: [80, 443], protocols: ['HTTP', 'HTTPS', 'TCP'], isServer: true, authMethods: ['Basic', 'JWT', 'Client Certificate'], networkAccess: 'Reverse proxy / web server on ports 80/443.', hasWebInterface: true },
+    'node': { ports: [3000], protocols: ['HTTP', 'TCP', 'WebSocket'], isServer: true, networkAccess: 'Node.js runtime — network access depends on application code.' },
+    'docker': { ports: [2375, 2376], protocols: ['TCP', 'HTTP REST API'], isServer: true, requiresAdmin: true, networkAccess: 'Docker daemon on TCP 2375 (unencrypted) or 2376 (TLS).' },
+    'elasticsearch': { ports: [9200, 9300], protocols: ['HTTP REST', 'TCP Transport'], isDatabase: true, isServer: true, authMethods: ['Native', 'LDAP', 'SAML', 'API Key'], dataHandling: 'Search engine storing indexed data on disk.', networkAccess: 'HTTP API on 9200, inter-node on 9300. Supports TLS.', usesEncryption: true, storesData: true },
+    'azure data studio': { ports: [1433], protocols: ['TCP', 'TDS (Tabular Data Stream)'], isDesktopApp: true, authMethods: ['SQL Login', 'Windows Authentication', 'Azure AD', 'Kerberos'], dataHandling: 'Cross-platform database management tool. Connects to SQL Server, PostgreSQL, and Azure databases. Does not store data locally beyond connection profiles.', networkAccess: 'Connects to SQL Server on TCP port 1433. Supports encrypted connections via SSL/TLS.', usesEncryption: true, storesData: false },
+    'azuredatastudio': { ports: [1433], protocols: ['TCP', 'TDS'], isDesktopApp: true, authMethods: ['SQL Login', 'Windows Auth', 'Azure AD', 'Kerberos'], dataHandling: 'Cross-platform database tool for SQL Server and Azure databases.', networkAccess: 'TCP 1433 to SQL Server. Supports SSL/TLS.', usesEncryption: true },
+    'vscode': { ports: [], protocols: ['HTTPS'], isDesktopApp: true, authMethods: ['Microsoft Account', 'GitHub'], dataHandling: 'Code editor. Stores settings and extensions locally.', networkAccess: 'HTTPS for extensions marketplace and updates.' },
+    'visual studio code': { ports: [], protocols: ['HTTPS'], isDesktopApp: true, authMethods: ['Microsoft Account', 'GitHub'], dataHandling: 'Code editor storing files locally.', networkAccess: 'HTTPS for marketplace and telemetry.' },
+    'git': { ports: [22, 443, 9418], protocols: ['SSH', 'HTTPS', 'Git Protocol'], isCLI: true, authMethods: ['SSH Key', 'HTTPS Token', 'Credential Manager'], dataHandling: 'Version control — stores repository data locally.', networkAccess: 'SSH (22), HTTPS (443), or Git protocol (9418) for remote operations.', storesData: true },
+    'python': { ports: [], protocols: [], isCLI: true, dataHandling: 'Programming language runtime. Network and data access depends on executed scripts.', networkAccess: 'No default network access — depends on application code.' },
+    'java': { ports: [], protocols: [], isCLI: true, dataHandling: 'Runtime environment. Data handling depends on executed application.', networkAccess: 'No default network access — depends on application.' },
+    'putty': { ports: [22, 23], protocols: ['SSH', 'Telnet', 'Serial'], isDesktopApp: true, authMethods: ['SSH Key', 'Password', 'Kerberos/GSSAPI'], dataHandling: 'Terminal emulator. Stores session configs and host keys locally.', networkAccess: 'Connects to remote hosts via SSH (22) or Telnet (23).', usesEncryption: true },
+    'filezilla': { ports: [21, 22, 990], protocols: ['FTP', 'FTPS', 'SFTP'], isDesktopApp: true, authMethods: ['Password', 'SSH Key', 'Certificate'], dataHandling: 'FTP client — transfers files between local and remote systems.', networkAccess: 'FTP (21), SFTP (22), or FTPS (990).', usesEncryption: true },
+    'wireshark': { ports: [], protocols: ['Promiscuous mode capture'], isDesktopApp: true, requiresAdmin: true, dataHandling: 'Network packet analyzer. Captures and stores network traffic locally in PCAP format.', networkAccess: 'Passive network capture — does not initiate connections.', storesData: true },
+    'notepad++': { ports: [], protocols: [], isDesktopApp: true, dataHandling: 'Text editor. Stores files locally.', networkAccess: 'HTTPS for update checks only.' },
+    'chrome': { ports: [80, 443], protocols: ['HTTP', 'HTTPS', 'WebSocket', 'QUIC'], isDesktopApp: true, authMethods: ['Google Account', 'OAuth'], dataHandling: 'Web browser storing cache, cookies, browsing history, and saved passwords locally.', networkAccess: 'Full internet access on HTTP/HTTPS. Supports QUIC protocol.', usesEncryption: true, storesData: true, hasWebInterface: true },
+    'firefox': { ports: [80, 443], protocols: ['HTTP', 'HTTPS', 'WebSocket'], isDesktopApp: true, authMethods: ['Firefox Account', 'OAuth'], dataHandling: 'Web browser with local storage of cache, cookies, and credentials.', networkAccess: 'Full internet access.', usesEncryption: true, storesData: true, hasWebInterface: true },
+    'slack': { ports: [443], protocols: ['HTTPS', 'WebSocket'], isDesktopApp: true, authMethods: ['OAuth 2.0', 'SAML SSO', 'Email/Password'], dataHandling: 'Messaging platform. Caches messages and files locally.', networkAccess: 'HTTPS (443) with WebSocket for real-time messaging.', usesEncryption: true, storesData: true },
+    'zoom': { ports: [443, 8801, 8802], protocols: ['HTTPS', 'UDP', 'TCP'], isDesktopApp: true, authMethods: ['SSO', 'OAuth', 'Email/Password'], dataHandling: 'Video conferencing client. Temporarily stores meeting data locally.', networkAccess: 'HTTPS (443), UDP (8801-8802) for media streams.', usesEncryption: true },
+    'terraform': { ports: [], protocols: ['HTTPS'], isCLI: true, dataHandling: 'Infrastructure as Code tool. Stores state files containing infrastructure details — may include secrets.', networkAccess: 'HTTPS to cloud provider APIs.', usesEncryption: true, storesData: true, requiresAdmin: true },
+    'kubectl': { ports: [6443], protocols: ['HTTPS', 'TCP'], isCLI: true, authMethods: ['x.509 Certificate', 'Bearer Token', 'OIDC'], dataHandling: 'Kubernetes CLI. Stores kubeconfig with cluster credentials locally.', networkAccess: 'HTTPS to Kubernetes API server (6443).', usesEncryption: true, requiresAdmin: true },
+    'openssh': { ports: [22], protocols: ['SSH'], isServer: true, authMethods: ['SSH Key', 'Password', 'Certificate', 'Kerberos'], networkAccess: 'SSH server on TCP port 22.', usesEncryption: true },
+    'tomcat': { ports: [8080, 8443], protocols: ['HTTP', 'HTTPS', 'AJP'], isServer: true, authMethods: ['BASIC', 'FORM', 'DIGEST', 'CLIENT-CERT'], hasWebInterface: true, networkAccess: 'HTTP (8080), HTTPS (8443), AJP (8009).', usesEncryption: true },
+    'rabbitmq': { ports: [5672, 15672], protocols: ['AMQP', 'HTTP'], isServer: true, authMethods: ['Username/Password', 'LDAP', 'x.509'], dataHandling: 'Message broker. Stores messages in queues on disk.', networkAccess: 'AMQP (5672), Management UI (15672).', usesEncryption: true, storesData: true, hasWebInterface: true },
+    'grafana': { ports: [3000], protocols: ['HTTP', 'HTTPS'], isServer: true, authMethods: ['Built-in', 'LDAP', 'OAuth', 'SAML'], hasWebInterface: true, dataHandling: 'Monitoring dashboard. Stores dashboards and config in local SQLite or external DB.', networkAccess: 'HTTP/HTTPS on port 3000.', storesData: true },
+    'prometheus': { ports: [9090], protocols: ['HTTP'], isServer: true, dataHandling: 'Time-series database for metrics. Stores scraped metrics on disk.', networkAccess: 'HTTP on port 9090. Scrapes targets via HTTP.', storesData: true, hasWebInterface: true },
+    '7zip': { ports: [], protocols: [], isDesktopApp: true, dataHandling: 'File archiver. Compresses/decompresses files locally.', networkAccess: 'No network access required.' },
+    '7-zip': { ports: [], protocols: [], isDesktopApp: true, dataHandling: 'File archiver utility.', networkAccess: 'No network access.' },
+    'vlc': { ports: [], protocols: ['HTTP', 'RTSP', 'UDP'], isDesktopApp: true, dataHandling: 'Media player. Can stream and play local/remote media.', networkAccess: 'Supports network streaming (RTSP, HTTP, UDP) but no default server mode.' },
+    'winscp': { ports: [22, 21, 990], protocols: ['SFTP', 'SCP', 'FTP', 'FTPS'], isDesktopApp: true, authMethods: ['Password', 'SSH Key', 'Kerberos'], dataHandling: 'File transfer client. Transfers files between local and remote hosts.', networkAccess: 'SFTP (22), FTP (21), FTPS (990).', usesEncryption: true },
+    'postman': { ports: [], protocols: ['HTTP', 'HTTPS', 'WebSocket', 'gRPC'], isDesktopApp: true, authMethods: ['Postman Account', 'OAuth'], dataHandling: 'API development tool. Stores collections, environments, and API keys locally and optionally in cloud.', networkAccess: 'Makes HTTP/HTTPS requests to any endpoint as configured by user.', usesEncryption: true, storesData: true },
+    'sqlite': { ports: [], protocols: [], dataHandling: 'Embedded database engine. Stores data in local files.', storesData: true, networkAccess: 'No network access — local file-based database.' },
+    'memcached': { ports: [11211], protocols: ['TCP', 'UDP'], isServer: true, dataHandling: 'In-memory caching system.', networkAccess: 'TCP/UDP port 11211.', storesData: true },
+    'consul': { ports: [8500, 8501, 8300], protocols: ['HTTP', 'HTTPS', 'TCP'], isServer: true, authMethods: ['ACL Tokens', 'TLS Certificates'], hasWebInterface: true, dataHandling: 'Service mesh and discovery. Stores service catalog and KV data.', networkAccess: 'HTTP API (8500), HTTPS (8501), RPC (8300).', usesEncryption: true, storesData: true },
+    'vault': { ports: [8200], protocols: ['HTTPS'], isServer: true, authMethods: ['Token', 'LDAP', 'AppRole', 'AWS IAM', 'Kubernetes', 'OIDC'], hasWebInterface: true, dataHandling: 'Secrets management. Stores encrypted secrets in backend storage.', networkAccess: 'HTTPS on port 8200.', usesEncryption: true, storesData: true, requiresAdmin: true },
+  };
+
+  // Match app name against known apps
+  const appLower = appName.toLowerCase().replace(/\s+/g, '');
+  const fileNameLower = fileName.toLowerCase();
+  for (const [key, appData] of Object.entries(knownApps)) {
+    const keyNorm = key.replace(/\s+/g, '');
+    if (appLower.includes(keyNorm) || fileNameLower.includes(keyNorm) || fileNameLower.includes(key.replace(/\s+/g, '-'))) {
+      if (appData.ports) intel.ports = [...new Set([...intel.ports, ...appData.ports])];
+      if (appData.protocols) intel.protocols = [...new Set([...intel.protocols, ...appData.protocols])];
+      if (appData.authMethods) intel.authMethods = appData.authMethods;
+      if (appData.dataHandling) intel.dataHandling = appData.dataHandling;
+      if (appData.networkAccess) intel.networkAccess = appData.networkAccess;
+      if (appData.isDatabase) intel.isDatabase = true;
+      if (appData.isServer) intel.isServer = true;
+      if (appData.isCLI) intel.isCLI = true;
+      if (appData.isDesktopApp) intel.isDesktopApp = true;
+      if (appData.usesEncryption) intel.usesEncryption = true;
+      if (appData.requiresAdmin) intel.requiresAdmin = true;
+      if (appData.storesData) intel.storesData = true;
+      if (appData.hasWebInterface) intel.hasWebInterface = true;
+      intel.found = true;
+      break;
+    }
+  }
+
+  // Infer from description text if no known app match
+  if (!intel.found && intel.description) {
+    if (/database|sql|data\s*store|NoSQL/i.test(rawLower)) intel.isDatabase = true;
+    if (/server|daemon|listen|service/i.test(rawLower)) intel.isServer = true;
+    if (/command.line|cli|terminal|console/i.test(rawLower)) intel.isCLI = true;
+    if (/desktop|gui|graphical|window/i.test(rawLower)) intel.isDesktopApp = true;
+    if (/encrypt|ssl|tls|https/i.test(rawLower)) intel.usesEncryption = true;
+    if (/admin|root|elevated|privilege/i.test(rawLower)) intel.requiresAdmin = true;
+    if (/open.source|free software|gpl|mit license|apache license|bsd/i.test(rawLower)) intel.isOpenSource = true;
+    if (/web.interface|web.ui|dashboard|browser.based/i.test(rawLower)) intel.hasWebInterface = true;
+  }
+
+  // Detect category from text
+  if (!intel.category) {
+    if (intel.isDatabase) intel.category = 'Database Management';
+    else if (intel.isServer) intel.category = 'Server / Service';
+    else if (intel.isCLI) intel.category = 'Command-Line Tool';
+    else if (intel.isDesktopApp) intel.category = 'Desktop Application';
+    else intel.category = getAppCategory(ext);
+  }
+
+  return intel;
+}
+
+async function fetchWikipedia(query) {
+  try {
+    const searchUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query.replace(/\s+/g, '_'))}`;
+    const resp = await fetch(searchUrl, { signal: AbortSignal.timeout(5000) });
+    if (!resp.ok) {
+      // Fallback: search API
+      const searchResp = await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=1&format=json&origin=*`, { signal: AbortSignal.timeout(5000) });
+      const searchData = await searchResp.json();
+      if (searchData[1] && searchData[1][0]) {
+        const title = searchData[1][0];
+        const summResp = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`, { signal: AbortSignal.timeout(5000) });
+        if (summResp.ok) {
+          const data = await summResp.json();
+          return { description: data.extract || '', raw: data.extract || '' };
+        }
+      }
+      return null;
+    }
+    const data = await resp.json();
+    return { description: data.extract || '', raw: data.extract || '' };
+  } catch(e) { return null; }
+}
+
+async function fetchDuckDuckGo(query) {
+  try {
+    const resp = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`, { signal: AbortSignal.timeout(5000) });
+    const data = await resp.json();
+    const desc = data.Abstract || data.AbstractText || '';
+    const raw = [desc, data.RelatedTopics?.map(t => t.Text || '').join(' ') || ''].join(' ');
+    let developer = '';
+    if (data.Infobox?.content) {
+      for (const item of data.Infobox.content) {
+        if (/developer|author|creator|company/i.test(item.label || '')) developer = item.value;
+        if (/license/i.test(item.label || '')) return { description: desc, raw, developer, license: item.value };
+      }
+    }
+    return { description: desc, raw, developer };
+  } catch(e) { return null; }
+}
+
+function buildIntelligentControls(intel, verdict, fileHash, results) {
+  const clean = verdict.level === 'safe';
+  const appName = intel.name;
+  const vtResult = results.find(r => r.engine.includes('VirusTotal'));
+  const mdResult = results.find(r => r.engine.includes('MetaDefender'));
+  const vtSummary = vtResult ? vtResult.description : 'Not scanned';
+  const mdSummary = mdResult ? mdResult.description : 'Not scanned';
+  const scanSummary = `Checked on VirusTotal and MetaDefender — results are ${clean ? 'clear' : 'flagged'}. SHA-256: ${fileHash || 'N/A'}`;
+
+  // AC — Access Control
+  let acAnswer = 'No', acDetail = '';
+  if (intel.authMethods.length > 0) {
+    acAnswer = 'Yes';
+    acDetail = `${appName} supports the following authentication methods: ${intel.authMethods.join(', ')}. `;
+    if (intel.isDatabase || intel.isServer) acDetail += 'Roles should be clearly defined with least privilege. Personnel with access should be provided a role with minimum required permissions.';
+    else acDetail += 'Access should be limited to authorized personnel only.';
+  } else if (intel.isServer || intel.isDatabase) {
+    acAnswer = 'Yes';
+    acDetail = `${appName} is a ${intel.isDatabase ? 'database' : 'server'} application. Access control should be configured with clearly defined roles and least privilege. Consideration should be given for shared accounts and MFA for administrative access.`;
+  } else {
+    acDetail = `${appName} is a ${intel.category.toLowerCase()}. It does not introduce new access control requirements beyond existing system policies.`;
+  }
+
+  // AT — Awareness and Training
+  let atAnswer = 'No', atDetail = '';
+  if (intel.isDatabase || intel.isServer || intel.requiresAdmin) {
+    atAnswer = 'Yes';
+    atDetail = `Personnel managing ${appName} should be trained on its security configuration, ${intel.isDatabase ? 'database access controls, query security, and backup procedures' : 'service hardening, monitoring, and incident escalation'}. Standard operating procedures should be documented.`;
+  } else {
+    atDetail = `No additional training required for ${appName}. Standard security awareness training is sufficient.`;
+  }
+
+  // AU — Audit and Accountability
+  let auAnswer = 'No', auDetail = '';
+  if (intel.isDatabase || intel.isServer || intel.hasWebInterface) {
+    auAnswer = 'Yes';
+    auDetail = `${appName} ${intel.isDatabase ? 'supports audit logging of queries, connections, and administrative actions. Audit logs should be enabled and forwarded to the SIEM.' : 'should have logging enabled for security events. Logs should be sent to the centralized SIEM for monitoring and analysis.'}`;
+    if (intel.ports.length > 0) auDetail += ` Network connections on port(s) ${intel.ports.join(', ')} should be logged.`;
+  } else {
+    auDetail = `${appName} does not generate security-relevant audit events beyond standard OS-level logging.`;
+  }
+
+  // CA — Security Assessment and Authorization
+  let caAnswer = 'No', caDetail = '';
+  if (intel.ports.length > 0 || intel.networkAccess) {
+    caAnswer = 'Yes';
+    caDetail = intel.networkAccess || `${appName} communicates over network port(s) ${intel.ports.join(', ')} using ${intel.protocols.join(', ') || 'TCP'}.`;
+    caDetail += ' All connections should be clearly authorized. ';
+    if (intel.usesEncryption) caDetail += 'SSL/TLS encryption is supported for data in transit.';
+    else caDetail += 'Encryption for data in transit should be configured if not enabled by default.';
+  } else {
+    caDetail = `${appName} does not establish external network connections. No authorization boundary changes required.`;
+  }
+
+  // CM — Configuration Management
+  let cmAnswer = 'No', cmDetail = '';
+  if (intel.isServer || intel.isDatabase || intel.requiresAdmin) {
+    cmAnswer = 'Yes';
+    cmDetail = `${appName} should be hardened using vendor-provided security guidelines or CIS benchmarks. Vendor-provided security settings should be reviewed and configured. Vulnerability scans should include ${appName} and its dependencies. Configuration baseline should be documented and monitored for changes.`;
+  } else {
+    cmDetail = `${appName} does not impact baseline configuration management. Standard vulnerability scanning and patch management apply.`;
+  }
+
+  // CP — Contingency Plan
+  let cpAnswer = 'No', cpDetail = '';
+  if (intel.isDatabase && intel.storesData) {
+    cpAnswer = 'Yes';
+    cpDetail = `${appName} stores data that may need to be included in backup and disaster recovery plans. ${intel.dataHandling || ''} RPO and RTO requirements should be defined. Backup and restore procedures should be tested.`;
+  } else {
+    cpDetail = `${appName} does not impact existing contingency or disaster recovery plans.`;
+  }
+
+  // IA — Identification and Authentication
+  let iaAnswer = 'No', iaDetail = '';
+  if (intel.authMethods.length > 0) {
+    iaAnswer = 'Yes';
+    iaDetail = `${appName} uses the following authentication mechanisms: ${intel.authMethods.join(', ')}. `;
+    if (intel.authMethods.some(a => /ldap|ad |active.directory|kerberos|saml|oauth|oidc|sso/i.test(a))) {
+      iaDetail += 'Integration with existing IAM/AD infrastructure is supported.';
+    } else {
+      iaDetail += 'Consideration should be given for integrating with existing AD/IAM infrastructure where possible.';
+    }
+  } else {
+    iaDetail = `Authentication type for ${appName} is standard OS-level authentication. No additional identity management changes required.`;
+  }
+
+  // IR — Incident Response
+  let irAnswer = 'No', irDetail = '';
+  if (intel.isServer || intel.isDatabase || intel.hasWebInterface) {
+    irAnswer = 'Yes';
+    irDetail = `Incident response procedures should be updated to include ${appName} in monitoring scope. ${intel.isDatabase ? 'Database breach scenarios and data exfiltration playbooks should cover this system.' : 'Service disruption and unauthorized access scenarios should be documented.'}`;
+  } else {
+    irDetail = `${appName} does not impact the current incident response plan.`;
+  }
+
+  // MA — Maintenance
+  let maAnswer = 'No', maDetail = '';
+  if (intel.isServer || intel.isDatabase) {
+    maDetail = `${appName} should be included in the regular maintenance schedule for patching and updates. ${intel.isOpenSource ? 'As open-source software, community security advisories should be monitored.' : 'Vendor security bulletins should be monitored for patches.'}`;
+  } else {
+    maDetail = `Standard maintenance and patching procedures apply to ${appName}. No special maintenance requirements.`;
+  }
+
+  // MP — Media Protection
+  let mpDetail = '';
+  if (intel.storesData || intel.isDatabase) {
+    mpDetail = `${appName} ${intel.dataHandling || 'stores data on disk'}. Data at rest should be encrypted. Media containing ${appName} data should be sanitized before disposal per organizational policy.`;
+  } else {
+    mpDetail = `${appName} does not introduce new media protection requirements.`;
+  }
+
+  // PE — Physical and Environmental
+  let peDetail = `${appName} does not change physical or environmental protection requirements. Standard data center physical security controls apply.`;
+
+  // PL — Planning
+  let plAnswer = 'No', plDetail = '';
+  if (intel.isServer || intel.isDatabase || (intel.ports.length > 0)) {
+    plAnswer = 'Yes';
+    plDetail = `System architecture documentation should be updated to reflect ${appName} deployment${intel.ports.length > 0 ? `, including network ports (${intel.ports.join(', ')}) and communication flows` : ''}. Boundary diagrams may need to be updated.`;
+  } else {
+    plDetail = `${appName} does not impact the SSP or system architecture.`;
+  }
+
+  // PS — Personnel Security
+  let psDetail = `${appName} does not change personnel security requirements. Standard background checks and access provisioning/deprovisioning procedures apply.`;
+
+  // RA — Risk Assessment
+  let raDetail = `${scanSummary}. ${vtSummary}. ${mdSummary}.`;
+
+  // SA — System and Service Acquisition
+  let saAnswer = 'No', saDetail = '';
+  if (intel.isOpenSource || intel.license) {
+    saDetail = `${appName} is ${intel.isOpenSource ? 'open-source software' : 'third-party software'}${intel.license ? ` licensed under ${intel.license}` : ''}${intel.developer ? `, developed by ${intel.developer}` : ''}. No procurement cost — free to use. Supply chain risk should be assessed for dependency integrity.`;
+  } else {
+    saDetail = `${appName}${intel.developer ? ` by ${intel.developer}` : ''} — licensing and acquisition terms should be verified.`;
+  }
+
+  // SC — System and Communication Protection
+  let scAnswer = 'No', scDetail = '';
+  if (intel.ports.length > 0 || intel.usesEncryption || intel.networkAccess) {
+    scAnswer = 'Yes';
+    scDetail = '';
+    if (intel.networkAccess) scDetail += intel.networkAccess + ' ';
+    if (intel.usesEncryption) scDetail += 'SSL/TLS encryption is supported for data in transit. FIPS-compliant encryption should be verified. ';
+    else if (intel.ports.length > 0) scDetail += `Communication on port(s) ${intel.ports.join(', ')} should be encrypted. `;
+    scDetail += 'All data traversing outside the authorization boundary should be encrypted using FIPS-compliant protocols. Incoming connections (IPs, ports, protocols) should be specifically authorized.';
+    if (intel.storesData) scDetail += ' Data at rest should be encrypted.';
+  } else {
+    scDetail = `${appName} does not establish network communications requiring additional protection beyond existing controls.`;
+  }
+
+  // SI — System and Information Integrity
+  let siAnswer = clean ? 'No' : 'Yes', siDetail = '';
+  if (!clean) {
+    siDetail = `Scan results indicate potential concerns: ${verdict.title}. Integrity review recommended before deployment. Malicious code protection should be verified.`;
+  } else {
+    siDetail = `Scanned with VirusTotal and MetaDefender — results clear. ${appName} should be included in regular vulnerability scanning. ${intel.isServer || intel.isDatabase ? 'Security patches should be applied promptly. Monitoring should be configured for anomalous behavior.' : 'Standard malicious code protection and patch management apply.'}`;
+  }
+
+  return [
+    { num: '1', code: 'AC', title: 'Access Control', answer: acAnswer, detail: acDetail },
+    { num: '2', code: 'AT', title: 'Awareness and Training', answer: atAnswer, detail: atDetail },
+    { num: '3', code: 'AU', title: 'Audit and Accountability', answer: auAnswer, detail: auDetail },
+    { num: '4', code: 'CA', title: 'Security Assessment and Authorization', answer: caAnswer, detail: caDetail },
+    { num: '5', code: 'CM', title: 'Configuration Management', answer: cmAnswer, detail: cmDetail },
+    { num: '6', code: 'CP', title: 'Contingency Plan', answer: cpAnswer, detail: cpDetail },
+    { num: '7', code: 'IA', title: 'Identification and Authentication', answer: iaAnswer, detail: iaDetail },
+    { num: '8', code: 'IR', title: 'Incident Response', answer: irAnswer, detail: irDetail },
+    { num: '9', code: 'MA', title: 'Maintenance', answer: maAnswer, detail: maDetail },
+    { num: '10', code: 'MP', title: 'Media Protection', answer: 'No', detail: mpDetail },
+    { num: '11', code: 'PE', title: 'Physical and Environmental Protection', answer: 'No', detail: peDetail },
+    { num: '12', code: 'PL', title: 'Planning', answer: plAnswer, detail: plDetail },
+    { num: '13', code: 'PS', title: 'Personnel Security', answer: 'No', detail: psDetail },
+    { num: '14', code: 'RA', title: 'Risk Assessment', answer: clean ? 'No' : 'Yes', detail: raDetail },
+    { num: '15', code: 'SA', title: 'System and Service Acquisition', answer: saAnswer, detail: saDetail },
+    { num: '16', code: 'SC', title: 'System and Communication Protection', answer: scAnswer, detail: scDetail },
+    { num: '17', code: 'SI', title: 'System and Information Integrity', answer: siAnswer, detail: siDetail },
+  ];
 }
 
 // ── SIA Engines ──
@@ -2126,13 +2533,6 @@ function generateSIADocx() {
     .trim();
 
   // Determine scan verdicts text
-  const vtResult = d.results.find(r => r.engine.includes('VirusTotal'));
-  const mdResult = d.results.find(r => r.engine.includes('MetaDefender'));
-  const vtText = vtResult ? `VirusTotal: ${vtResult.status.toUpperCase()} — ${vtResult.description}` : 'VirusTotal: Not scanned';
-  const mdText = mdResult ? `MetaDefender: ${mdResult.status.toUpperCase()} — ${mdResult.description}` : 'MetaDefender: Not scanned';
-  const overallClean = d.verdict.level === 'safe';
-  const yesNo = (val) => val ? 'Yes' : 'No';
-
   // Get the extension categorization
   const appCategory = getAppCategory(d.fileExt);
 
@@ -2159,98 +2559,8 @@ function generateSIADocx() {
     });
   }
 
-  // Build the 17 security control question rows
-  const controls = [
-    {
-      num: '1', code: 'AC', title: 'Access Control',
-      question: 'Will change(s) to system affect how the system limits: (i) information system access to authorized users, processes acting on behalf of authorized users or devices; and (ii) the types of transactions and functions that authorized users are permitted to exercise.',
-      answer: overallClean ? 'No' : 'Yes',
-      detail: overallClean ? 'No access control changes required. File scan results are clear.' : `Review required. Scan detected: ${d.verdict.title}.`
-    },
-    {
-      num: '2', code: 'AT', title: 'Awareness and Training',
-      question: 'Will change(s) affect required system training to ensure personnel are adequately trained?',
-      answer: 'No', detail: 'NA'
-    },
-    {
-      num: '3', code: 'AU', title: 'Audit and Accountability',
-      question: 'Will change(s) affect how system audit requirements to create, protect, and retain audit records?',
-      answer: 'No', detail: 'Audit logs maintained per existing policy.'
-    },
-    {
-      num: '4', code: 'CA', title: 'Security Assessment and Authorization',
-      question: 'All connections (internal and external) should be clearly authorized.',
-      answer: overallClean ? 'No' : 'Yes',
-      detail: overallClean ? 'No authorization boundary changes.' : 'Authorization review recommended based on scan findings.'
-    },
-    {
-      num: '5', code: 'CM', title: 'Configuration Management',
-      question: 'Will change(s) impact baseline configuration, security settings enforcement, or ability to monitor changes?',
-      answer: 'No', detail: 'No configuration management impact.'
-    },
-    {
-      num: '6', code: 'CP', title: 'Contingency Plan',
-      question: 'Will change(s) affect the contingency plan?',
-      answer: 'No', detail: 'NA'
-    },
-    {
-      num: '7', code: 'IA', title: 'Identification and Authentication',
-      question: 'Will change(s) impact how the system identifies or authenticates users?',
-      answer: 'No', detail: 'No authentication changes.'
-    },
-    {
-      num: '8', code: 'IR', title: 'Incident Response',
-      question: 'Will change(s) impact the current incident response plan and process?',
-      answer: 'No', detail: 'NA'
-    },
-    {
-      num: '9', code: 'MA', title: 'Maintenance',
-      question: 'Will change(s) impact how periodic and timely maintenance is performed?',
-      answer: 'No', detail: 'NA'
-    },
-    {
-      num: '10', code: 'MP', title: 'Media Protection',
-      question: 'Will change(s) impact how information on digital media is protected or sanitized?',
-      answer: 'No', detail: 'NA'
-    },
-    {
-      num: '11', code: 'PE', title: 'Physical and Environmental Protection',
-      question: 'Will change(s) change how physical access or environmental controls are provided?',
-      answer: 'No', detail: 'NA'
-    },
-    {
-      num: '12', code: 'PL', title: 'Planning',
-      question: 'Will change(s) impact the SSP or the system architecture?',
-      answer: 'No', detail: 'NA'
-    },
-    {
-      num: '13', code: 'PS', title: 'Personnel Security',
-      question: 'Will change(s) impact the personnel security controls of the system?',
-      answer: 'No', detail: 'NA'
-    },
-    {
-      num: '14', code: 'RA', title: 'Risk Assessment',
-      question: 'Will change(s) impact the security categorization or vulnerability scanning?',
-      answer: overallClean ? 'No' : 'Yes',
-      detail: `Checked on VirusTotal and MetaDefender — results are ${overallClean ? 'clear' : 'flagged'}. SHA-256: ${d.fileHash || 'N/A'}`
-    },
-    {
-      num: '15', code: 'SA', title: 'System and Service Acquisition',
-      question: 'Will change(s) impact system and service acquisition?',
-      answer: 'No', detail: 'NA'
-    },
-    {
-      num: '16', code: 'SC', title: 'System and Communication Protection',
-      question: 'Will change(s) affect how communications are monitored, controlled, and protected?',
-      answer: 'No', detail: 'NA'
-    },
-    {
-      num: '17', code: 'SI', title: 'System and Information Integrity',
-      question: 'Will change(s) affect how system flaws are identified, malicious code protection is employed, or security functions verified?',
-      answer: overallClean ? 'No' : 'Yes',
-      detail: overallClean ? 'No integrity concerns. Scan results clear.' : `Integrity review recommended. Verdict: ${d.verdict.title}`
-    },
-  ];
+  // Build the 17 security control question rows — use pre-built intelligent controls
+  const controls = d.controls;
 
   function makeControlRow(ctrl) {
     return new TableRow({
@@ -2387,6 +2697,20 @@ function generateSIADocx() {
         }),
 
         new Paragraph({ spacing: { before: 200 }, children: [] }),
+
+        // Application Description (from web intelligence)
+        ...(d.appIntel && d.appIntel.description ? [
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Application Description")] }),
+          new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: d.appIntel.description, size: 20, font: "Arial" })] }),
+          ...(d.appIntel.developer ? [new Paragraph({ numbering: { reference: "bullets", level: 0 }, children: [new TextRun({ text: `Developer: ${d.appIntel.developer}`, size: 20, font: "Arial" })] })] : []),
+          ...(d.appIntel.license ? [new Paragraph({ numbering: { reference: "bullets", level: 0 }, children: [new TextRun({ text: `License: ${d.appIntel.license}`, size: 20, font: "Arial" })] })] : []),
+          ...(d.appIntel.ports.length > 0 ? [new Paragraph({ numbering: { reference: "bullets", level: 0 }, children: [new TextRun({ text: `Default Port(s): ${d.appIntel.ports.join(', ')}`, size: 20, font: "Arial" })] })] : []),
+          ...(d.appIntel.protocols.length > 0 ? [new Paragraph({ numbering: { reference: "bullets", level: 0 }, children: [new TextRun({ text: `Protocols: ${d.appIntel.protocols.join(', ')}`, size: 20, font: "Arial" })] })] : []),
+          ...(d.appIntel.authMethods.length > 0 ? [new Paragraph({ numbering: { reference: "bullets", level: 0 }, children: [new TextRun({ text: `Authentication: ${d.appIntel.authMethods.join(', ')}`, size: 20, font: "Arial" })] })] : []),
+          ...(d.appIntel.dataHandling ? [new Paragraph({ numbering: { reference: "bullets", level: 0 }, children: [new TextRun({ text: `Data Handling: ${d.appIntel.dataHandling}`, size: 20, font: "Arial" })] })] : []),
+          ...(d.appIntel.networkAccess ? [new Paragraph({ numbering: { reference: "bullets", level: 0 }, children: [new TextRun({ text: `Network Access: ${d.appIntel.networkAccess}`, size: 20, font: "Arial" })] })] : []),
+          new Paragraph({ spacing: { before: 200 }, children: [] }),
+        ] : []),
 
         // Scan Engine Results
         new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Scan Engine Results")] }),
@@ -2547,6 +2871,41 @@ function generateSIAPdf() {
   }
   y += 8;
 
+  // Application Description (from web intelligence)
+  if (d.appIntel && (d.appIntel.description || d.appIntel.dataHandling)) {
+    checkPage(40);
+    pdf.setFontSize(13); pdf.setTextColor(11, 29, 58); pdf.setFont('helvetica', 'bold');
+    pdf.text('Application Description', margin, y); y += 2;
+    pdf.setDrawColor(232, 93, 38); pdf.line(margin, y, margin + 55, y); y += 6;
+
+    pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(40);
+    if (d.appIntel.description) {
+      const descLines = pdf.splitTextToSize(d.appIntel.description, contentW);
+      pdf.text(descLines, margin, y);
+      y += descLines.length * 4.5 + 4;
+    }
+
+    pdf.setFontSize(8);
+    const appDetails = [];
+    if (d.appIntel.developer) appDetails.push(['Developer', d.appIntel.developer]);
+    if (d.appIntel.license) appDetails.push(['License', d.appIntel.license]);
+    if (d.appIntel.ports.length > 0) appDetails.push(['Default Port(s)', d.appIntel.ports.join(', ')]);
+    if (d.appIntel.protocols.length > 0) appDetails.push(['Protocols', d.appIntel.protocols.join(', ')]);
+    if (d.appIntel.authMethods.length > 0) appDetails.push(['Authentication', d.appIntel.authMethods.join(', ')]);
+    if (d.appIntel.dataHandling) appDetails.push(['Data Handling', d.appIntel.dataHandling]);
+    if (d.appIntel.networkAccess) appDetails.push(['Network Access', d.appIntel.networkAccess]);
+
+    for (const [label, value] of appDetails) {
+      checkPage(8);
+      pdf.setFont('helvetica', 'bold'); pdf.setTextColor(80); pdf.text(label + ':', margin + 3, y);
+      pdf.setFont('helvetica', 'normal'); pdf.setTextColor(40);
+      const valLines = pdf.splitTextToSize(String(value), contentW - 50);
+      pdf.text(valLines, margin + 50, y);
+      y += Math.max(5, valLines.length * 4) + 1;
+    }
+    y += 6;
+  }
+
   // Scan Engine Results
   checkPage(20);
   pdf.setFontSize(13); pdf.setTextColor(11, 29, 58); pdf.setFont('helvetica', 'bold');
@@ -2583,27 +2942,8 @@ function generateSIAPdf() {
   pdf.setFontSize(16); pdf.setTextColor(11, 29, 58); pdf.setFont('helvetica', 'bold');
   pdf.text('Security Controls Assessment', pageW / 2, y, { align: 'center' }); y += 10;
 
-  const overallClean = d.verdict.level === 'safe';
-
-  const controls = [
-    { code: 'AC', title: 'Access Control', answer: overallClean ? 'No' : 'Yes', detail: overallClean ? 'No access control changes. Scan clear.' : `Review required. ${d.verdict.title}` },
-    { code: 'AT', title: 'Awareness and Training', answer: 'No', detail: 'NA' },
-    { code: 'AU', title: 'Audit and Accountability', answer: 'No', detail: 'Audit logs maintained.' },
-    { code: 'CA', title: 'Security Assessment & Authorization', answer: overallClean ? 'No' : 'Yes', detail: overallClean ? 'No boundary changes.' : 'Authorization review recommended.' },
-    { code: 'CM', title: 'Configuration Management', answer: 'No', detail: 'No CM impact.' },
-    { code: 'CP', title: 'Contingency Plan', answer: 'No', detail: 'NA' },
-    { code: 'IA', title: 'Identification & Authentication', answer: 'No', detail: 'No auth changes.' },
-    { code: 'IR', title: 'Incident Response', answer: 'No', detail: 'NA' },
-    { code: 'MA', title: 'Maintenance', answer: 'No', detail: 'NA' },
-    { code: 'MP', title: 'Media Protection', answer: 'No', detail: 'NA' },
-    { code: 'PE', title: 'Physical & Environmental', answer: 'No', detail: 'NA' },
-    { code: 'PL', title: 'Planning', answer: 'No', detail: 'NA' },
-    { code: 'PS', title: 'Personnel Security', answer: 'No', detail: 'NA' },
-    { code: 'RA', title: 'Risk Assessment', answer: overallClean ? 'No' : 'Yes', detail: `Checked on VT and MetaDefender. Results ${overallClean ? 'clear' : 'flagged'}. SHA-256: ${d.fileHash ? d.fileHash.substring(0,32)+'...' : 'N/A'}` },
-    { code: 'SA', title: 'System & Service Acquisition', answer: 'No', detail: 'NA' },
-    { code: 'SC', title: 'System & Communication Protection', answer: 'No', detail: 'NA' },
-    { code: 'SI', title: 'System & Information Integrity', answer: overallClean ? 'No' : 'Yes', detail: overallClean ? 'No integrity concerns.' : `Review recommended. ${d.verdict.title}` },
-  ];
+  // Use pre-built intelligent controls
+  const controls = d.controls;
 
   pdf.setFontSize(8);
   let ctrlNum = 1;
