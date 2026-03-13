@@ -1229,7 +1229,7 @@ body.dark .agent-input:focus {
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Assessment Agent
     </label>
-    <input type="text" class="agent-input" id="assessmentAgent" placeholder="Enter your name (e.g., Parth)" spellcheck="false">
+    <input type="text" class="agent-input" id="assessmentAgent" placeholder="Enter your name (e.g., Vidhya)" spellcheck="false">
   </div>
 
   <!-- Upload Zone -->
@@ -1754,19 +1754,128 @@ async function startSIAScan() {
 
 // ── SIA Engines ──
 
-function analyzeFileType(name, ext, size) {
-  const dangerous = ['exe','msi','bat','cmd','ps1','vbs','wsf','scr','pif','com','hta','cpl','jar','apk','sh'];
-  const macroEnabled = ['docm','xlsm','pptm','dotm','xltm','potm'];
-  const archives = ['zip','rar','7z','tar','gz','tgz'];
-  const documents = ['pdf','doc','docx','xls','xlsx','ppt','pptx','rtf','odt','ods','odp'];
-  const safe = ['txt','csv','json','xml','yml','yaml','md','png','jpg','jpeg','gif','svg','mp4','mp3','wav','webp'];
+// Comprehensive extension-to-category map for SIA reports
+const EXT_CATEGORY_MAP = {
+  // Executables
+  exe: 'Executable File', msi: 'Windows Installer Package', msix: 'Windows App Package',
+  appx: 'Windows App Package', appxbundle: 'Windows App Bundle',
+  com: 'DOS Executable', scr: 'Windows Screensaver Executable', pif: 'Program Information File',
+  cpl: 'Windows Control Panel Extension', hta: 'HTML Application (Executable)',
+  // macOS
+  dmg: 'macOS Disk Image', pkg: 'macOS Installer Package', app: 'macOS Application Bundle',
+  // Linux
+  deb: 'Debian Package', rpm: 'RPM Package', appimage: 'Linux AppImage',
+  snap: 'Snap Package', flatpak: 'Flatpak Package',
+  // Mobile
+  apk: 'Android Application Package', aab: 'Android App Bundle',
+  ipa: 'iOS Application Package', xapk: 'Extended Android Package',
+  // Java / JVM
+  jar: 'Java Archive (Executable)', war: 'Java Web Archive', ear: 'Java Enterprise Archive',
+  jnlp: 'Java Network Launch Protocol',
+  // Scripts
+  bat: 'Windows Batch Script', cmd: 'Windows Command Script',
+  ps1: 'PowerShell Script', psm1: 'PowerShell Module', psd1: 'PowerShell Data File',
+  vbs: 'VBScript File', vbe: 'Encoded VBScript', wsf: 'Windows Script File',
+  wsc: 'Windows Script Component', ws: 'Windows Script',
+  sh: 'Shell Script', bash: 'Bash Script', zsh: 'Zsh Script', csh: 'C Shell Script',
+  py: 'Python Script', pyc: 'Compiled Python', pyw: 'Python Windows Script',
+  rb: 'Ruby Script', pl: 'Perl Script', lua: 'Lua Script', tcl: 'Tcl Script',
+  js: 'JavaScript File', mjs: 'JavaScript Module', ts: 'TypeScript File',
+  // Archives
+  zip: 'ZIP Archive', rar: 'RAR Archive', '7z': '7-Zip Archive',
+  tar: 'TAR Archive', gz: 'GZip Archive', tgz: 'Compressed TAR Archive',
+  bz2: 'BZip2 Archive', xz: 'XZ Archive', zst: 'Zstandard Archive',
+  cab: 'Windows Cabinet Archive', iso: 'Disc Image (ISO)', img: 'Disk Image',
+  vhd: 'Virtual Hard Disk', vhdx: 'Virtual Hard Disk (Extended)',
+  vmdk: 'VMware Disk Image', ova: 'Virtual Appliance',
+  // Documents
+  pdf: 'PDF Document', doc: 'Microsoft Word Document (Legacy)',
+  docx: 'Microsoft Word Document', docm: 'Word Document (Macro-Enabled)',
+  xls: 'Microsoft Excel Spreadsheet (Legacy)', xlsx: 'Microsoft Excel Spreadsheet',
+  xlsm: 'Excel Spreadsheet (Macro-Enabled)', xlsb: 'Excel Binary Workbook',
+  ppt: 'Microsoft PowerPoint (Legacy)', pptx: 'Microsoft PowerPoint Presentation',
+  pptm: 'PowerPoint (Macro-Enabled)',
+  rtf: 'Rich Text Format Document', odt: 'OpenDocument Text', ods: 'OpenDocument Spreadsheet',
+  odp: 'OpenDocument Presentation', pages: 'Apple Pages Document',
+  numbers: 'Apple Numbers Spreadsheet', key: 'Apple Keynote Presentation',
+  epub: 'EPUB eBook', mobi: 'Kindle eBook',
+  dotm: 'Word Template (Macro-Enabled)', xltm: 'Excel Template (Macro-Enabled)',
+  potm: 'PowerPoint Template (Macro-Enabled)',
+  // Certificates & Keys
+  pem: 'PEM Certificate / Key File', cer: 'DER Certificate File', crt: 'X.509 Certificate',
+  der: 'DER Encoded Certificate', p12: 'PKCS#12 Certificate Bundle',
+  pfx: 'PFX Certificate Bundle', p7b: 'PKCS#7 Certificate Chain',
+  p7c: 'PKCS#7 Certificate', key: 'Private Key File', pub: 'Public Key File',
+  csr: 'Certificate Signing Request', jks: 'Java KeyStore', keystore: 'KeyStore File',
+  // Config / Data
+  ini: 'Configuration File (INI)', cfg: 'Configuration File',
+  conf: 'Configuration File', config: 'Configuration File',
+  env: 'Environment Variables File', properties: 'Properties File',
+  toml: 'TOML Configuration File', yaml: 'YAML Configuration File',
+  yml: 'YAML Configuration File', json: 'JSON Data File',
+  xml: 'XML Data File', csv: 'CSV Data File', tsv: 'TSV Data File',
+  sql: 'SQL Database Script', db: 'Database File', sqlite: 'SQLite Database',
+  mdb: 'Microsoft Access Database', accdb: 'Access Database',
+  // Text / Markup
+  txt: 'Plain Text File', md: 'Markdown Document', rst: 'reStructuredText Document',
+  log: 'Log File', html: 'HTML File', htm: 'HTML File',
+  css: 'CSS Stylesheet', scss: 'SCSS Stylesheet', less: 'LESS Stylesheet',
+  // Images
+  png: 'PNG Image', jpg: 'JPEG Image', jpeg: 'JPEG Image', gif: 'GIF Image',
+  bmp: 'Bitmap Image', svg: 'SVG Vector Image', webp: 'WebP Image',
+  ico: 'Icon File', tiff: 'TIFF Image', tif: 'TIFF Image',
+  psd: 'Photoshop Document', ai: 'Adobe Illustrator File',
+  // Audio / Video
+  mp3: 'MP3 Audio File', wav: 'WAV Audio File', flac: 'FLAC Audio File',
+  aac: 'AAC Audio File', ogg: 'OGG Audio File', wma: 'WMA Audio File',
+  mp4: 'MP4 Video File', mkv: 'MKV Video File', avi: 'AVI Video File',
+  mov: 'QuickTime Video', wmv: 'WMV Video File', flv: 'Flash Video File',
+  webm: 'WebM Video File',
+  // Fonts
+  ttf: 'TrueType Font', otf: 'OpenType Font', woff: 'Web Font (WOFF)',
+  woff2: 'Web Font (WOFF2)', eot: 'Embedded OpenType Font',
+  // Source Code
+  c: 'C Source Code', cpp: 'C++ Source Code', h: 'C/C++ Header File',
+  cs: 'C# Source Code', java: 'Java Source Code', kt: 'Kotlin Source Code',
+  swift: 'Swift Source Code', go: 'Go Source Code', rs: 'Rust Source Code',
+  r: 'R Script', m: 'MATLAB / Objective-C File',
+  // DevOps / Infra
+  dockerfile: 'Dockerfile', tf: 'Terraform File', hcl: 'HashiCorp Configuration',
+  vagrantfile: 'Vagrantfile', ansible: 'Ansible Playbook',
+  // Misc
+  reg: 'Windows Registry File', inf: 'Setup Information File',
+  sys: 'Windows System File', dll: 'Dynamic Link Library',
+  so: 'Shared Object (Linux Library)', dylib: 'macOS Dynamic Library',
+  lib: 'Static Library', o: 'Object File', a: 'Static Library Archive',
+  wasm: 'WebAssembly Module', crx: 'Chrome Extension',
+  xpi: 'Firefox Extension', vsix: 'VS Code Extension',
+};
 
-  if (dangerous.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 65, details: { 'Type': 'Executable / Script', 'Extension': '.' + ext, 'Risk': 'REQUIRES REVIEW' }, description: `Executable/script file (.${ext}) that can run code. Requires verification before allowing.` };
-  if (macroEnabled.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 70, details: { 'Type': 'Macro-Enabled Document', 'Extension': '.' + ext, 'Risk': 'MODERATE' }, description: `Macro-enabled document (.${ext}) can execute code via macros.` };
-  if (archives.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 55, details: { 'Type': 'Archive', 'Extension': '.' + ext, 'Risk': 'MODERATE' }, description: `Archive file (.${ext}) can contain hidden executables.` };
-  if (documents.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 80, details: { 'Type': 'Document', 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `Standard document file (.${ext}).` };
-  if (safe.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 85, details: { 'Type': 'Data / Media', 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `Data/media file (.${ext}) with low risk.` };
-  return { engine: 'File Type Analysis', status: 'suspicious', confidence: 50, details: { 'Type': 'Unknown', 'Extension': '.' + ext, 'Risk': 'UNKNOWN' }, description: `Unknown file type (.${ext}).` };
+function getAppCategory(ext) {
+  return EXT_CATEGORY_MAP[ext.toLowerCase()] || `${ext.toUpperCase()} File`;
+}
+
+function analyzeFileType(name, ext, size) {
+  const dangerous = ['exe','msi','bat','cmd','ps1','vbs','wsf','scr','pif','com','hta','cpl','jar','apk','sh','dll','sys'];
+  const macroEnabled = ['docm','xlsm','pptm','dotm','xltm','potm'];
+  const archives = ['zip','rar','7z','tar','gz','tgz','bz2','xz','cab','iso','img'];
+  const documents = ['pdf','doc','docx','xls','xlsx','ppt','pptx','rtf','odt','ods','odp','epub','pages','numbers'];
+  const safe = ['txt','csv','json','xml','yml','yaml','md','png','jpg','jpeg','gif','svg','mp4','mp3','wav','webp','ico','bmp','ttf','otf','woff','woff2','html','css'];
+  const certificates = ['pem','cer','crt','der','p12','pfx','p7b','key','pub','csr','jks','keystore'];
+  const configs = ['ini','cfg','conf','config','env','properties','toml','reg','inf'];
+  const sourceCode = ['c','cpp','h','cs','java','kt','swift','go','rs','py','rb','pl','lua','js','ts','mjs','r','m'];
+
+  const category = getAppCategory(ext);
+
+  if (dangerous.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 65, details: { 'Type': category, 'Extension': '.' + ext, 'Risk': 'REQUIRES REVIEW' }, description: `${category} (.${ext}) that can execute code on the system. Requires verification before allowing.` };
+  if (macroEnabled.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 70, details: { 'Type': category, 'Extension': '.' + ext, 'Risk': 'MODERATE' }, description: `${category} (.${ext}) can execute code via embedded macros.` };
+  if (archives.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 55, details: { 'Type': category, 'Extension': '.' + ext, 'Risk': 'MODERATE' }, description: `${category} (.${ext}) can contain hidden executables inside.` };
+  if (certificates.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 80, details: { 'Type': category, 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `${category} (.${ext}). Certificate/key file — verify source and chain of trust.` };
+  if (configs.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 82, details: { 'Type': category, 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `${category} (.${ext}). Configuration file with low inherent risk.` };
+  if (sourceCode.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 78, details: { 'Type': category, 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `${category} (.${ext}). Source code file — review before execution.` };
+  if (documents.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 80, details: { 'Type': category, 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `${category} (.${ext}). Standard document format.` };
+  if (safe.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 85, details: { 'Type': category, 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `${category} (.${ext}) with low inherent risk.` };
+  return { engine: 'File Type Analysis', status: 'suspicious', confidence: 50, details: { 'Type': category, 'Extension': '.' + ext, 'Risk': 'REVIEW RECOMMENDED' }, description: `${category} (.${ext}). Review recommended before proceeding.` };
 }
 
 function analyzeExtensionRisk(name, ext) {
@@ -2025,8 +2134,7 @@ function generateSIADocx() {
   const yesNo = (val) => val ? 'Yes' : 'No';
 
   // Get the extension categorization
-  const fileTypeResult = d.results.find(r => r.engine === 'File Type Analysis');
-  const appCategory = fileTypeResult?.details?.Type || 'Unknown';
+  const appCategory = getAppCategory(d.fileExt);
 
   const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     Header, Footer, AlignmentType, HeadingLevel, BorderStyle, WidthType,
@@ -2397,7 +2505,7 @@ function generateSIAPdf() {
   const sysInfo = [
     ['System/Application Name', appName],
     ['File Name', d.fileName],
-    ['Application Category', d.results.find(r => r.engine === 'File Type Analysis')?.details?.Type || 'Unknown'],
+    ['Application Category', getAppCategory(d.fileExt)],
     ['Assessment Agent', d.assessmentAgent],
     ['Date', today],
   ];
