@@ -1229,7 +1229,7 @@ body.dark .agent-input:focus {
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Assessment Agent
     </label>
-    <input type="text" class="agent-input" id="assessmentAgent" placeholder="Enter your name (e.g., Parth)" spellcheck="false">
+    <input type="text" class="agent-input" id="assessmentAgent" placeholder="Enter your name (e.g., Vidhya)" spellcheck="false">
   </div>
 
   <!-- Upload Zone -->
@@ -1278,9 +1278,6 @@ let backendAvailable = false;
 
 // Store last SIA scan data for report generation
 let lastSIAScanData = null;
-
-// Casepoint logo embedded as base64 (166x42 PNG)
-const CASEPOINT_LOGO_B64 = '/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAqAKYDASIAAhEBAxEB/8QAHQABAAMAAwEBAQAAAAAAAAAAAAIDBAUHCAYBCf/EADUQAAIBAwMBBwMCAwkAAAAAAAECAwAEEQUSITEGBxMUIkFRCGGBMnFykfEjNTdSYnShscH/xAAbAQEAAgMBAQAAAAAAAAAAAAAAAQMFBgcECP/EACYRAAIBAwMEAQUAAAAAAAAAAAABEQIDBAYxQQUSIVEWIiNhkdH/2gAMAwEAAhEDEQA/APGVdnfTN2Z0Ptb3nJo/aGxF7YtZTSGIyMnqUDBypBrr7SdMutSn8O3UbR+t2/Std8fSpoEemd60E/mHlkNjOp9OB0FeXrmBmvomVl2U0qKKn3TGy45/RdiVUPIopq5aOd73vpqs4tMn1fu/kuBPCpd9MnfxPEA6+E553f6Wzn5ry86sjlHUqynBBGCDX9PK8L/VV2etuz/fHqHk41jg1GJL8IowFZ8h/wCbqx/Nc50HqfJzbtWFl1dzSmlvfxun79p77mW6rg0WqVdtqPaOqqUq+C0nmXciYX5JxXUDBlFKumtpomCshy3AxzmptY3Kpu2Z+wPNRIM1KumtpoQDIuATgc5qxbC5K7tgH2J5pIMtKs8GXxfC2Hf8Vc9hcqm7YD9geamQZaVdDbzTKWjXIBweamtjcsm8J+CeaSDNSpbG37Np3ZxjHNaBYXJXOwftnmkgzxo8jhEUsx9hSRHjco6lWHsavsxPFd4SPLgHKnip3EVzc3LZjAYAcA9BUSDHStKWNywJCYwccmp2NqzznxY8ovDAnoaSDHSt95ZP4xMEYCYHvSkg+60OySw0yGBQA23c5+WPWu1fpw/xPg/2c/8A0K60tpVnt45kOVdQw/Ir7nuV17RuzXbqPVde1GDT7JbaVDNKTt3EDA49zXQtZY6+LZlqwp+1Uklz9PgowaoyqHV7R6xrw39WOu2+ud8l8lrIJItNgjsSwOQXTJf+TMR+K7Y73vqS0i30yfS+wDSXl9KpQ6jJGUigB90VuWb4JAA6815QlkklleWV2kkdizMxyWJ6kn5r5r0DprKw7tWdlUunxFKe/ndtcbQp/JsnVs2i5SrVtz7EShpUU9CwBrldTme3jRYvTnjOOmK4kHByK5NL23miC3K8jrkZBrqLMER06R7i5LynJRPTULi8nS8ZVOFVsbcdaPdW8VwkluhwBhuMAirpLqyJ8XZukHT080BPUXCGB2HAkyam4M5D291tI9hyPyKy3d3by+FkMwVssMYqaT2COZkBV8dAD/SogFmnxurTtKcy7sE/jNfkBEcpd71XB6gms0V/tundlOx/b3GKtM2nKTIE3Mfbaf6Uhg02uzfOYyCpcHj9qx295O94qscqzY246VdpJUxylV2gvwPjivxLqyDGXZtk9/TzQF/hJ58yYG7w/wD2sU15Ot4VB9IbG3HWq/Ot5zx9vpxt2/atfmrFmEpX1/w80iAXyKPOQv74Yf8AFRi/vCb+BayC+Vr1ZHBWNQQB71NLyAXckhLbWUAcUhglHcytqTRE+jJGP2qZdl1QRg4VlyR8nFYYp411AzEnYST0qya7Tz6TpkqBg8VMAlqNxNHclEkIXA4xSpXM9jLhyCzfsaUQOU7K69HaxiyvWIiB/s5P8v2P2rku2MsU2gFopEkUyLgqwPzXw9K2G1qC9Th1YlxdyahPlf2Cp2l3dyFKUrAFopSlAKUpQClKUApSlAaILp4YHjQDLH9XxWelKAUpSgFKUoBSlKAUpSgP/9k=';
 
 const KNOWN_SAFE_DOMAINS = [
   'google.com','youtube.com','facebook.com','amazon.com','wikipedia.org',
@@ -2519,7 +2516,7 @@ function renderSIAResults(fileName, hash, fileSize, ext, results, verdict) {
 // SIA REPORT GENERATION — DOCX (using docx.js library)
 // ═══════════════════════════════════════════════════
 
-async function generateSIADocx() {
+function generateSIADocx() {
   if (!lastSIAScanData) { showToast('No scan data available'); return; }
   showToast('Generating DOCX report...');
 
@@ -2539,19 +2536,9 @@ async function generateSIADocx() {
   // Get the extension categorization
   const appCategory = getAppCategory(d.fileExt);
 
-  // Decode embedded Casepoint logo for footer
-  let logoBuffer = null;
-  try {
-    const binaryStr = atob(CASEPOINT_LOGO_B64);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-    logoBuffer = bytes.buffer;
-  } catch(e) { /* logo optional */ }
-
   const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     Header, Footer, AlignmentType, HeadingLevel, BorderStyle, WidthType,
-    ShadingType, PageNumber, PageBreak, LevelFormat, ImageRun,
-    TabStopType, TabStopPosition } = docx;
+    ShadingType, PageNumber, PageBreak, LevelFormat } = docx;
 
   const border = { style: BorderStyle.SINGLE, size: 1, color: "999999" };
   const borders = { top: border, bottom: border, left: border, right: border };
@@ -2634,15 +2621,9 @@ async function generateSIADocx() {
       footers: {
         default: new Footer({
           children: [new Paragraph({
-            tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+            alignment: AlignmentType.CENTER,
             children: [
-              ...(logoBuffer ? [new ImageRun({
-                type: 'jpg',
-                data: logoBuffer,
-                transformation: { width: 100, height: 25 },
-                altText: { title: "Casepoint", description: "Casepoint Logo", name: "casepoint-logo" }
-              })] : [new TextRun({ text: "Casepoint", size: 16, font: "Arial", color: "999999", bold: true })]),
-              new TextRun({ text: "\tPage ", size: 16, font: "Arial", color: "999999" }),
+              new TextRun({ text: "Trishul SIA Report — Page ", size: 16, font: "Arial", color: "999999" }),
               new TextRun({ children: [PageNumber.CURRENT], size: 16, font: "Arial", color: "999999" })
             ]
           })]
@@ -2796,7 +2777,7 @@ async function generateSIADocx() {
 // SIA REPORT GENERATION — PDF (using jsPDF)
 // ═══════════════════════════════════════════════════
 
-async function generateSIAPdf() {
+function generateSIAPdf() {
   if (!lastSIAScanData) { showToast('No scan data available'); return; }
   showToast('Generating PDF report...');
 
@@ -2813,11 +2794,8 @@ async function generateSIAPdf() {
   const appName = d.fileName.replace(/[-_](windows|win|mac|linux|x64|x86|arm|setup|user|installer|portable)[-_]?/gi, ' ')
     .replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
 
-  // Decode embedded Casepoint logo for footer
-  const logoDataUrl = 'data:image/jpeg;base64,' + CASEPOINT_LOGO_B64;
-
   function checkPage(needed) {
-    if (y + needed > 280) { pdf.addPage(); y = margin; addHeader(); addFooterLogo(); }
+    if (y + needed > 280) { pdf.addPage(); y = margin; addHeader(); }
   }
 
   function addHeader() {
@@ -2826,21 +2804,9 @@ async function generateSIAPdf() {
     pdf.setDrawColor(200); pdf.line(margin, 15, pageW - margin, 15);
   }
 
-  function addFooterLogo() {
-    // Logo bottom-left, page text center
-    if (logoDataUrl) {
-      try { pdf.addImage(logoDataUrl, 'JPEG', margin, 284, 32, 8); } catch(e) {}
-    } else {
-      pdf.setFontSize(7); pdf.setTextColor(150); pdf.setFont('helvetica', 'bold');
-      pdf.text('Casepoint', margin, 290);
-      pdf.setFont('helvetica', 'normal');
-    }
-  }
-
   function addFooter(pageNum) {
-    addFooterLogo();
-    pdf.setFontSize(8); pdf.setTextColor(150); pdf.setFont('helvetica', 'normal');
-    pdf.text(`Page ${pageNum}`, pageW - margin, 290, { align: 'right' });
+    pdf.setFontSize(8); pdf.setTextColor(150);
+    pdf.text(`Trishul SIA Report — Page ${pageNum}`, pageW / 2, 290, { align: 'center' });
   }
 
   // Page 1
@@ -3012,15 +2978,6 @@ async function generateSIAPdf() {
   pdf.text(fnLines, margin, y);
 
   addFooter(pdf.internal.getNumberOfPages());
-
-  // Add footer with logo + page number to ALL pages
-  const totalPages = pdf.internal.getNumberOfPages();
-  for (let p = 1; p <= totalPages; p++) {
-    pdf.setPage(p);
-    addFooterLogo();
-    pdf.setFontSize(8); pdf.setTextColor(150); pdf.setFont('helvetica', 'normal');
-    pdf.text(`Page ${p} of ${totalPages}`, pageW - margin, 290, { align: 'right' });
-  }
 
   // Save
   const safeName = appName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
