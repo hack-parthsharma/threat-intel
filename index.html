@@ -1404,39 +1404,102 @@ async function buildGroqControls(intel, verdict, fileHash, results) {
   const scanLines  = results.map(r => `- ${r.engine}: ${r.status.toUpperCase()} — ${r.description}`).join('\n');
   const staticFallback = () => buildIntelligentControls(intel, verdict, fileHash, results);
 
-  const prompt = `You are a cybersecurity analyst completing a NIST 800-53 Security Impact Analysis (SIA) form.
+  const NIST_CONTROLS = [
+  { code:'AC', title:'Access Control',
+    question:'Will change(s) to system affect how the system limits: (i) information system access to authorized users, processes acting on behalf of authorized users or devices (including other information systems); and (ii) the types of transactions and functions that authorized users are permitted to exercise.',
+    considerations:'1. Component should have clearly defined roles. 2. Personnel with access to the component should be provided a role with least privilege. 3. Component should ideally leverage the existing AD/IAM. 4. Consideration for shared accounts. 5. Consideration for MFA for admins.' },
+  { code:'AT', title:'Awareness and Training',
+    question:'Will change(s) affect required system training to ensure that personnel are adequately trained to carry out their assigned information security related duties and responsibilities?',
+    considerations:'' },
+  { code:'AU', title:'Audit and Accountability',
+    question:'Will change(s) affect how system audit requirements to (i) create, protect, and retain information system audit records to the extent needed to enable the monitoring, analysis, investigation, and reporting of unlawful, unauthorized, or inappropriate information system activity; and (ii) ensure that the actions of individual information system users can be uniquely traced to those users so they can be held accountable for their actions.',
+    considerations:'1. Does the component log security events? 2. Are security events sent to the SIEM?' },
+  { code:'CA', title:'Security Assessment and Authorization',
+    question:'Will change(s) affect security assessment and authorization of the system?',
+    considerations:'All connections (internal to the boundary and external) should be clearly authorized. If the component communicates outside of the authorization boundary – special consideration is needed for what is being shared and how that information will be protected.' },
+  { code:'CM', title:'Configuration Management',
+    question:'Will change(s) to the system impact the (i) baseline configuration and inventory of organizational information systems; (ii) establishment and enforcement of security configuration settings; and (iii) ability to monitor and control changes to the baseline configurations and to the constituent components of the systems (including hardware, software, firmware, and documentation) throughout the respective system development life cycle.',
+    considerations:'1. Component should be hardened using a standard or best practice. 2. Consideration should be given for any vendor provided security settings. 3. We will need to be able to do compliance checks. 4. We should be able to remediate compliance failures. 5. We should be able to do vulnerability scans. 6. We should be able to address vulnerabilities.' },
+  { code:'CP', title:'Contingency Plan',
+    question:'Will change(s) affect the contingency plan?',
+    considerations:'The component must support the existing contingency and disaster recovery plans (secondary site, RPO, RTO).' },
+  { code:'IA', title:'Identification and Authentication',
+    question:'Will change(s) to the system impact how it (i) identifies users, processes acting on behalf of users, or devices; and (ii) authenticates (or verifies) the identities of those users, processes, or devices, as a prerequisite to allowing access to organizational information systems.',
+    considerations:'' },
+  { code:'IR', title:'Incident Response',
+    question:'Will change(s) to the system impact the current incident response plan and process?',
+    considerations:'' },
+  { code:'MA', title:'Maintenance',
+    question:'Will change(s) to the system impact how (i) periodic and timely maintenance is performed; and (ii) provide effective controls on the tools, techniques, mechanisms, and personnel used to conduct information system maintenance.',
+    considerations:'' },
+  { code:'MP', title:'Media Protection',
+    question:'Will change(s) to the system impact how (i) information contained in the systems in printed form or on digital media is protected; (ii) access to information in printed form or on digital media removed from the systems is limited to authorized users; and (iii) how digital media is sanitized or destroyed before disposal or release for reuse.',
+    considerations:'' },
+  { code:'PE', title:'Physical and Environmental Protection',
+    question:'Will change(s) to the system/system environment change how (i) physical access to information systems, equipment, and the respective operating environments is limited to authorized individuals; (ii) the physical plant and support infrastructure for information systems is protected; (iii) supporting utilities for information systems is provided; and appropriate environmental controls in facilities are provided.',
+    considerations:'' },
+  { code:'PL', title:'Planning',
+    question:'Will change(s) to the system impact the SSP or the system architecture?',
+    considerations:'' },
+  { code:'PS', title:'Personnel Security',
+    question:'Will change(s) to the system impact the personnel security controls of the system?',
+    considerations:'' },
+  { code:'RA', title:'Risk Assessment',
+    question:'Will change(s) to the system impact the security categorization or vulnerability scanning of the system?',
+    considerations:'Check on virustotal.com, any.run, hybrid-analysis.com. Please note down SHA-1 / MD5 / CRC32.' },
+  { code:'SA', title:'System and Service Acquisition',
+    question:'Will change(s) affect system and service acquisition processes, including licensing, procurement, and third-party software evaluation?',
+    considerations:'' },
+  { code:'SC', title:'System and Communication Protection',
+    question:'Will change(s) to the system effect how: (i) communications are monitored, controlled, and protected at the external boundaries and key internal boundaries of the information systems; and (ii) architectural designs, software development techniques, and systems engineering principles that promote effective information security are implemented.',
+    considerations:'1. All data at rest should be encrypted using FIPS compliant protocols. Special consideration is needed for client data. 2. All backups at primary and secondary sites should be encrypted. 3. Encryption key should be protected and only authorized personnel should have access. 4. All data in transit should be encrypted. 5. Data traversing out of the authorization boundary should be encrypted using FIPS compliant protocols. 6. Replication of data between primary to secondary sites should be encrypted, especially over public connections. 7. Connection to admin interfaces should be encrypted. 8. Incoming connections (IPs, ports, protocols) should be specifically authorized.' },
+  { code:'SI', title:'System and Information Integrity',
+    question:'Will change(s) to the system effect how (i) system flaws are identified, reported, and corrected in a timely manner; (ii) malicious code protection is employed; (iii) system events are monitored and detected; (iv) the correct operation of security functions is verified; and (v) information is checked for accuracy, completeness, validity, and authenticity.',
+    considerations:'' }
+];
 
-FILE DETAILS:
+  const controlsBlock = NIST_CONTROLS.map(c =>
+    `### ${c.code} — ${c.title}\nQuestion: ${c.question}${c.considerations ? '\nConsiderations: ' + c.considerations : ''}`
+  ).join('\n\n');
+
+  const prompt = `You are a senior cybersecurity analyst completing a NIST 800-53 Security Impact Analysis (SIA) form for a software deployment.
+
+FILE BEING ASSESSED:
 - File Name: ${intel.name || 'Unknown'}
 - File Extension: .${intel.category || 'unknown'}
 - Category: ${intel.category || 'Unknown'}
 - Description: ${intel.description || 'No description available.'}
 - Developer: ${intel.developer || 'Unknown'}
 - License: ${intel.license || 'Unknown'}
-- Ports: ${intel.ports.length > 0 ? intel.ports.join(', ') : 'None detected'}
+- Ports Used: ${intel.ports.length > 0 ? intel.ports.join(', ') : 'None detected'}
 - Protocols: ${intel.protocols.length > 0 ? intel.protocols.join(', ') : 'None'}
-- Auth Methods: ${intel.authMethods.length > 0 ? intel.authMethods.join(', ') : 'None'}
+- Authentication Methods: ${intel.authMethods.length > 0 ? intel.authMethods.join(', ') : 'None'}
 - Uses Encryption: ${intel.usesEncryption}
-- Stores Data: ${intel.storesData}
-- Requires Admin: ${intel.requiresAdmin}
+- Stores Data on Disk: ${intel.storesData}
+- Requires Admin/Root: ${intel.requiresAdmin}
 - Network Access: ${intel.networkAccess || 'None'}
 - Is Database: ${intel.isDatabase}
-- Is Server: ${intel.isServer}
+- Is Server/Service: ${intel.isServer}
 
 SCAN VERDICT: ${verdict.title} (Threat Score: ${verdict.threatScore}/100)
-SCAN RESULTS:
+MALWARE SCAN RESULTS:
 ${scanLines}
 SHA-256: ${fileHash || 'N/A'}
 
-Generate a JSON response for all 17 NIST control families. Each entry must have:
-- "code": the NIST code (AC, AT, AU, CA, CM, CP, IA, IR, MA, MP, PE, PL, PS, RA, SA, SC, SI)
-- "title": full control family name
-- "answer": "Yes" or "No" (does this change impact this control?)
-- "detail": a specific, intelligent 1-3 sentence explanation tailored to THIS file
+NIST 800-53 CONTROL FAMILIES TO ASSESS:
+${controlsBlock}
 
-Be specific and practical. Reference the actual file name, its capabilities, ports, threats found. Do NOT give generic answers.
+INSTRUCTIONS:
+- For each of the 17 control families above, answer whether this specific file/software deployment impacts that control.
+- Read each control's question AND considerations carefully before answering.
+- Set "answer" to "Yes" if the deployment of this file affects that control area, "No" if it does not.
+- Write "detail" as 2-4 specific sentences that directly address the control's question and considerations as they apply to THIS file.
+- Reference the actual file name, ports, protocols, auth methods, scan results, and encryption status where relevant.
+- For RA (Risk Assessment), always include the SHA-256 hash and mention virustotal/any.run scan sites.
+- For SC, address FIPS encryption, data at rest/in transit, and port authorization.
+- Do NOT write generic answers. Every answer must be tailored to this specific file.
 
-Respond ONLY with a valid JSON array, no markdown, no explanation:
+Respond ONLY with a valid JSON array, no markdown, no preamble:
 [{"code":"AC","title":"Access Control","answer":"Yes","detail":"..."},...]`;
 
   try {
@@ -1445,7 +1508,7 @@ Respond ONLY with a valid JSON array, no markdown, no explanation:
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
       body: JSON.stringify({
         model: GROQ_MODEL,
-        max_tokens: 2048,
+        max_tokens: 3500,
         temperature: 0.3,
         messages: [{ role: 'user', content: prompt }]
       })
