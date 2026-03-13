@@ -372,7 +372,7 @@ body.dark .agent-input:focus { background: #141B2D; }
 
 <script>
 // ================================================================
-// TRISHUL v4.0 — 21-Engine URL Threat Intelligence + SIA
+// TRISHUL v5.0 — 21-Engine URL Threat Intelligence + SIA (12 File Engines)
 // NEW: PhishTank, AbuseIPDB, Cloudflare Radar, Cert Transparency,
 //      IP Geolocation/ASN, Google Safe Browsing, VT Community Votes
 // ================================================================
@@ -514,7 +514,7 @@ async function checkPhishTank(url) {
 
 // 2. AbuseIPDB — IP abuse reputation (free 1000/day)
 async function checkAbuseIPDB(parsed) {
-  const AIPDB_KEY = 'fac56139c9f726c2789972e5cbfd8189f82a77c265e1545dd173e225004a59e42f30f1d84eed8bbe'; // register free at abuseipdb.com
+  const AIPDB_KEY = 'YOUR_FREE_KEY_FROM_ABUSEIPDB.COM'; // register free at abuseipdb.com
   if (!parsed) return { engine: 'AbuseIPDB', status: 'error', confidence: 0, details: { 'Error': 'No parsed URL' }, description: 'Could not parse URL.' };
   try {
     let ip = parsed.hostname;
@@ -931,7 +931,7 @@ function shareLink() {
 function copyReport() {
   if(!scanHistory.length)return;
   const h=scanHistory[0];
-  let t=`TRISHUL REPORT (v4.0 — 21 Engines)\n${'='.repeat(40)}\nURL: ${h.url}\nVerdict: ${h.verdict.title}\nSafety: ${100-h.verdict.threatScore}/100\nThreat: ${h.verdict.threatScore}/100\n\nENGINES:\n`;
+  let t=`TRISHUL REPORT (v5.0 — 21+12 Engines)\n${'='.repeat(40)}\nURL: ${h.url}\nVerdict: ${h.verdict.title}\nSafety: ${100-h.verdict.threatScore}/100\nThreat: ${h.verdict.threatScore}/100\n\nENGINES:\n`;
   for(const r of h.results){t+=`\n${r.engine}: ${r.status.toUpperCase()}\n  ${r.description}\n`;}
   navigator.clipboard.writeText(t).then(()=>showToast('Report copied'));
 }
@@ -1108,6 +1108,209 @@ function parseMDResult(data) {
   return{engine:'MetaDefender Cloud',status,confidence:88,details,description:`MetaDefender: ${total} engines, ${detected} detected.`};
 }
 
+// ── NEW SIA ENGINES ──────────────────────────────────────────────────────────
+
+// 7. MalwareBazaar (abuse.ch) — free hash lookup, no key needed
+async function checkMalwareBazaar(hash) {
+  try {
+    let data;
+    try {
+      if (backendAvailable) {
+        const r = await fetchViaBackend('/api/malwarebazaar', { method: 'POST', body: JSON.stringify({ query: 'get_info', hash }) });
+        data = await r.json();
+      } else {
+        const r = await fetchWithCORSFallback('https://mb-api.abuse.ch/api/v1/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `query=get_info&hash=${hash}`
+        });
+        data = safeParse(await r.text());
+      }
+    } catch(e) { data = null; }
+    if (!data) throw new Error('No response');
+    if (data.query_status === 'ok' && data.data && data.data.length > 0) {
+      const d = data.data[0];
+      return {
+        engine: 'MalwareBazaar (abuse.ch)',
+        status: 'malicious',
+        confidence: 95,
+        details: {
+          'File Type': d.file_type || 'Unknown',
+          'Malware Family': d.tags ? d.tags.join(', ') : 'Unknown',
+          'First Seen': d.first_seen || 'N/A',
+          'Signature': d.signature || 'N/A',
+          'Reporter': d.reporter || 'N/A',
+          'Delivery': d.delivery_method || 'N/A'
+        },
+        description: `Found in MalwareBazaar! Classified as "${d.signature || 'malware'}". Tags: ${(d.tags||['none']).join(', ')}.`
+      };
+    }
+    if (data.query_status === 'hash_not_found') {
+      return { engine: 'MalwareBazaar (abuse.ch)', status: 'clean', confidence: 72, details: { 'Result': 'Not found in database' }, description: 'Not in MalwareBazaar. No malware sample match.' };
+    }
+    return { engine: 'MalwareBazaar (abuse.ch)', status: 'unknown', confidence: 40, details: { 'Status': data.query_status || 'unknown' }, description: 'MalwareBazaar returned no usable result.' };
+  } catch(e) {
+    return { engine: 'MalwareBazaar (abuse.ch)', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'MalwareBazaar lookup failed.' };
+  }
+}
+
+// 8. NSRL (National Software Reference Library) — NIST maintained, clean file DB
+async function checkNSRL(hash) {
+  try {
+    const r = await fetchWithCORSFallback(`https://hashlookup.circl.lu/lookup/sha256/${hash}`);
+    const data = safeParse(await r.text());
+    if (data && (data.SHA256 || data['SHA-256'])) {
+      const name = data['FileName'] || data['Name'] || 'Known software';
+      const pkg = data['PackageName'] || data['ProductName'] || '';
+      return {
+        engine: 'NSRL / CIRCL Hash DB',
+        status: 'clean',
+        confidence: 80,
+        details: {
+          'File Name': name,
+          'Product': pkg || 'N/A',
+          'OS': data['OpSystemCode'] || 'N/A',
+          'Source': 'NIST NSRL via CIRCL'
+        },
+        description: `Verified in NSRL as legitimate software: "${name}"${pkg ? ' ('+pkg+')' : ''}. Strong clean signal.`
+      };
+    }
+    return { engine: 'NSRL / CIRCL Hash DB', status: 'unknown', confidence: 35, details: { 'Result': 'Not in NSRL database' }, description: 'Not in NSRL. Unknown or unlisted file — not necessarily malicious.' };
+  } catch(e) {
+    return { engine: 'NSRL / CIRCL Hash DB', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'NSRL lookup failed.' };
+  }
+}
+
+// 9. InQuest Labs RepDB — free community file reputation
+async function checkInQuest(hash) {
+  try {
+    const r = await fetchWithCORSFallback(`https://labs.inquest.net/api/dfi/search/hash/sha256?hash=${hash}`);
+    const data = safeParse(await r.text());
+    if (data && data.success && data.data && data.data.length > 0) {
+      const entry = data.data[0];
+      const isMal = entry.classification === 'MALICIOUS' || entry.inquest_alerts > 0;
+      const status = isMal ? 'malicious' : entry.classification === 'UNKNOWN' ? 'suspicious' : 'clean';
+      return {
+        engine: 'InQuest Labs',
+        status,
+        confidence: 78,
+        details: {
+          'Classification': entry.classification || 'N/A',
+          'File Type': entry.file_type || 'N/A',
+          'Alerts': entry.inquest_alerts || 0,
+          'First Seen': entry.first_seen || 'N/A',
+          'Tags': (entry.tags || []).join(', ') || 'None'
+        },
+        description: `InQuest classification: ${entry.classification || 'UNKNOWN'}. ${entry.inquest_alerts > 0 ? entry.inquest_alerts+' alert(s) fired.' : 'No alerts.'}`
+      };
+    }
+    return { engine: 'InQuest Labs', status: 'unknown', confidence: 35, details: { 'Result': 'Not found' }, description: 'File not indexed in InQuest Labs database.' };
+  } catch(e) {
+    return { engine: 'InQuest Labs', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'InQuest Labs lookup failed.' };
+  }
+}
+
+// 10. FileScan.io — free hash lookup
+async function checkFileScan(hash) {
+  try {
+    const r = await fetchWithCORSFallback(`https://www.filescan.io/api/reputation/report?sha256=${hash}`);
+    const data = safeParse(await r.text());
+    if (data && data.reports && data.reports.length > 0) {
+      const rep = data.reports[0];
+      const verdict = rep.verdict || 'unknown';
+      const status = verdict === 'malicious' ? 'malicious' : verdict === 'suspicious' ? 'suspicious' : verdict === 'benign' ? 'clean' : 'unknown';
+      return {
+        engine: 'FileScan.io',
+        status,
+        confidence: 75,
+        details: {
+          'Verdict': verdict.toUpperCase(),
+          'Threat Name': rep.threat_name || 'N/A',
+          'File Type': rep.mime_type || 'N/A',
+          'Scanned': rep.scan_date || 'N/A'
+        },
+        description: `FileScan.io verdict: ${verdict.toUpperCase()}${rep.threat_name ? ' — '+rep.threat_name : ''}. Community-powered sandbox analysis.`
+      };
+    }
+    return { engine: 'FileScan.io', status: 'unknown', confidence: 35, details: { 'Result': 'Not found' }, description: 'File not found in FileScan.io reputation database.' };
+  } catch(e) {
+    return { engine: 'FileScan.io', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'FileScan.io lookup failed.' };
+  }
+}
+
+// 11. Entropy / Binary Analysis — local, no API
+function analyzeBinaryEntropy(buffer, ext) {
+  try {
+    const bytes = new Uint8Array(buffer.slice(0, Math.min(buffer.byteLength, 65536)));
+    if (bytes.length === 0) return { engine: 'Binary Entropy Analysis', status: 'unknown', confidence: 0, details: {}, description: 'Empty file.' };
+    // Shannon entropy
+    const freq = new Array(256).fill(0);
+    for (const b of bytes) freq[b]++;
+    let entropy = 0;
+    for (const f of freq) { if (f > 0) { const p = f / bytes.length; entropy -= p * Math.log2(p); } }
+    entropy = Math.round(entropy * 100) / 100;
+    // Magic byte checks
+    const magic = Array.from(bytes.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join('');
+    const magicMap = { '4d5a': 'Windows PE (EXE/DLL)', '7f454c46': 'Linux ELF', 'cafebabe': 'Java Class / Mach-O', '504b0304': 'ZIP/JAR/APK/DOCX', '25504446': 'PDF', 'd0cf11e0': 'MS Office (OLE)', '52617221': 'RAR Archive', '1f8b0800': 'GZIP', '377abcaf': '7-Zip Archive', 'ffd8ffe0': 'JPEG Image', '89504e47': 'PNG Image' };
+    const detectedType = magicMap[magic.substring(0, 8)] || magicMap[magic.substring(0, 6)] || magicMap[magic.substring(0, 4)] || 'Unknown';
+    // Extension vs magic mismatch
+    const execExts = ['exe', 'dll', 'scr', 'bat', 'cmd', 'ps1', 'vbs', 'js', 'hta', 'jar', 'com'];
+    const isExec = execExts.includes(ext) || detectedType.includes('PE') || detectedType.includes('ELF');
+    let status = 'clean', issues = [];
+    if (entropy > 7.5) { issues.push(`Very high entropy (${entropy}) — possible packing or encryption`); status = 'suspicious'; }
+    else if (entropy > 7.0 && isExec) { issues.push(`High entropy for executable (${entropy}) — possible packer`); status = 'suspicious'; }
+    if (detectedType.includes('PE') || detectedType.includes('ELF') || detectedType.includes('Java')) {
+      if (!execExts.includes(ext)) { issues.push(`Magic bytes show executable but extension is .${ext}`); status = 'suspicious'; }
+    }
+    return {
+      engine: 'Binary Entropy Analysis',
+      status,
+      confidence: 65,
+      details: {
+        'Shannon Entropy': `${entropy} / 8.0`,
+        'Magic Bytes': magic.substring(0, 8).toUpperCase(),
+        'Detected Type': detectedType,
+        'Sample Size': `${bytes.length.toLocaleString()} bytes`
+      },
+      description: issues.length > 0 ? issues.join('. ') : `Entropy ${entropy}/8.0 is normal. Magic bytes match .${ext} expectation.`
+    };
+  } catch(e) {
+    return { engine: 'Binary Entropy Analysis', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'Entropy analysis failed.' };
+  }
+}
+
+// 12. PE Header / Script String Analysis — local static analysis
+async function analyzeStaticStrings(file, ext) {
+  try {
+    const sample = await file.slice(0, Math.min(file.size, 131072)).arrayBuffer();
+    const raw = new TextDecoder('latin1').decode(sample);
+    const iocs = [];
+    const ipRx = /\b(\d{1,3}\.){3}\d{1,3}\b/g;
+    const urlRx = /https?:\/\/[^\s"'<>]{6,}/gi;
+    const b64Rx = /[A-Za-z0-9+/]{40,}={0,2}/g;
+    const ips = [...new Set(raw.match(ipRx) || [])].filter(ip => !ip.startsWith('0.') && !ip.startsWith('127.') && !ip.startsWith('255.'));
+    const urls = [...new Set(raw.match(urlRx) || [])].slice(0, 8);
+    const b64 = (raw.match(b64Rx) || []).length;
+    const suspKeywords = ['cmd.exe', 'powershell', 'wscript', 'cscript', 'regsvr32', 'mshta', 'certutil', 'bitsadmin', 'wget', 'curl ', 'invoke-expression', 'iex ', 'downloadstring', 'shellexecute', 'createobject', 'activexobject', 'base64', 'frombase64string', 'net user ', 'net localgroup', 'mimikatz', 'sekurlsa', 'privilege::debug'];
+    const foundKw = suspKeywords.filter(k => raw.toLowerCase().includes(k));
+    let status = 'clean', issues = [];
+    if (foundKw.length >= 3) { status = 'malicious'; issues.push(`${foundKw.length} high-risk strings found`); }
+    else if (foundKw.length >= 1 || b64 >= 5) { status = 'suspicious'; if (foundKw.length) issues.push(`Suspicious strings: ${foundKw.slice(0,3).join(', ')}`); if (b64 >= 5) issues.push(`${b64} large base64 blocks`); }
+    const details = { 'Embedded IPs': ips.length > 0 ? ips.slice(0, 5).join(', ') : 'None', 'Embedded URLs': urls.length > 0 ? urls.slice(0, 3).join(' | ') : 'None', 'Suspicious Strings': foundKw.length > 0 ? foundKw.slice(0, 4).join(', ') : 'None', 'Base64 Blocks': b64 >= 5 ? `${b64} (suspicious)` : `${b64}` };
+    return {
+      engine: 'Static String Analysis',
+      status,
+      confidence: 70,
+      details,
+      description: issues.length > 0 ? `Static analysis flagged: ${issues.join('. ')}.` : `No suspicious strings, IPs, or encoded payloads found in first 128KB.`
+    };
+  } catch(e) {
+    return { engine: 'Static String Analysis', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'String analysis failed.' };
+  }
+}
+
+// ── END NEW SIA ENGINES ───────────────────────────────────────────────────────
+
 function calculateSIAVerdict(results) {
   let threatScore=0,reasons={safe:[],caution:[],danger:[]};let malCount=0,susCount=0,cleanCount=0;
   const vtResult=results.find(r=>r.engine.includes('VirusTotal')&&!r.skipped);
@@ -1144,10 +1347,23 @@ async function startSIAScan() {
   pFill.style.width='20%';pText.textContent='Analyzing file type...';pEngine.textContent='File Heuristics';await new Promise(r=>setTimeout(r,400));results.push(analyzeFileType(fileName,fileExt,fileSize));
   pFill.style.width='35%';pText.textContent='Checking extension risk...';pEngine.textContent='Extension Analysis';await new Promise(r=>setTimeout(r,400));results.push(analyzeExtensionRisk(fileName,fileExt));
   pFill.style.width='50%';pText.textContent='Analyzing file size...';pEngine.textContent='Size & Metadata';await new Promise(r=>setTimeout(r,400));results.push(analyzeFileSize(fileSize,fileExt));
+  pFill.style.width='44%';pText.textContent='Binary entropy analysis...';pEngine.textContent='Entropy Engine';
+  await new Promise(r=>setTimeout(r,300));
+  try{const buf=await siaFile.arrayBuffer();results.push(analyzeBinaryEntropy(buf,fileExt));}catch(e){results.push({engine:'Binary Entropy Analysis',status:'error',confidence:0,details:{'Error':e.message},description:'Entropy analysis failed.'});}
+  pFill.style.width='49%';pText.textContent='Static string analysis...';pEngine.textContent='String Scanner';
+  results.push(await analyzeStaticStrings(siaFile,fileExt));
   pFill.style.width='55%';pText.textContent='Querying VirusTotal...';pEngine.textContent='VirusTotal';
   if(fileHash&&fileSize<=33554432){results.push(await checkVTHash(fileHash));}else{results.push({engine:'VirusTotal (File Scan)',status:'unknown',confidence:0,details:{'Note':'File exceeds 32MB'},description:'File too large for VT free tier.',skipped:true});}
+  pFill.style.width='63%';pText.textContent='Checking MalwareBazaar...';pEngine.textContent='MalwareBazaar';
+  if(fileHash){results.push(await checkMalwareBazaar(fileHash));}else{results.push({engine:'MalwareBazaar (abuse.ch)',status:'error',confidence:0,details:{},description:'No hash available.'});}
+  pFill.style.width='70%';pText.textContent='NSRL hash lookup...';pEngine.textContent='NSRL / CIRCL';
+  if(fileHash){results.push(await checkNSRL(fileHash));}else{results.push({engine:'NSRL / CIRCL Hash DB',status:'error',confidence:0,details:{},description:'No hash available.'});}
   pFill.style.width='75%';pText.textContent='Scanning with MetaDefender...';pEngine.textContent='MetaDefender';
   if(siaFile&&fileHash){results.push(await checkMetaDefender(fileHash));}else{results.push({engine:'MetaDefender Cloud',status:'error',confidence:0,details:{'Error':'No hash'},description:'Could not scan.'});}
+  pFill.style.width='82%';pText.textContent='FileScan.io reputation check...';pEngine.textContent='FileScan.io';
+  if(fileHash){results.push(await checkFileScan(fileHash));}else{results.push({engine:'FileScan.io',status:'error',confidence:0,details:{},description:'No hash available.'});}
+  pFill.style.width='88%';pText.textContent='InQuest Labs lookup...';pEngine.textContent='InQuest Labs';
+  if(fileHash){results.push(await checkInQuest(fileHash));}else{results.push({engine:'InQuest Labs',status:'error',confidence:0,details:{},description:'No hash available.'});}
   pFill.style.width='90%';pText.textContent='Checking filename patterns...';pEngine.textContent='Name Analysis';await new Promise(r=>setTimeout(r,400));results.push(analyzeFileName(fileName));
   pFill.style.width='95%';pText.textContent='Calculating verdict...';pEngine.textContent='Risk Engine';await new Promise(r=>setTimeout(r,300));
   pFill.style.width='100%';pText.textContent='Analysis complete';pEngine.textContent='';
