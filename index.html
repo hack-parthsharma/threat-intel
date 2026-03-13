@@ -1229,7 +1229,7 @@ body.dark .agent-input:focus {
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Assessment Agent
     </label>
-    <input type="text" class="agent-input" id="assessmentAgent" placeholder="Enter your name (e.g., Vidhya)" spellcheck="false">
+    <input type="text" class="agent-input" id="assessmentAgent" placeholder="Enter your name (e.g., Parth)" spellcheck="false">
   </div>
 
   <!-- Upload Zone -->
@@ -2552,9 +2552,9 @@ function generateSIADocx() {
     return new TableRow({
       children: [
         new TableCell({ borders, width: { size: col1, type: WidthType.DXA }, margins: cellMargins,
-          children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, size: 20, font: "Arial" })] })] }),
+          children: [new Paragraph({ children: [new TextRun({ text: String(label || ''), bold: true, size: 20, font: "Arial" })] })] }),
         new TableCell({ borders, width: { size: col2, type: WidthType.DXA }, margins: cellMargins,
-          children: [new Paragraph({ children: [new TextRun({ text: value, size: 20, font: "Arial" })] })] }),
+          children: [new Paragraph({ children: [new TextRun({ text: String(value || 'N/A'), size: 20, font: "Arial" })] })] }),
       ]
     });
   }
@@ -2568,8 +2568,7 @@ function generateSIADocx() {
         new TableCell({
           borders, width: { size: col1, type: WidthType.DXA }, margins: cellMargins,
           children: [
-            new Paragraph({ children: [new TextRun({ text: `${ctrl.num}. ${ctrl.code} (${ctrl.title}): `, bold: true, size: 20, font: "Arial" })] }),
-            new Paragraph({ spacing: { before: 60 }, children: [new TextRun({ text: ctrl.question, size: 18, font: "Arial", color: "444444" })] }),
+            new Paragraph({ children: [new TextRun({ text: `${ctrl.num}. ${ctrl.code} (${ctrl.title})`, bold: true, size: 20, font: "Arial" })] }),
           ]
         }),
         new TableCell({
@@ -2577,7 +2576,7 @@ function generateSIADocx() {
           children: [
             new Paragraph({ children: [new TextRun({ text: ctrl.answer === 'Yes' ? '☑ Yes  ☐ No' : '☐ Yes  ☑ No', bold: true, size: 20, font: "Arial" })] }),
             new Paragraph({ spacing: { before: 80 }, children: [new TextRun({ text: 'If yes, what is changing and how?', italics: true, size: 18, font: "Arial", color: "666666" })] }),
-            new Paragraph({ spacing: { before: 40 }, children: [new TextRun({ text: ctrl.detail, size: 18, font: "Arial" })] }),
+            new Paragraph({ spacing: { before: 40 }, children: [new TextRun({ text: String(ctrl.detail || 'NA'), size: 18, font: "Arial" })] }),
           ]
         }),
       ]
@@ -2767,8 +2766,13 @@ function generateSIADocx() {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `SIA_${safeName}_${d.scanDate.toISOString().split('T')[0]}.docx`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     showToast('SIA DOCX report downloaded!');
+  }).catch(err => {
+    console.error('DOCX generation failed:', err);
+    showToast('DOCX generation failed — check console');
   });
 }
 
