@@ -2516,7 +2516,7 @@ function renderSIAResults(fileName, hash, fileSize, ext, results, verdict) {
 // SIA REPORT GENERATION — DOCX (using docx.js library)
 // ═══════════════════════════════════════════════════
 
-function generateSIADocx() {
+async function generateSIADocx() {
   if (!lastSIAScanData) { showToast('No scan data available'); return; }
   showToast('Generating DOCX report...');
 
@@ -2536,9 +2536,17 @@ function generateSIADocx() {
   // Get the extension categorization
   const appCategory = getAppCategory(d.fileExt);
 
+  // Fetch Casepoint logo for footer
+  let logoBuffer = null;
+  try {
+    const logoResp = await fetch('https://casepoint.com/wp-content/uploads/email/casepoint-logo.png');
+    if (logoResp.ok) logoBuffer = await logoResp.arrayBuffer();
+  } catch(e) { /* logo optional */ }
+
   const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     Header, Footer, AlignmentType, HeadingLevel, BorderStyle, WidthType,
-    ShadingType, PageNumber, PageBreak, LevelFormat } = docx;
+    ShadingType, PageNumber, PageBreak, LevelFormat, ImageRun,
+    TabStopType, TabStopPosition } = docx;
 
   const border = { style: BorderStyle.SINGLE, size: 1, color: "999999" };
   const borders = { top: border, bottom: border, left: border, right: border };
@@ -2621,9 +2629,15 @@ function generateSIADocx() {
       footers: {
         default: new Footer({
           children: [new Paragraph({
-            alignment: AlignmentType.CENTER,
+            tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
             children: [
-              new TextRun({ text: "Trishul SIA Report — Page ", size: 16, font: "Arial", color: "999999" }),
+              ...(logoBuffer ? [new ImageRun({
+                type: 'png',
+                data: logoBuffer,
+                transformation: { width: 90, height: 22 },
+                altText: { title: "Casepoint", description: "Casepoint Logo", name: "casepoint-logo" }
+              })] : [new TextRun({ text: "Casepoint", size: 16, font: "Arial", color: "999999", bold: true })]),
+              new TextRun({ text: "\tPage ", size: 16, font: "Arial", color: "999999" }),
               new TextRun({ children: [PageNumber.CURRENT], size: 16, font: "Arial", color: "999999" })
             ]
           })]
@@ -2777,7 +2791,7 @@ function generateSIADocx() {
 // SIA REPORT GENERATION — PDF (using jsPDF)
 // ═══════════════════════════════════════════════════
 
-function generateSIAPdf() {
+async function generateSIAPdf() {
   if (!lastSIAScanData) { showToast('No scan data available'); return; }
   showToast('Generating PDF report...');
 
@@ -2794,8 +2808,22 @@ function generateSIAPdf() {
   const appName = d.fileName.replace(/[-_](windows|win|mac|linux|x64|x86|arm|setup|user|installer|portable)[-_]?/gi, ' ')
     .replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
 
+  // Fetch Casepoint logo for footer
+  let logoDataUrl = null;
+  try {
+    const logoResp = await fetch('https://casepoint.com/wp-content/uploads/email/casepoint-logo.png');
+    if (logoResp.ok) {
+      const blob = await logoResp.blob();
+      logoDataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    }
+  } catch(e) { /* logo optional */ }
+
   function checkPage(needed) {
-    if (y + needed > 280) { pdf.addPage(); y = margin; addHeader(); }
+    if (y + needed > 280) { pdf.addPage(); y = margin; addHeader(); addFooterLogo(); }
   }
 
   function addHeader() {
@@ -2804,9 +2832,21 @@ function generateSIAPdf() {
     pdf.setDrawColor(200); pdf.line(margin, 15, pageW - margin, 15);
   }
 
+  function addFooterLogo() {
+    // Logo bottom-left, page text center
+    if (logoDataUrl) {
+      try { pdf.addImage(logoDataUrl, 'PNG', margin, 285, 30, 7.5); } catch(e) {}
+    } else {
+      pdf.setFontSize(7); pdf.setTextColor(150); pdf.setFont('helvetica', 'bold');
+      pdf.text('Casepoint', margin, 290);
+      pdf.setFont('helvetica', 'normal');
+    }
+  }
+
   function addFooter(pageNum) {
-    pdf.setFontSize(8); pdf.setTextColor(150);
-    pdf.text(`Trishul SIA Report — Page ${pageNum}`, pageW / 2, 290, { align: 'center' });
+    addFooterLogo();
+    pdf.setFontSize(8); pdf.setTextColor(150); pdf.setFont('helvetica', 'normal');
+    pdf.text(`Page ${pageNum}`, pageW - margin, 290, { align: 'right' });
   }
 
   // Page 1
@@ -2934,8 +2974,6 @@ function generateSIAPdf() {
     y += descLines.length * 4 + 3;
   }
 
-  addFooter(1);
-
   // Page 2+ — Security Controls
   pdf.addPage(); y = margin; addHeader(); y = 25;
 
@@ -2980,6 +3018,15 @@ function generateSIAPdf() {
   pdf.text(fnLines, margin, y);
 
   addFooter(pdf.internal.getNumberOfPages());
+
+  // Add footer with logo + page number to ALL pages
+  const totalPages = pdf.internal.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    pdf.setPage(p);
+    addFooterLogo();
+    pdf.setFontSize(8); pdf.setTextColor(150); pdf.setFont('helvetica', 'normal');
+    pdf.text(`Page ${p} of ${totalPages}`, pageW - margin, 290, { align: 'right' });
+  }
 
   // Save
   const safeName = appName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
