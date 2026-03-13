@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TRISHUL — URL Threat Intelligence</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- DOCX generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.min.js"></script>
+<!-- PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root {
   --bg: #F7F8FA;
@@ -108,11 +112,9 @@ body {
   color: white;
 }
 
-/* Light mode: show moon, hide sun */
 .icon-sun { display: none; }
 .icon-moon { display: block; }
 
-/* Dark mode: show sun, hide moon */
 body.dark .icon-sun { display: block; }
 body.dark .icon-moon { display: none; }
 
@@ -509,6 +511,7 @@ body.dark .hero h1 span {
   display: flex;
   gap: 10px;
   margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
 .export-btn {
@@ -530,6 +533,18 @@ body.dark .hero h1 span {
 .export-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.export-btn.sia-report-btn {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
+.export-btn.sia-report-btn:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 /* Analysis */
@@ -989,6 +1004,59 @@ body.dark .upload-icon {
   color: var(--danger);
 }
 
+/* Assessment Agent Input */
+.agent-input-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.agent-input-card label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.agent-input {
+  width: 100%;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.agent-input::placeholder { color: var(--text-muted); }
+
+.agent-input:focus {
+  border-color: var(--accent);
+  background: var(--bg-white);
+  box-shadow: 0 0 0 3px rgba(232,93,38,0.1);
+}
+
+body.dark .agent-input {
+  background: #0B1120;
+  border-color: #243050;
+  color: #E8ECF4;
+}
+
+body.dark .agent-input:focus {
+  background: #141B2D;
+}
+
 .sia-scan-btn {
   background: var(--accent);
   border: none;
@@ -1084,13 +1152,11 @@ body.dark .upload-icon {
     Back to modules
   </button>
 
-  <!-- Hero -->
   <div class="hero">
     <h1>Multi-Engine <span>URL Threat</span> Analysis</h1>
     <p>Scan any URL across 14 intelligence engines — VirusTotal, URLhaus, ThreatFox, WHOIS, DNS, Wayback Machine, and 8 advanced heuristic analyzers.</p>
   </div>
 
-  <!-- Input -->
   <div class="input-card">
     <div class="input-label">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -1132,10 +1198,8 @@ body.dark .upload-icon {
     </div>
   </div>
 
-  <!-- Results -->
   <div id="resultsContainer"></div>
 
-  <!-- History -->
   <div class="history-section" id="historySection" style="display:none;">
     <div class="section-heading">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -1144,7 +1208,7 @@ body.dark .upload-icon {
     <div id="historyList"></div>
   </div>
 </div>
-</div><!-- end securityPage -->
+</div>
 
 <!-- SIA Module -->
 <div class="page" id="siaPage">
@@ -1159,6 +1223,15 @@ body.dark .upload-icon {
     <p>Upload any file — executables, installers, archives, or documents — to scan for threats and generate a security verdict before allowing installation.</p>
   </div>
 
+  <!-- Assessment Agent Input -->
+  <div class="agent-input-card">
+    <label>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Assessment Agent
+    </label>
+    <input type="text" class="agent-input" id="assessmentAgent" placeholder="Enter your name (e.g., Parth)" spellcheck="false">
+  </div>
+
   <!-- Upload Zone -->
   <div class="upload-zone" id="uploadZone">
     <input type="file" id="siaFileInput" onchange="handleFileSelect(event)">
@@ -1170,16 +1243,13 @@ body.dark .upload-icon {
     <div class="supported">.exe .msi .dmg .pkg .deb .apk .jar .zip .rar .7z .tar.gz .pdf .doc .docx .xls .xlsx .ps1 .bat .sh</div>
   </div>
 
-  <!-- File Info (shown after upload) -->
   <div id="siaFileInfo" style="display:none;"></div>
 
-  <!-- Scan Button -->
   <button class="sia-scan-btn" id="siaScanBtn" onclick="startSIAScan()" disabled>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
     ANALYZE FILE
   </button>
 
-  <!-- SIA Progress -->
   <div class="scan-progress" id="siaProgress">
     <div class="progress-track">
       <div class="progress-fill" id="siaProgressFill"></div>
@@ -1190,22 +1260,24 @@ body.dark .upload-icon {
     </div>
   </div>
 
-  <!-- SIA Results -->
   <div id="siaResultsContainer"></div>
 
 </div>
-</div><!-- end siaPage -->
+</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 // ================================================================
-// TRISHUL v3.0 — URL Threat Intelligence
+// TRISHUL v3.1 — URL Threat Intelligence + SIA Report Generation
 // ================================================================
 
 const PROXY_BASE = 'https://threatintel.ps191240.workers.dev';
 const VT_API_KEY = '7b1cbfe4e28992636ac7a75fcdb8cc3f17b17987e29f7837cba48c63c32196e3';
 let backendAvailable = false;
+
+// Store last SIA scan data for report generation
+let lastSIAScanData = null;
 
 const KNOWN_SAFE_DOMAINS = [
   'google.com','youtube.com','facebook.com','amazon.com','wikipedia.org',
@@ -1236,7 +1308,7 @@ const URL_SHORTENERS = ['bit.ly','tinyurl.com','t.co','goo.gl','is.gd','buff.ly'
 
 let scanHistory = [];
 
-// ── Backend Check (silent — no UI display) ──
+// ── Backend Check ──
 async function checkBackend() {
   try {
     const resp = await fetch(PROXY_BASE + '/health', { method: 'GET', signal: AbortSignal.timeout(5000) });
@@ -1288,13 +1360,13 @@ function parseURL(urlStr) {
 
 function isKnownSafe(parsed) { return KNOWN_SAFE_DOMAINS.some(d => parsed.domain === d || parsed.fullDomain === d || parsed.fullDomain.endsWith('.' + d)); }
 
-// ═══════════════ ENGINES (same logic as before) ═══════════════
+// ═══════════════ ENGINES ═══════════════
 
 async function checkURLhaus(url) { try { let data; if (backendAvailable) { const resp = await fetchViaBackend('/api/urlhaus', { method: 'POST', body: JSON.stringify({ url }) }); data = await resp.json(); } else { const resp = await fetchWithCORSFallback('https://urlhaus-api.abuse.ch/v1/url/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'url=' + encodeURIComponent(url) }); data = safeParse(await resp.text()); } if (!data) throw new Error('Invalid response'); if (data.query_status === 'ok' && data.id) { return { engine: 'URLhaus (abuse.ch)', status: 'malicious', confidence: 95, details: { 'Threat Type': data.threat || 'malware', 'Date Added': data.date_added || 'Unknown', 'Tags': (data.tags || []).join(', ') || 'None', 'URLhaus ID': data.id, 'Reporter': data.reporter || 'N/A', 'Status': data.url_status || 'active' }, description: `Reported to URLhaus as distributing ${data.threat || 'malware'}. Flagged by "${data.reporter || 'anonymous'}".` }; } return { engine: 'URLhaus (abuse.ch)', status: 'clean', confidence: 70, details: { 'Result': 'Not found in database', 'Database': 'URLhaus Malware URL Exchange' }, description: 'Not present in URLhaus malware database. Positive signal.' }; } catch(e) { return { engine: 'URLhaus (abuse.ch)', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'Could not reach URLhaus API.' }; } }
 
 async function checkVirusTotal(url) { try { let analysisData = null; const urlId = btoa(url).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_'); try { if (backendAvailable) { const resp = await fetchViaBackend('/api/virustotal/lookup', { method: 'POST', body: JSON.stringify({ url }) }); analysisData = await resp.json(); } else { const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/urls/${urlId}`, { headers: { 'x-apikey': VT_API_KEY } }); analysisData = safeParse(await resp.text()); } if (analysisData?.error) analysisData = null; } catch(e) { analysisData = null; } if (!analysisData?.data?.attributes?.last_analysis_stats) { try { if (backendAvailable) { await fetchViaBackend('/api/virustotal/submit', { method: 'POST', body: JSON.stringify({ url }) }); } else { await fetchWithCORSFallback('https://www.virustotal.com/api/v3/urls', { method: 'POST', headers: { 'x-apikey': VT_API_KEY, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'url=' + encodeURIComponent(url) }); } } catch(e) {} await new Promise(r => setTimeout(r, 15000)); try { if (backendAvailable) { const resp = await fetchViaBackend('/api/virustotal/lookup', { method: 'POST', body: JSON.stringify({ url }) }); analysisData = await resp.json(); } else { const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/urls/${urlId}`, { headers: { 'x-apikey': VT_API_KEY } }); analysisData = safeParse(await resp.text()); } } catch(e) { analysisData = null; } } if (analysisData?.data?.attributes) { const attrs = analysisData.data.attributes; const stats = attrs.last_analysis_stats || {}; const mal = stats.malicious||0, sus = stats.suspicious||0, harm = stats.harmless||0, undet = stats.undetected||0, tout = stats.timeout||0, total = mal+sus+harm+undet+tout; const flagged = []; for (const [v,r] of Object.entries(attrs.last_analysis_results||{})) { if (r.category==='malicious'||r.category==='suspicious') flagged.push(`${v}: ${r.result||r.category}`); } let status='clean'; if(mal>=3) status='malicious'; else if(mal>=1||sus>=2) status='suspicious'; const details = { 'Malicious': `${mal}/${total}`, 'Suspicious': `${sus}/${total}`, 'Harmless': `${harm}/${total}`, 'Total Engines': total, 'Reputation': attrs.reputation??'N/A' }; if(flagged.length>0) details['Flagged By']=flagged.join(', '); if(attrs.last_analysis_date) details['Last Scanned']=new Date(attrs.last_analysis_date*1000).toLocaleString(); let desc=`Scanned with ${total} engines. ${mal} malicious, ${sus} suspicious.`; if(flagged.length>0) desc+=` Flagged by: ${flagged.join(', ')}.`; return { engine:'VirusTotal', status, confidence:92, details, vtStats:stats, description:desc }; } return { engine:'VirusTotal', status:'unknown', confidence:50, details:{'Result':'No analysis available'}, description:'No VirusTotal analysis results.' }; } catch(e) { return { engine:'VirusTotal', status:'error', confidence:0, details:{'Error':e.message}, description:`VirusTotal failed: ${e.message}` }; } }
 
-function checkSSL(parsed) { const f={}; let s='clean',i=[]; if(!parsed.isHTTPS){s='suspicious';i.push('No HTTPS — plaintext');f['Protocol']='HTTP (Insecure)';} else f['Protocol']='HTTPS'; if(parsed.hasPort&&!['443','80','8080','8443'].includes(parsed.port)){i.push(`Non-standard port ${parsed.port}`);if(s==='clean')s='suspicious';f['Port']=parsed.port+' (Non-standard)';} else f['Port']=parsed.port||'Standard'; f['Transport']=parsed.isHTTPS?'TLS Encrypted':'None'; return {engine:'SSL/TLS Analysis',status:s,confidence:75,details:f,issues:i,description:i.length>0?`Concerns: ${i.join('. ')}.`:'HTTPS with standard config.'}; }
+function checkSSL(parsed) { const f={}; let s='clean',i=[]; if(!parsed.isHTTPS){s='suspicious';i.push('No HTTPS');f['Protocol']='HTTP (Insecure)';} else f['Protocol']='HTTPS'; if(parsed.hasPort&&!['443','80','8080','8443'].includes(parsed.port)){i.push(`Non-standard port ${parsed.port}`);if(s==='clean')s='suspicious';f['Port']=parsed.port+' (Non-standard)';} else f['Port']=parsed.port||'Standard'; f['Transport']=parsed.isHTTPS?'TLS Encrypted':'None'; return {engine:'SSL/TLS Analysis',status:s,confidence:75,details:f,issues:i,description:i.length>0?`Concerns: ${i.join('. ')}.`:'HTTPS with standard config.'}; }
 
 function checkDomainReputation(parsed) { const f={}; let score=100,i=[],p=[]; if(isKnownSafe(parsed)){return{engine:'Domain & URL Heuristics',status:'clean',confidence:90,details:{'Known Domain':'Verified safe','Reputation Score':'100/100'},issues:[],positives:['Trusted domain'],reputationScore:100,description:`${parsed.domain} is a trusted domain.`};} if(SUSPICIOUS_TLDS.includes(parsed.tld.toLowerCase())){f['TLD Risk']=parsed.tld+' — High risk';i.push(`Suspicious TLD "${parsed.tld}"`);score-=30;} if(parsed.isIP){i.push('Raw IP address');score-=35;} if(URL_SHORTENERS.includes(parsed.fullDomain)){i.push('URL shortener');score-=15;} const sub=parsed.subdomain.split('.').filter(Boolean); if(sub.length>=3){i.push(`Deep subdomains (${sub.length} levels)`);score-=20;} const kw=SUSPICIOUS_KEYWORDS.filter(k=>parsed.full.toLowerCase().includes(k)); if(kw.length>=2){i.push(`Phishing keywords: ${kw.join(', ')}`);score-=20*Math.min(kw.length,3);} if(parsed.pathname.length>100){i.push('Long path');score-=10;} if(/xn--/.test(parsed.hostname)){i.push('IDN/Punycode');score-=25;} if(parsed.full.includes('@')){i.push('@ symbol');score-=30;} score=Math.max(0,Math.min(100,score)); let s='clean';if(score<40)s='malicious';else if(score<70)s='suspicious'; f['Reputation Score']=score+'/100'; return{engine:'Domain & URL Heuristics',status:s,confidence:65,details:f,issues:i,positives:p,reputationScore:score,description:i.length>0?`Found ${i.length} concern(s): ${i[0]}.`:'No suspicious patterns.'}; }
 
@@ -1306,9 +1378,9 @@ async function checkThreatFox(url,parsed) { try { let data; if(backendAvailable)
 
 async function checkWaybackExistence(parsed) { try { let data; if(backendAvailable){const resp=await fetchViaBackend(`/api/wayback?domain=${encodeURIComponent(parsed.fullDomain)}`);data=await resp.json();} else{const resp=await fetchWithCORSFallback(`https://archive.org/wayback/available?url=${encodeURIComponent(parsed.fullDomain)}`);data=safeParse(await resp.text());} const f={};let i=[],s='clean'; if(data?.archived_snapshots?.closest){const snap=data.archived_snapshots.closest;f['Archived']='Yes';const year=parseInt(snap.timestamp?.substring(0,4));const age=new Date().getFullYear()-year;if(age>=5)f['Maturity']=age+'+ years';else if(age>=1)f['Maturity']=age+' year(s)';else{f['Maturity']='<1 year';if(!isKnownSafe(parsed)){i.push('Limited archive history');s='suspicious';}}} else{f['Archived']='No';if(!isKnownSafe(parsed)){i.push('No archive history');s='suspicious';}else f['Note']='Known safe domain';} return{engine:'Wayback Machine (Archive.org)',status:s,confidence:45,details:f,issues:i,description:i.length>0?`${i[0]}.`:'Has archive presence or known safe.'}; } catch(e){return{engine:'Wayback Machine (Archive.org)',status:'error',confidence:0,details:{'Error':e.message},description:'Could not query Wayback Machine.'};} }
 
-async function checkDNS(parsed) { const f={};let i=[],s='clean'; try{let data;if(backendAvailable){const resp=await fetchViaBackend(`/api/dns?domain=${encodeURIComponent(parsed.fullDomain)}&type=A`);data=await resp.json();}else{const resp=await fetchWithCORSFallback(`https://dns.google/resolve?name=${encodeURIComponent(parsed.fullDomain)}&type=A`);data=safeParse(await resp.text());} if(data){f['DNS Status']=data.Status===0?'Resolved ✓':'Status: '+data.Status;if(data.Answer&&data.Answer.length>0){const ips=data.Answer.filter(a=>a.type===1).map(a=>a.data);f['IPs']=ips.join(', ')||'None';for(const ip of ips){if(ip.startsWith('127.')||ip==='0.0.0.0'){i.push(`Loopback IP (${ip})`);s='suspicious';}}if(ips.length>3)f['Infra']=ips.length+' IPs — CDN';}else if(data.Status===3){f['DNS']='NXDOMAIN';i.push('Domain does not resolve');s='suspicious';}f['DNSSEC']=data.AD?'Validated ✓':'Not validated';}} catch(e){f['Error']=e.message;} try{let mx;if(backendAvailable){const r=await fetchViaBackend(`/api/dns?domain=${encodeURIComponent(parsed.fullDomain)}&type=MX`);mx=await r.json();}else{const r=await fetchWithCORSFallback(`https://dns.google/resolve?name=${encodeURIComponent(parsed.fullDomain)}&type=MX`);mx=safeParse(await r.text());}f['Mail']=(mx?.Answer?.length>0)?mx.Answer.length+' MX records':'None';}catch(e){} return{engine:'DNS & Infrastructure',status:s,confidence:60,details:f,issues:i,description:i.length>0?`DNS: ${i[0]}.`:'DNS resolves normally.'}; }
+async function checkDNS(parsed) { const f={};let i=[],s='clean'; try{let data;if(backendAvailable){const resp=await fetchViaBackend(`/api/dns?domain=${encodeURIComponent(parsed.fullDomain)}&type=A`);data=await resp.json();}else{const resp=await fetchWithCORSFallback(`https://dns.google/resolve?name=${encodeURIComponent(parsed.fullDomain)}&type=A`);data=safeParse(await resp.text());} if(data){f['DNS Status']=data.Status===0?'Resolved':'Status: '+data.Status;if(data.Answer&&data.Answer.length>0){const ips=data.Answer.filter(a=>a.type===1).map(a=>a.data);f['IPs']=ips.join(', ')||'None';for(const ip of ips){if(ip.startsWith('127.')||ip==='0.0.0.0'){i.push(`Loopback IP (${ip})`);s='suspicious';}}if(ips.length>3)f['Infra']=ips.length+' IPs — CDN';}else if(data.Status===3){f['DNS']='NXDOMAIN';i.push('Domain does not resolve');s='suspicious';}f['DNSSEC']=data.AD?'Validated':'Not validated';}} catch(e){f['Error']=e.message;} try{let mx;if(backendAvailable){const r=await fetchViaBackend(`/api/dns?domain=${encodeURIComponent(parsed.fullDomain)}&type=MX`);mx=await r.json();}else{const r=await fetchWithCORSFallback(`https://dns.google/resolve?name=${encodeURIComponent(parsed.fullDomain)}&type=MX`);mx=safeParse(await r.text());}f['Mail']=(mx?.Answer?.length>0)?mx.Answer.length+' MX records':'None';}catch(e){} return{engine:'DNS & Infrastructure',status:s,confidence:60,details:f,issues:i,description:i.length>0?`DNS: ${i[0]}.`:'DNS resolves normally.'}; }
 
-async function checkRedirects(url,parsed) { const f={};let i=[],s='clean'; try{let rd;if(backendAvailable){const resp=await fetchViaBackend('/api/headers',{method:'POST',body:JSON.stringify({url})});rd=await resp.json();f['HTTP Status']=rd.status+' '+(rd.statusText||'');f['Final URL']=rd.finalUrl||'Same';if(rd.redirected||(rd.finalUrl&&rd.finalUrl!==url)){const fp=parseURL(rd.finalUrl);if(fp&&fp.domain!==parsed.domain){f['Redirected']='Different domain!';i.push(`Redirects to ${fp.domain}`);s='suspicious';}else f['Redirected']='Same domain (normal)';}else f['Redirected']='No';const h=rd.headers||{};f['HSTS']=h['strict-transport-security']?'Enabled ✓':'Not set';f['CSP']=h['content-security-policy']?'Present ✓':'Not set';if(rd.status>=400)i.push(`HTTP ${rd.status}`);}else{try{const resp=await fetch(url,{method:'HEAD',redirect:'follow',signal:AbortSignal.timeout(8000)});f['HTTP Status']=resp.status+' '+resp.statusText;f['Redirected']=resp.redirected?'Yes':'No';}catch(e){f['Note']='CORS blocked — use backend for full analysis';}}}catch(e){f['Error']=e.message;} if(i.length>0&&s==='clean')s='suspicious'; return{engine:'Redirect & Header Analysis',status:s,confidence:50,details:f,issues:i,description:i.length>0?`${i.length} concern(s): ${i[0]}.`:'No issues detected.'}; }
+async function checkRedirects(url,parsed) { const f={};let i=[],s='clean'; try{let rd;if(backendAvailable){const resp=await fetchViaBackend('/api/headers',{method:'POST',body:JSON.stringify({url})});rd=await resp.json();f['HTTP Status']=rd.status+' '+(rd.statusText||'');f['Final URL']=rd.finalUrl||'Same';if(rd.redirected||(rd.finalUrl&&rd.finalUrl!==url)){const fp=parseURL(rd.finalUrl);if(fp&&fp.domain!==parsed.domain){f['Redirected']='Different domain!';i.push(`Redirects to ${fp.domain}`);s='suspicious';}else f['Redirected']='Same domain (normal)';}else f['Redirected']='No';const h=rd.headers||{};f['HSTS']=h['strict-transport-security']?'Enabled':'Not set';f['CSP']=h['content-security-policy']?'Present':'Not set';if(rd.status>=400)i.push(`HTTP ${rd.status}`);}else{try{const resp=await fetch(url,{method:'HEAD',redirect:'follow',signal:AbortSignal.timeout(8000)});f['HTTP Status']=resp.status+' '+resp.statusText;f['Redirected']=resp.redirected?'Yes':'No';}catch(e){f['Note']='CORS blocked';}}}catch(e){f['Error']=e.message;} if(i.length>0&&s==='clean')s='suspicious'; return{engine:'Redirect & Header Analysis',status:s,confidence:50,details:f,issues:i,description:i.length>0?`${i.length} concern(s): ${i[0]}.`:'No issues detected.'}; }
 
 function checkEntropy(parsed) { const f={};let i=[],s='clean'; function se(str){const fr={};for(const c of str)fr[c]=(fr[c]||0)+1;const l=str.length;let e=0;for(const c in fr){const p=fr[c]/l;e-=p*Math.log2(p);}return e;} const he=se(parsed.hostname);f['Hostname Entropy']=he.toFixed(2)+' bits/char';if(he>4.0&&parsed.hostname.length>15&&!isKnownSafe(parsed)){i.push(`High entropy (${he.toFixed(2)})`);s='suspicious';f['DGA Risk']='High';}else f['DGA Risk']='Low'; if(parsed.pathname.length>10){const pe=se(parsed.pathname);f['Path Entropy']=pe.toFixed(2);if(pe>4.5&&!isKnownSafe(parsed)){i.push('High path entropy');if(s==='clean')s='suspicious';}} const enc=(parsed.full.match(/%[0-9a-f]{2}/gi)||[]).length;if(enc>10){f['URL Encoding']=enc+' encoded chars';i.push('Excessive encoding');if(s==='clean')s='suspicious';} return{engine:'Entropy & Obfuscation Analysis',status:s,confidence:55,details:f,issues:i,description:i.length>0?`${i.length} anomaly(ies): ${i[0]}.`:'Normal entropy.'}; }
 
@@ -1366,14 +1438,12 @@ async function startScan() {
 
   pFill.style.width = '100%';
   pText.textContent = 'Analysis complete';
-  pEngine.textContent = '✓';
+  pEngine.textContent = '';
 
   const verdict = calculateVerdict(results, parsed);
   renderResults(parsed, results, verdict);
   scanHistory.unshift({ url: parsed.full, verdict, time: new Date(), results, parsed });
   renderHistory();
-
-  // Update URL hash for shareable link
   window.history.replaceState(null, '', '#' + encodeURIComponent(parsed.full));
 
   btn.disabled = false;
@@ -1419,16 +1489,16 @@ function renderResults(parsed, results, verdict) {
   let engHTML = '';
   for (const r of results) {
     const bc = r.status==='clean'?'badge-clean':r.status==='suspicious'?'badge-suspicious':r.status==='malicious'?'badge-malicious':r.status==='error'?'badge-error':'badge-unknown';
-    const bl = r.status==='clean'?'✓ Clean':r.status==='suspicious'?'⚠ Suspicious':r.status==='malicious'?'✕ Malicious':r.status==='error'?'⚡ Error':'? Unknown';
+    const bl = r.status==='clean'?'CLEAN':r.status==='suspicious'?'SUSPICIOUS':r.status==='malicious'?'MALICIOUS':r.status==='error'?'ERROR':'UNKNOWN';
     const em = r.status==='clean'?'🟢':r.status==='suspicious'?'🟡':r.status==='malicious'?'🔴':'⚪';
     let dHTML='';for(const[k,v]of Object.entries(r.details))dHTML+=`<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`;
     engHTML+=`<div class="engine-card"><div class="engine-header"><span class="engine-name">${em} ${r.engine}</span><span class="engine-badge ${bc}">${bl}</span></div><p class="engine-desc">${r.description}</p><div class="engine-details">${dHTML}</div></div>`;
   }
 
   let aHTML='';
-  for(const r of verdict.reasons.safe) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-safe"></div><div class="analysis-content"><h4>✓ ${r.engine}</h4><p>${r.text}</p></div></div>`;
-  for(const r of verdict.reasons.caution) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-warn"></div><div class="analysis-content"><h4>⚠ ${r.engine}</h4><p>${r.text}</p></div></div>`;
-  for(const r of verdict.reasons.danger) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>✕ ${r.engine}</h4><p>${r.text}</p></div></div>`;
+  for(const r of verdict.reasons.safe) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-safe"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
+  for(const r of verdict.reasons.caution) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-warn"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
+  for(const r of verdict.reasons.danger) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
 
   container.innerHTML = `
     <div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease">
@@ -1442,10 +1512,10 @@ function renderResults(parsed, results, verdict) {
     <div class="scores-row">
       <div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${safeOff}"/></svg><div class="score-num" style="color:${vc}">${safety}</div></div><div class="score-label">Safety Score</div></div>
       <div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${threatOff}"/></svg><div class="score-num" style="color:${vc}">${verdict.threatScore}</div></div><div class="score-label">Threat Level</div></div>
-      <div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Scan Summary</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🔍 <strong>${results.length}</strong> engines checked<br>🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious<br>⚪ <strong>${results.filter(r=>r.status==='error'||r.status==='unknown').length}</strong> other</div></div></div>
+      <div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Scan Summary</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🔍 <strong>${results.length}</strong> engines<br>🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious<br>⚪ <strong>${results.filter(r=>r.status==='error'||r.status==='unknown').length}</strong> other</div></div></div>
     </div>
     <div class="export-row">
-      <button class="export-btn" onclick="shareLink()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share Link</button>
+      <button class="export-btn" onclick="shareLink()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share</button>
       <button class="export-btn" onclick="copyReport()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy</button>
       <button class="export-btn" onclick="downloadReport('html')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> HTML</button>
       <button class="export-btn" onclick="downloadReport('pdf')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PDF</button>
@@ -1478,7 +1548,7 @@ function reloadScan(i) {
   }
 }
 
-// ── Export ──
+// ── URL Module Export ──
 function shareLink() {
   if(!scanHistory.length)return;
   const url = window.location.origin + window.location.pathname + '#' + encodeURIComponent(scanHistory[0].url);
@@ -1488,103 +1558,40 @@ function shareLink() {
 function copyReport() {
   if(!scanHistory.length)return;
   const h=scanHistory[0];
-  let t=`TRISHUL — URL THREAT REPORT\n${'='.repeat(40)}\nURL: ${h.url}\nVerdict: ${h.verdict.title}\nSafety: ${100-h.verdict.threatScore}/100\nThreat: ${h.verdict.threatScore}/100\n\nENGINES:\n${'-'.repeat(30)}\n`;
-  for(const r of h.results){t+=`\n${r.engine}: ${r.status.toUpperCase()}\n  ${r.description}\n`;for(const[k,v]of Object.entries(r.details))t+=`  ${k}: ${v}\n`;}
-  t+=`\nTrishul — ${new Date().toISOString()}\n`;
+  let t=`TRISHUL REPORT\n${'='.repeat(40)}\nURL: ${h.url}\nVerdict: ${h.verdict.title}\nSafety: ${100-h.verdict.threatScore}/100\nThreat: ${h.verdict.threatScore}/100\n\nENGINES:\n`;
+  for(const r of h.results){t+=`\n${r.engine}: ${r.status.toUpperCase()}\n  ${r.description}\n`;}
   navigator.clipboard.writeText(t).then(()=>showToast('Report copied'));
 }
 
 function buildReportHTML(h) {
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Trishul Report — ${h.url}</title>
-<style>
-@page { margin: 20mm; }
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#fff;color:#0B1D3A;padding:40px;max-width:800px;margin:auto;font-size:13px;line-height:1.6}
-h1{color:#E85D26;font-size:22px;margin-bottom:4px}
-h2{color:#0B1D3A;margin-top:28px;font-size:16px;border-bottom:2px solid #E2E6ED;padding-bottom:6px}
-.subtitle{color:#4A5568;font-size:12px;margin-bottom:24px}
-.safe{color:#0D9F6E}.warn{color:#D97706}.danger{color:#DC2626}
-.card{background:#F7F8FA;border:1px solid #E2E6ED;border-radius:8px;padding:14px 16px;margin:10px 0}
-.meta{display:flex;gap:24px;flex-wrap:wrap;margin:12px 0}
-.meta-item{font-size:12px}.meta-label{color:#8896AB;font-weight:600;display:block;margin-bottom:2px}
-table{width:100%;border-collapse:collapse;margin-top:6px}
-td{padding:5px 10px;border-bottom:1px solid #EEF1F6;font-size:11px}
-td:first-child{color:#8896AB;width:140px}
-.engine-title{font-weight:700;font-size:13px;margin-bottom:4px}
-.engine-status{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;display:inline-block}
-.footer{margin-top:40px;padding-top:16px;border-top:1px solid #E2E6ED;color:#8896AB;font-size:11px;text-align:center}
-</style></head><body>
-<h1>🔱 Trishul — Threat Intelligence Report</h1>
-<p class="subtitle">Automated URL threat analysis across 14 engines</p>
-<div class="card">
-  <div class="meta">
-    <div class="meta-item"><span class="meta-label">Target URL</span>${h.url}</div>
-    <div class="meta-item"><span class="meta-label">Verdict</span><span class="${h.verdict.level==='safe'?'safe':h.verdict.level==='caution'?'warn':'danger'}">${h.verdict.title}</span></div>
-    <div class="meta-item"><span class="meta-label">Safety Score</span>${100-h.verdict.threatScore} / 100</div>
-    <div class="meta-item"><span class="meta-label">Threat Score</span>${h.verdict.threatScore} / 100</div>
-    <div class="meta-item"><span class="meta-label">Scan Time</span>${h.time.toLocaleString()}</div>
-  </div>
-</div>
-<h2>Engine-by-Engine Results</h2>` +
-  h.results.map(r => {
-    const cls = r.status==='clean'?'safe':r.status==='suspicious'?'warn':'danger';
-    return `<div class="card">
-      <div class="engine-title">${r.engine} — <span class="${cls}">${r.status.toUpperCase()}</span></div>
-      <p style="font-size:12px;color:#4A5568;margin:4px 0 8px">${r.description}</p>
-      <table>${Object.entries(r.details).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
-    </div>`;
-  }).join('') +
-  `<div class="footer">Trishul</div></body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Trishul Report</title>
+<style>body{font-family:'Segoe UI',system-ui,sans-serif;background:#fff;color:#0B1D3A;padding:40px;max-width:800px;margin:auto;font-size:13px;line-height:1.6}h1{color:#E85D26;font-size:22px}h2{color:#0B1D3A;margin-top:28px;font-size:16px;border-bottom:2px solid #E2E6ED;padding-bottom:6px}.safe{color:#0D9F6E}.warn{color:#D97706}.danger{color:#DC2626}.card{background:#F7F8FA;border:1px solid #E2E6ED;border-radius:8px;padding:14px 16px;margin:10px 0}table{width:100%;border-collapse:collapse}td{padding:5px 10px;border-bottom:1px solid #EEF1F6;font-size:11px}td:first-child{color:#8896AB;width:140px}</style></head><body>
+<h1>Trishul Report</h1>
+<div class="card"><table><tr><td><b>URL</b></td><td>${h.url}</td></tr><tr><td><b>Verdict</b></td><td><span class="${h.verdict.level==='safe'?'safe':h.verdict.level==='caution'?'warn':'danger'}">${h.verdict.title}</span></td></tr><tr><td><b>Safety</b></td><td>${100-h.verdict.threatScore}/100</td></tr><tr><td><b>Time</b></td><td>${h.time.toLocaleString()}</td></tr></table></div>
+<h2>Results</h2>` +
+  h.results.map(r => `<div class="card"><b>${r.engine}</b> — <span class="${r.status==='clean'?'safe':r.status==='suspicious'?'warn':'danger'}">${r.status.toUpperCase()}</span><p style="font-size:12px;color:#4A5568">${r.description}</p><table>${Object.entries(r.details).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table></div>`).join('') +
+  `</body></html>`;
 }
 
 function downloadReport(format) {
   if(!scanHistory.length)return;
   const h=scanHistory[0];
   const html = buildReportHTML(h);
-
   if (format === 'pdf') {
-    // Open report in new window and trigger print (Save as PDF)
     const win = window.open('', '_blank');
     win.document.write(html);
     win.document.close();
     setTimeout(() => { win.print(); }, 500);
-    showToast('Print dialog opened — choose "Save as PDF"');
+    showToast('Print dialog opened — Save as PDF');
   } else if (format === 'docx') {
-    // Word-compatible HTML with mso namespace
-    const docHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
-<style>body{font-family:'Segoe UI',sans-serif;font-size:11pt;color:#0B1D3A;line-height:1.6}h1{color:#E85D26;font-size:18pt}h2{color:#0B1D3A;font-size:14pt;border-bottom:2pt solid #E2E6ED;padding-bottom:4pt;margin-top:20pt}.safe{color:#0D9F6E}.warn{color:#D97706}.danger{color:#DC2626}table{border-collapse:collapse;width:100%}td{padding:4pt 8pt;border:1pt solid #E2E6ED;font-size:9pt}.card{background:#F7F8FA;border:1pt solid #E2E6ED;padding:10pt;margin:8pt 0}.footer{margin-top:30pt;color:#8896AB;font-size:9pt;text-align:center}</style></head><body>` +
-    `<h1>🔱 Trishul — Threat Intelligence Report</h1>
-<p style="color:#4A5568;font-size:10pt">Automated URL threat analysis across 14 engines</p>
-<div class="card"><table>
-<tr><td><b>Target URL</b></td><td>${h.url}</td></tr>
-<tr><td><b>Verdict</b></td><td><span class="${h.verdict.level==='safe'?'safe':h.verdict.level==='caution'?'warn':'danger'}">${h.verdict.title}</span></td></tr>
-<tr><td><b>Safety Score</b></td><td>${100-h.verdict.threatScore} / 100</td></tr>
-<tr><td><b>Threat Score</b></td><td>${h.verdict.threatScore} / 100</td></tr>
-<tr><td><b>Scan Time</b></td><td>${h.time.toLocaleString()}</td></tr>
-</table></div>
-<h2>Engine-by-Engine Results</h2>` +
-    h.results.map(r => {
-      const cls = r.status==='clean'?'safe':r.status==='suspicious'?'warn':'danger';
-      return `<div class="card"><p><b>${r.engine}</b> — <span class="${cls}">${r.status.toUpperCase()}</span></p>
-<p style="font-size:9pt;color:#4A5568">${r.description}</p>
-<table>${Object.entries(r.details).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table></div>`;
-    }).join('') +
-    `<p class="footer">Trishul</p></body></html>`;
-
+    const docHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="UTF-8"><style>body{font-family:'Segoe UI',sans-serif;font-size:11pt}h1{color:#E85D26}table{border-collapse:collapse;width:100%}td{padding:4pt 8pt;border:1pt solid #E2E6ED;font-size:9pt}.safe{color:#0D9F6E}.warn{color:#D97706}.danger{color:#DC2626}</style></head><body>` + html.replace(/<\/?html>|<\/?head>|<\/?body>|<style[\s\S]*?<\/style>|<title[\s\S]*?<\/title>|<!DOCTYPE[^>]*>/gi, '') + `</body></html>`;
     const blob = new Blob(['\ufeff' + docHtml], { type: 'application/msword' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `trishul-report-${Date.now()}.doc`;
-    a.click();
-    showToast('DOCX report downloaded');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `trishul-report-${Date.now()}.doc`; a.click();
+    showToast('DOCX downloaded');
   } else {
-    // HTML download
     const blob = new Blob([html], { type: 'text/html' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `trishul-report-${Date.now()}.html`;
-    a.click();
-    showToast('HTML report downloaded');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `trishul-report-${Date.now()}.html`; a.click();
+    showToast('HTML downloaded');
   }
 }
 
@@ -1605,7 +1612,6 @@ function showModule(module) {
   } else if (module === 'sia') {
     document.getElementById('siaPage').classList.add('active');
   }
-
   window.scrollTo({ top: 0 });
 }
 
@@ -1613,41 +1619,27 @@ function showModule(module) {
 
 let siaFile = null;
 
-// Drag & drop
 document.addEventListener('DOMContentLoaded', () => {
   const zone = document.getElementById('uploadZone');
   if (!zone) return;
-
   zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
   zone.addEventListener('dragleave', () => { zone.classList.remove('dragover'); });
   zone.addEventListener('drop', (e) => {
     e.preventDefault();
     zone.classList.remove('dragover');
-    if (e.dataTransfer.files.length > 0) {
-      handleFile(e.dataTransfer.files[0]);
-    }
+    if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
   });
 });
 
 function handleFileSelect(event) {
-  if (event.target.files.length > 0) {
-    handleFile(event.target.files[0]);
-  }
+  if (event.target.files.length > 0) handleFile(event.target.files[0]);
 }
 
 function handleFile(file) {
   siaFile = file;
   const ext = file.name.split('.').pop().toLowerCase();
-  const sizeStr = file.size < 1024 ? file.size + ' B'
-    : file.size < 1048576 ? (file.size / 1024).toFixed(1) + ' KB'
-    : (file.size / 1048576).toFixed(2) + ' MB';
-
-  const icons = {
-    exe: '⚙️', msi: '📦', dmg: '💿', pkg: '📦', deb: '🐧', apk: '📱',
-    jar: '☕', zip: '🗜️', rar: '🗜️', '7z': '🗜️', tar: '🗜️', gz: '🗜️',
-    pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊',
-    ps1: '💻', bat: '💻', sh: '💻', py: '🐍', js: '📜'
-  };
+  const sizeStr = file.size < 1024 ? file.size + ' B' : file.size < 1048576 ? (file.size / 1024).toFixed(1) + ' KB' : (file.size / 1048576).toFixed(2) + ' MB';
+  const icons = { exe:'⚙️',msi:'📦',dmg:'💿',pkg:'📦',deb:'🐧',apk:'📱',jar:'☕',zip:'🗜️',rar:'🗜️','7z':'🗜️',tar:'🗜️',gz:'🗜️',pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ps1:'💻',bat:'💻',sh:'💻',py:'🐍',js:'📜' };
   const icon = icons[ext] || '📁';
 
   document.getElementById('uploadZone').style.display = 'none';
@@ -1662,7 +1654,6 @@ function handleFile(file) {
       <button class="file-remove" onclick="removeFile()">Remove</button>
     </div>
   `;
-
   document.getElementById('siaScanBtn').disabled = false;
 }
 
@@ -1674,6 +1665,7 @@ function removeFile() {
   document.getElementById('siaScanBtn').disabled = true;
   document.getElementById('siaFileInput').value = '';
   document.getElementById('siaResultsContainer').innerHTML = '';
+  lastSIAScanData = null;
 }
 
 async function startSIAScan() {
@@ -1688,8 +1680,8 @@ async function startSIAScan() {
   btn.disabled = true;
   btn.textContent = 'SCANNING...';
   progress.classList.add('active');
+  await checkBackend();
 
-  // Compute file hash (SHA-256) for VirusTotal lookup
   pFill.style.width = '10%';
   pText.textContent = 'Computing file hash...';
   pEngine.textContent = 'SHA-256';
@@ -1699,76 +1691,60 @@ async function startSIAScan() {
     const buffer = await siaFile.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
     fileHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-  } catch(e) {
-    fileHash = '';
-  }
+  } catch(e) { fileHash = ''; }
 
+  // Also compute SHA-1 and MD5 are not available in Web Crypto — we'll use SHA-256 only
   const results = [];
   const fileExt = siaFile.name.split('.').pop().toLowerCase();
   const fileName = siaFile.name;
   const fileSize = siaFile.size;
 
-  // Engine 1: File Type Analysis
-  pFill.style.width = '20%';
-  pText.textContent = 'Analyzing file type...';
-  pEngine.textContent = 'File Heuristics';
+  pFill.style.width = '20%'; pText.textContent = 'Analyzing file type...'; pEngine.textContent = 'File Heuristics';
   await new Promise(r => setTimeout(r, 400));
   results.push(analyzeFileType(fileName, fileExt, fileSize));
 
-  // Engine 2: Extension Risk
-  pFill.style.width = '35%';
-  pText.textContent = 'Checking extension risk...';
-  pEngine.textContent = 'Extension Analysis';
+  pFill.style.width = '35%'; pText.textContent = 'Checking extension risk...'; pEngine.textContent = 'Extension Analysis';
   await new Promise(r => setTimeout(r, 400));
   results.push(analyzeExtensionRisk(fileName, fileExt));
 
-  // Engine 3: File Size Analysis
-  pFill.style.width = '50%';
-  pText.textContent = 'Analyzing file characteristics...';
-  pEngine.textContent = 'Size & Metadata';
+  pFill.style.width = '50%'; pText.textContent = 'Analyzing file characteristics...'; pEngine.textContent = 'Size & Metadata';
   await new Promise(r => setTimeout(r, 400));
   results.push(analyzeFileSize(fileSize, fileExt));
 
-  // Engine 4: VirusTotal (files under 32MB)
-  pFill.style.width = '50%';
-  pText.textContent = 'Querying VirusTotal...';
-  pEngine.textContent = 'VirusTotal';
+  pFill.style.width = '50%'; pText.textContent = 'Querying VirusTotal...'; pEngine.textContent = 'VirusTotal';
   if (fileHash && fileSize <= 33554432) {
     results.push(await checkVTHash(fileHash));
   } else if (fileSize > 33554432) {
-    results.push({ engine: 'VirusTotal (File Scan)', status: 'unknown', confidence: 0, details: { 'Note': 'File exceeds 32MB VT limit — using MetaDefender instead' }, description: 'File too large for VirusTotal free tier (32MB max). MetaDefender handles files up to 140MB.', skipped: true });
+    results.push({ engine: 'VirusTotal (File Scan)', status: 'unknown', confidence: 0, details: { 'Note': 'File exceeds 32MB limit' }, description: 'File too large for VirusTotal free tier.', skipped: true });
   } else {
-    results.push({ engine: 'VirusTotal (File Scan)', status: 'error', confidence: 0, details: { 'Error': 'Could not compute hash' }, description: 'File hash computation failed.' });
+    results.push({ engine: 'VirusTotal (File Scan)', status: 'error', confidence: 0, details: { 'Error': 'Hash failed' }, description: 'File hash computation failed.' });
   }
 
-  // Engine 5: MetaDefender Cloud (20+ AV engines, up to 140MB)
-  pFill.style.width = '70%';
-  pText.textContent = 'Scanning with MetaDefender (20+ engines)...';
-  pEngine.textContent = 'MetaDefender';
+  pFill.style.width = '70%'; pText.textContent = 'Scanning with MetaDefender...'; pEngine.textContent = 'MetaDefender';
   if (siaFile && fileHash) {
     results.push(await checkMetaDefender(fileHash));
   } else {
-    results.push({ engine: 'MetaDefender Cloud', status: 'error', confidence: 0, details: { 'Error': 'No file or hash' }, description: 'Could not scan with MetaDefender.' });
+    results.push({ engine: 'MetaDefender Cloud', status: 'error', confidence: 0, details: { 'Error': 'No file or hash' }, description: 'Could not scan.' });
   }
 
-  // Engine 6: Name Pattern Analysis
-  pFill.style.width = '85%';
-  pText.textContent = 'Checking filename patterns...';
-  pEngine.textContent = 'Name Analysis';
+  pFill.style.width = '85%'; pText.textContent = 'Checking filename patterns...'; pEngine.textContent = 'Name Analysis';
   await new Promise(r => setTimeout(r, 400));
   results.push(analyzeFileName(fileName));
 
-  // Final
-  pFill.style.width = '95%';
-  pText.textContent = 'Calculating verdict...';
-  pEngine.textContent = 'Risk Engine';
+  pFill.style.width = '95%'; pText.textContent = 'Calculating verdict...'; pEngine.textContent = 'Risk Engine';
   await new Promise(r => setTimeout(r, 300));
 
-  pFill.style.width = '100%';
-  pText.textContent = 'Analysis complete';
-  pEngine.textContent = '✓';
+  pFill.style.width = '100%'; pText.textContent = 'Analysis complete'; pEngine.textContent = '';
 
   const verdict = calculateSIAVerdict(results);
+
+  // Store scan data for report generation
+  lastSIAScanData = {
+    fileName, fileHash, fileSize, fileExt, results, verdict,
+    scanDate: new Date(),
+    assessmentAgent: document.getElementById('assessmentAgent').value.trim() || 'N/A'
+  };
+
   renderSIAResults(fileName, fileHash, fileSize, fileExt, results, verdict);
 
   btn.disabled = false;
@@ -1783,430 +1759,188 @@ function analyzeFileType(name, ext, size) {
   const macroEnabled = ['docm','xlsm','pptm','dotm','xltm','potm'];
   const archives = ['zip','rar','7z','tar','gz','tgz'];
   const documents = ['pdf','doc','docx','xls','xlsx','ppt','pptx','rtf','odt','ods','odp'];
-  const safe = ['txt','csv','json','xml','yml','yaml','md','png','jpg','jpeg','gif','svg','mp4','mp3','wav','webp','ico','bmp','ttf','woff','woff2'];
+  const safe = ['txt','csv','json','xml','yml','yaml','md','png','jpg','jpeg','gif','svg','mp4','mp3','wav','webp'];
 
-  if (dangerous.includes(ext)) {
-    return { engine: 'File Type Analysis', status: 'suspicious', confidence: 65, details: { 'Type': 'Executable / Script', 'Extension': '.' + ext, 'Risk': 'REQUIRES REVIEW — Can execute code on system' }, description: `Executable/script file (.${ext}) that can run code on the system. Not inherently malicious, but requires verification of source and legitimacy before allowing.` };
-  } else if (macroEnabled.includes(ext)) {
-    return { engine: 'File Type Analysis', status: 'suspicious', confidence: 70, details: { 'Type': 'Macro-Enabled Document', 'Extension': '.' + ext, 'Risk': 'MODERATE — Contains executable macros' }, description: `Macro-enabled document (.${ext}) can execute code via embedded macros. Macros should be reviewed before enabling.` };
-  } else if (archives.includes(ext)) {
-    return { engine: 'File Type Analysis', status: 'suspicious', confidence: 55, details: { 'Type': 'Archive', 'Extension': '.' + ext, 'Risk': 'MODERATE — May contain hidden executables' }, description: `Archive file (.${ext}) can contain any file type inside, including executables. Contents should be inspected.` };
-  } else if (documents.includes(ext)) {
-    return { engine: 'File Type Analysis', status: 'clean', confidence: 80, details: { 'Type': 'Document', 'Extension': '.' + ext, 'Risk': 'LOW — Standard document format' }, description: `Standard document file (.${ext}). No macro capability in this format.` };
-  } else if (safe.includes(ext)) {
-    return { engine: 'File Type Analysis', status: 'clean', confidence: 85, details: { 'Type': 'Data / Media', 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `Data/media file (.${ext}) with low inherent risk.` };
-  }
-  return { engine: 'File Type Analysis', status: 'suspicious', confidence: 50, details: { 'Type': 'Unknown', 'Extension': '.' + ext, 'Risk': 'UNKNOWN' }, description: `Unknown file type (.${ext}). Exercise caution.` };
+  if (dangerous.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 65, details: { 'Type': 'Executable / Script', 'Extension': '.' + ext, 'Risk': 'REQUIRES REVIEW' }, description: `Executable/script file (.${ext}) that can run code. Requires verification before allowing.` };
+  if (macroEnabled.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 70, details: { 'Type': 'Macro-Enabled Document', 'Extension': '.' + ext, 'Risk': 'MODERATE' }, description: `Macro-enabled document (.${ext}) can execute code via macros.` };
+  if (archives.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 55, details: { 'Type': 'Archive', 'Extension': '.' + ext, 'Risk': 'MODERATE' }, description: `Archive file (.${ext}) can contain hidden executables.` };
+  if (documents.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 80, details: { 'Type': 'Document', 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `Standard document file (.${ext}).` };
+  if (safe.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 85, details: { 'Type': 'Data / Media', 'Extension': '.' + ext, 'Risk': 'LOW' }, description: `Data/media file (.${ext}) with low risk.` };
+  return { engine: 'File Type Analysis', status: 'suspicious', confidence: 50, details: { 'Type': 'Unknown', 'Extension': '.' + ext, 'Risk': 'UNKNOWN' }, description: `Unknown file type (.${ext}).` };
 }
 
 function analyzeExtensionRisk(name, ext) {
-  const f = {};
-  let issues = [];
-  let status = 'clean';
-
-  // Double extension check
+  const f = {}; let issues = [], status = 'clean';
   const parts = name.split('.');
   if (parts.length > 2) {
     const dangerousExts = ['exe','bat','cmd','scr','pif','js','vbs','ps1','msi'];
-    if (dangerousExts.includes(ext)) {
-      issues.push(`Double extension detected: appears as .${parts[parts.length-2]} but is actually .${ext}`);
-      f['Double Extension'] = 'Yes — masquerading file type!';
-      status = 'malicious';
-    }
+    if (dangerousExts.includes(ext)) { issues.push(`Double extension: appears as .${parts[parts.length-2]} but is .${ext}`); f['Double Extension'] = 'Yes — masquerading!'; status = 'malicious'; }
   }
-
-  // Very long filename (obfuscation)
-  if (name.length > 100) {
-    issues.push('Extremely long filename — possible obfuscation');
-    f['Name Length'] = name.length + ' characters';
-    if (status === 'clean') status = 'suspicious';
-  }
-
-  // Unicode/special chars in name
-  if (/[^\x20-\x7E]/.test(name)) {
-    issues.push('Contains non-ASCII characters — possible spoofing');
-    if (status === 'clean') status = 'suspicious';
-  }
-
-  if (issues.length === 0) f['Extension'] = 'Normal — no tricks detected';
-
-  return { engine: 'Extension & Name Analysis', status, confidence: 70, details: f, issues, description: issues.length > 0 ? `Found ${issues.length} concern(s): ${issues[0]}.` : 'Filename and extension appear normal.' };
+  if (name.length > 100) { issues.push('Long filename — possible obfuscation'); f['Name Length'] = name.length + ' chars'; if (status === 'clean') status = 'suspicious'; }
+  if (/[^\x20-\x7E]/.test(name)) { issues.push('Non-ASCII characters'); if (status === 'clean') status = 'suspicious'; }
+  if (issues.length === 0) f['Extension'] = 'Normal';
+  return { engine: 'Extension & Name Analysis', status, confidence: 70, details: f, issues, description: issues.length > 0 ? `${issues[0]}.` : 'Filename and extension appear normal.' };
 }
 
 function analyzeFileSize(size, ext) {
-  const f = {};
-  let issues = [];
-  let status = 'clean';
+  const f = {}; let issues = [], status = 'clean';
   const sizeMB = size / 1048576;
-
   f['File Size'] = sizeMB < 1 ? (size / 1024).toFixed(1) + ' KB' : sizeMB.toFixed(2) + ' MB';
-
-  // Unusually small executables (could be dropper/stager)
-  if (['exe','msi','dmg'].includes(ext) && size < 50000) {
-    issues.push('Very small executable — could be a dropper or stager');
-    f['Size Risk'] = 'Suspiciously small for this file type';
-    status = 'suspicious';
-  }
-
-  // Very large files
-  if (sizeMB > 500) {
-    issues.push('Very large file (>500MB) — verify this is expected');
-    f['Size Risk'] = 'Unusually large';
-    if (status === 'clean') status = 'suspicious';
-  }
-
+  if (['exe','msi','dmg'].includes(ext) && size < 50000) { issues.push('Very small executable — possible dropper'); f['Size Risk'] = 'Suspiciously small'; status = 'suspicious'; }
+  if (sizeMB > 500) { issues.push('Very large file (>500MB)'); f['Size Risk'] = 'Unusually large'; if (status === 'clean') status = 'suspicious'; }
   if (issues.length === 0) f['Size Risk'] = 'Normal';
-
-  return { engine: 'File Size Analysis', status, confidence: 40, details: f, issues, description: issues.length > 0 ? `${issues[0]}.` : 'File size is within normal range for this type.' };
+  return { engine: 'File Size Analysis', status, confidence: 40, details: f, issues, description: issues.length > 0 ? `${issues[0]}.` : 'File size normal.' };
 }
 
 async function checkVTHash(hash) {
   try {
-    // Step 1: Check if VT already has this hash
     let data;
     if (backendAvailable) {
       const resp = await fetch(PROXY_BASE + `/api/virustotal/file-report?hash=${hash}`);
       data = await resp.json();
     } else {
-      const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/files/${hash}`, {
-        headers: { 'x-apikey': VT_API_KEY }
-      });
+      const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/files/${hash}`, { headers: { 'x-apikey': VT_API_KEY } });
       data = safeParse(await resp.text());
     }
 
-    if (data?.data?.attributes?.last_analysis_stats) {
-      return parseVTFileResult(data, hash);
-    }
+    if (data?.data?.attributes?.last_analysis_stats) return parseVTFileResult(data, hash);
 
-    // Step 2: File not found — upload it for scanning
     if (siaFile && backendAvailable) {
       const pText = document.getElementById('siaProgressText');
       const pEngine = document.getElementById('siaProgressEngine');
-      pText.textContent = 'Uploading file to VirusTotal...';
-      pEngine.textContent = 'File Upload';
-
-      const uploadForm = new FormData();
-      uploadForm.append('file', siaFile, siaFile.name);
-
+      pText.textContent = 'Uploading to VirusTotal...'; pEngine.textContent = 'Upload';
+      const uploadForm = new FormData(); uploadForm.append('file', siaFile, siaFile.name);
       let uploadData;
-      try {
-        const uploadResp = await fetch(PROXY_BASE + '/api/virustotal/file-upload', {
-          method: 'POST',
-          body: uploadForm,
-        });
-        uploadData = await uploadResp.json();
-      } catch(e) { uploadData = null; }
+      try { const ur = await fetch(PROXY_BASE + '/api/virustotal/file-upload', { method: 'POST', body: uploadForm }); uploadData = await ur.json(); } catch(e) { uploadData = null; }
 
       if (uploadData?.data?.id) {
-        const analysisId = uploadData.data.id;
-        pText.textContent = 'Waiting for VirusTotal scan (70+ engines)...';
-        pEngine.textContent = 'Scanning...';
-
-        // Step 3: Poll for results (up to 60 seconds)
+        pText.textContent = 'Waiting for VT scan...'; pEngine.textContent = 'Scanning...';
         for (let attempt = 0; attempt < 6; attempt++) {
           await new Promise(r => setTimeout(r, 10000));
-          pText.textContent = `VirusTotal scanning... (${(attempt+1)*10}s)`;
-
+          pText.textContent = `VT scanning... (${(attempt+1)*10}s)`;
           try {
-            const pollResp = await fetch(PROXY_BASE + `/api/virustotal/analysis?id=${encodeURIComponent(analysisId)}`);
-            const pollData = await pollResp.json();
-
-            if (pollData?.data?.attributes?.status === 'completed') {
-              // Fetch the full file report now
-              const finalResp = await fetch(PROXY_BASE + `/api/virustotal/file-report?hash=${hash}`);
-              const finalData = await finalResp.json();
-              if (finalData?.data?.attributes?.last_analysis_stats) {
-                return parseVTFileResult(finalData, hash);
-              }
+            const pr = await fetch(PROXY_BASE + `/api/virustotal/analysis?id=${encodeURIComponent(uploadData.data.id)}`);
+            const pd = await pr.json();
+            if (pd?.data?.attributes?.status === 'completed') {
+              const fr = await fetch(PROXY_BASE + `/api/virustotal/file-report?hash=${hash}`);
+              const fd = await fr.json();
+              if (fd?.data?.attributes?.last_analysis_stats) return parseVTFileResult(fd, hash);
               break;
             }
           } catch(e) { continue; }
         }
-
-        return {
-          engine: 'VirusTotal (File Scan)',
-          status: 'unknown',
-          confidence: 40,
-          details: { 'SHA-256': hash.substring(0,20)+'...', 'Result': 'Scan submitted but results still processing', 'Analysis ID': analysisId.substring(0,20)+'...' },
-          description: 'File uploaded to VirusTotal. Scan is still processing — check back in a few minutes or look up the hash on virustotal.com.'
-        };
+        return { engine: 'VirusTotal (File Scan)', status: 'unknown', confidence: 40, details: { 'SHA-256': hash.substring(0,20)+'...', 'Result': 'Still processing' }, description: 'Scan submitted, still processing.' };
       }
     }
-
-    // If we couldn't upload (no backend or upload failed)
-    return {
-      engine: 'VirusTotal (Hash Lookup)',
-      status: 'unknown',
-      confidence: 40,
-      details: { 'SHA-256': hash.substring(0,20)+'...', 'Result': 'Not found in VirusTotal database' },
-      description: 'This file hash is not in VirusTotal\'s database. ' + (backendAvailable ? 'File upload may have failed.' : 'Connect backend to enable file upload scanning.')
-    };
+    return { engine: 'VirusTotal (Hash Lookup)', status: 'unknown', confidence: 40, details: { 'SHA-256': hash.substring(0,20)+'...', 'Result': 'Not found' }, description: 'Hash not in VirusTotal database.' };
   } catch(e) {
-    return {
-      engine: 'VirusTotal (File Scan)',
-      status: 'error',
-      confidence: 0,
-      details: { 'Error': e.message, 'SHA-256': hash.substring(0,20)+'...' },
-      description: 'Could not query VirusTotal for file.'
-    };
+    return { engine: 'VirusTotal (File Scan)', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'VT query failed.' };
   }
 }
 
 function parseVTFileResult(data, hash) {
   const attrs = data.data.attributes;
   const stats = attrs.last_analysis_stats || {};
-  const mal = stats.malicious || 0;
-  const sus = stats.suspicious || 0;
-  const harm = stats.harmless || 0;
-  const undet = stats.undetected || 0;
-  const total = mal + sus + harm + undet + (stats.timeout||0);
-
+  const mal = stats.malicious||0, sus = stats.suspicious||0, harm = stats.harmless||0, undet = stats.undetected||0, total = mal+sus+harm+undet+(stats.timeout||0);
   const flagged = [];
-  for (const [v, r] of Object.entries(attrs.last_analysis_results || {})) {
-    if (r.category === 'malicious' || r.category === 'suspicious') {
-      flagged.push(`${v}: ${r.result || r.category}`);
-    }
-  }
-
-  let status = 'clean';
-  if (mal >= 3) status = 'malicious';
-  else if (mal >= 1 || sus >= 2) status = 'suspicious';
-
-  const details = {
-    'SHA-256': hash.substring(0,20)+'...',
-    'Malicious': `${mal}/${total}`,
-    'Suspicious': `${sus}/${total}`,
-    'Harmless': `${harm}/${total}`,
-    'Total Engines': total,
-    'File Names': (attrs.names || []).slice(0, 3).join(', ') || 'N/A',
-    'File Type': attrs.type_description || attrs.type_tag || 'N/A',
-    'File Size': attrs.size ? (attrs.size / 1048576).toFixed(2) + ' MB' : 'N/A'
-  };
-
-  if (flagged.length > 0) details['Flagged By'] = flagged.slice(0, 10).join(', ') + (flagged.length > 10 ? ` (+${flagged.length-10} more)` : '');
-  if (attrs.last_analysis_date) details['Last Scanned'] = new Date(attrs.last_analysis_date * 1000).toLocaleString();
-  if (attrs.reputation !== undefined) details['Reputation'] = attrs.reputation;
-
-  let desc = `VirusTotal scanned with ${total} engines: ${mal} malicious, ${sus} suspicious.`;
-  if (flagged.length > 0) desc += ` Flagged by: ${flagged.slice(0,5).join(', ')}${flagged.length > 5 ? '...' : ''}.`;
-
+  for (const [v,r] of Object.entries(attrs.last_analysis_results||{})) { if (r.category==='malicious'||r.category==='suspicious') flagged.push(`${v}: ${r.result||r.category}`); }
+  let status = 'clean'; if (mal>=3) status='malicious'; else if (mal>=1||sus>=2) status='suspicious';
+  const details = { 'SHA-256': hash.substring(0,20)+'...', 'Malicious': `${mal}/${total}`, 'Suspicious': `${sus}/${total}`, 'Harmless': `${harm}/${total}`, 'Total Engines': total, 'File Type': attrs.type_description||'N/A' };
+  if (flagged.length>0) details['Flagged By'] = flagged.slice(0,10).join(', ');
+  if (attrs.last_analysis_date) details['Last Scanned'] = new Date(attrs.last_analysis_date*1000).toLocaleString();
+  let desc = `VT: ${total} engines — ${mal} malicious, ${sus} suspicious.`;
+  if (flagged.length>0) desc += ` Flagged: ${flagged.slice(0,5).join(', ')}.`;
   return { engine: 'VirusTotal (File Scan)', status, confidence: 92, details, description: desc };
 }
 
 async function checkMetaDefender(hash) {
   const MD_KEY = '498a6ecf01d9e5637878be789e58891c';
   try {
-    // Step 1: Try hash lookup first
     let data;
     try {
-      if (backendAvailable) {
-        const resp = await fetch(PROXY_BASE + `/api/metadefender/hash?hash=${hash}`);
-        data = await resp.json();
-      } else {
-        const resp = await fetch(`https://api.metadefender.com/v4/hash/${hash}`, {
-          headers: { 'apikey': MD_KEY }
-        });
-        data = await resp.json();
-      }
+      if (backendAvailable) { const r = await fetch(PROXY_BASE + `/api/metadefender/hash?hash=${hash}`); data = await r.json(); }
+      else { const r = await fetch(`https://api.metadefender.com/v4/hash/${hash}`, { headers: { 'apikey': MD_KEY } }); data = await r.json(); }
     } catch(e) { data = null; }
 
-    // If hash found and scan complete
-    if (data && data.scan_results && data.scan_results.scan_all_result_a !== undefined) {
-      return parseMDResult(data);
-    }
+    if (data?.scan_results?.scan_all_result_a !== undefined) return parseMDResult(data);
 
-    // Step 2: Upload file for scanning
     const pText = document.getElementById('siaProgressText');
-    const pEngine = document.getElementById('siaProgressEngine');
-    pText.textContent = 'Uploading to MetaDefender Cloud...';
-    pEngine.textContent = 'File Upload';
-
+    pText.textContent = 'Uploading to MetaDefender...';
     let uploadData;
     try {
       if (backendAvailable) {
-        const uploadForm = new FormData();
-        uploadForm.append('file', siaFile, siaFile.name);
-        const uploadResp = await fetch(PROXY_BASE + '/api/metadefender/file', {
-          method: 'POST',
-          body: uploadForm,
-        });
-        uploadData = await uploadResp.json();
+        const uf = new FormData(); uf.append('file', siaFile, siaFile.name);
+        const ur = await fetch(PROXY_BASE + '/api/metadefender/file', { method: 'POST', body: uf }); uploadData = await ur.json();
       } else {
-        const fileBytes = await siaFile.arrayBuffer();
-        const uploadResp = await fetch('https://api.metadefender.com/v4/file', {
-          method: 'POST',
-          headers: {
-            'apikey': MD_KEY,
-            'content-type': 'application/octet-stream',
-            'filename': siaFile.name,
-          },
-          body: fileBytes,
-        });
-        uploadData = await uploadResp.json();
+        const fb = await siaFile.arrayBuffer();
+        const ur = await fetch('https://api.metadefender.com/v4/file', { method: 'POST', headers: { 'apikey': MD_KEY, 'content-type': 'application/octet-stream', 'filename': siaFile.name }, body: fb }); uploadData = await ur.json();
       }
     } catch(e) { uploadData = null; }
 
     if (uploadData?.data_id) {
-      const dataId = uploadData.data_id;
-      pText.textContent = 'MetaDefender scanning (20+ engines)...';
-
-      // Step 3: Poll for results (up to 60 seconds)
+      pText.textContent = 'MetaDefender scanning...';
       for (let attempt = 0; attempt < 12; attempt++) {
         await new Promise(r => setTimeout(r, 5000));
-        pText.textContent = `MetaDefender scanning... (${(attempt+1)*5}s)`;
-
         try {
-          let pollData;
-          if (backendAvailable) {
-            const pollResp = await fetch(PROXY_BASE + `/api/metadefender/result?id=${encodeURIComponent(dataId)}`);
-            pollData = await pollResp.json();
-          } else {
-            const pollResp = await fetch(`https://api.metadefender.com/v4/file/${dataId}`, {
-              headers: { 'apikey': MD_KEY }
-            });
-            pollData = await pollResp.json();
-          }
-
-          if (pollData.scan_results && pollData.scan_results.progress_percentage === 100) {
-            return parseMDResult(pollData);
-          }
+          let pd;
+          if (backendAvailable) { const pr = await fetch(PROXY_BASE + `/api/metadefender/result?id=${encodeURIComponent(uploadData.data_id)}`); pd = await pr.json(); }
+          else { const pr = await fetch(`https://api.metadefender.com/v4/file/${uploadData.data_id}`, { headers: { 'apikey': MD_KEY } }); pd = await pr.json(); }
+          if (pd.scan_results?.progress_percentage === 100) return parseMDResult(pd);
         } catch(e) { continue; }
       }
-
-      return {
-        engine: 'MetaDefender Cloud',
-        status: 'unknown',
-        confidence: 40,
-        details: { 'Data ID': dataId, 'Result': 'Scan still processing' },
-        description: 'File uploaded to MetaDefender but scan still in progress.'
-      };
+      return { engine: 'MetaDefender Cloud', status: 'unknown', confidence: 40, details: { 'Result': 'Still processing' }, description: 'Scan in progress.' };
     }
-
-    return {
-      engine: 'MetaDefender Cloud',
-      status: 'error',
-      confidence: 0,
-      details: { 'Error': uploadData?.error?.messages?.[0] || 'Upload failed' },
-      description: 'Could not upload file to MetaDefender.'
-    };
+    return { engine: 'MetaDefender Cloud', status: 'error', confidence: 0, details: { 'Error': 'Upload failed' }, description: 'Could not upload to MetaDefender.' };
   } catch(e) {
-    return {
-      engine: 'MetaDefender Cloud',
-      status: 'error',
-      confidence: 0,
-      details: { 'Error': e.message },
-      description: 'MetaDefender scan failed: ' + e.message
-    };
+    return { engine: 'MetaDefender Cloud', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'MetaDefender failed.' };
   }
 }
 
 function parseMDResult(data) {
   const sr = data.scan_results || {};
-  const totalEngines = sr.total_avs || 0;
-  const totalDetected = sr.total_detected_avs || 0;
-  const overallResult = sr.scan_all_result_a || 'Unknown';
-
-  // Parse individual engine results
+  const total = sr.total_avs||0, detected = sr.total_detected_avs||0;
   const flagged = [];
-  const scanDetails = sr.scan_details || {};
-  for (const [engine, result] of Object.entries(scanDetails)) {
-    if (result.scan_result_i === 1) {
-      flagged.push(`${engine}: ${result.threat_found || 'detected'}`);
-    }
-  }
-
-  let status = 'clean';
-  if (totalDetected >= 3) status = 'malicious';
-  else if (totalDetected >= 1) status = 'suspicious';
-
-  const details = {
-    'Overall Result': overallResult,
-    'Detected': `${totalDetected}/${totalEngines}`,
-    'Total Engines': totalEngines,
-    'Scan Time': sr.total_time ? sr.total_time + 'ms' : 'N/A',
-  };
-
-  if (data.file_info) {
-    if (data.file_info.display_name) details['File Name'] = data.file_info.display_name;
-    if (data.file_info.file_type_description) details['File Type'] = data.file_info.file_type_description;
-  }
-
-  if (flagged.length > 0) {
-    details['Flagged By'] = flagged.slice(0, 8).join(', ') + (flagged.length > 8 ? ` (+${flagged.length-8} more)` : '');
-  }
-
-  let desc = `MetaDefender scanned with ${totalEngines} engines: ${totalDetected} detected threats.`;
-  if (flagged.length > 0) desc += ` Flagged by: ${flagged.slice(0,4).join(', ')}${flagged.length > 4 ? '...' : ''}.`;
-
-  return { engine: 'MetaDefender Cloud', status, confidence: 88, details, description: desc };
+  for (const [e,r] of Object.entries(sr.scan_details||{})) { if (r.scan_result_i===1) flagged.push(`${e}: ${r.threat_found||'detected'}`); }
+  let status = 'clean'; if (detected>=3) status='malicious'; else if (detected>=1) status='suspicious';
+  const details = { 'Overall': sr.scan_all_result_a||'Unknown', 'Detected': `${detected}/${total}`, 'Total Engines': total };
+  if (flagged.length>0) details['Flagged By'] = flagged.slice(0,8).join(', ');
+  return { engine: 'MetaDefender Cloud', status, confidence: 88, details, description: `MetaDefender: ${total} engines, ${detected} detected.` };
 }
 
 function analyzeFileName(name) {
-  const f = {};
-  let issues = [];
-  let status = 'clean';
+  const f = {}; let issues = [], status = 'clean';
   const lower = name.toLowerCase();
-
-  // Known suspicious patterns
   const suspiciousPatterns = ['crack','keygen','patch','activator','loader','inject','hack','exploit','payload','backdoor','trojan','worm','ransomware','miner','cryptominer'];
   const matched = suspiciousPatterns.filter(p => lower.includes(p));
-  if (matched.length > 0) {
-    issues.push(`Filename contains suspicious keywords: ${matched.join(', ')}`);
-    f['Suspicious Keywords'] = matched.join(', ');
-    status = 'malicious';
-  }
-
-  // Generic/random names (could be generated by malware)
-  if (/^[a-f0-9]{8,}\./.test(lower)) {
-    issues.push('Filename appears to be a hex hash — could be auto-generated');
-    f['Name Pattern'] = 'Hex hash pattern';
-    if (status === 'clean') status = 'suspicious';
-  }
-
-  if (issues.length === 0) f['Name Pattern'] = 'Normal';
-
-  return { engine: 'Filename Pattern Analysis', status, confidence: 55, details: f, issues, description: issues.length > 0 ? `${issues[0]}.` : 'Filename does not match known malicious patterns.' };
+  if (matched.length > 0) { issues.push(`Suspicious keywords: ${matched.join(', ')}`); f['Keywords'] = matched.join(', '); status = 'malicious'; }
+  if (/^[a-f0-9]{8,}\./.test(lower)) { issues.push('Hex hash filename'); f['Pattern'] = 'Hex hash'; if (status === 'clean') status = 'suspicious'; }
+  if (issues.length === 0) f['Pattern'] = 'Normal';
+  return { engine: 'Filename Pattern Analysis', status, confidence: 55, details: f, issues, description: issues.length > 0 ? `${issues[0]}.` : 'Filename normal.' };
 }
 
 function calculateSIAVerdict(results) {
-  let threatScore = 0;
-  let reasons = { safe: [], caution: [], danger: [] };
+  let threatScore = 0, reasons = { safe: [], caution: [], danger: [] };
   let malCount = 0, susCount = 0, cleanCount = 0;
-
-  // Check if VirusTotal or MetaDefender gave a clean result
   const vtResult = results.find(r => r.engine.includes('VirusTotal') && !r.skipped);
   const mdResult = results.find(r => r.engine.includes('MetaDefender'));
-  const vtClean = vtResult && vtResult.status === 'clean';
-  const mdClean = mdResult && mdResult.status === 'clean';
-  const anyEngineClean = vtClean || mdClean;
+  const anyEngineClean = (vtResult?.status === 'clean') || (mdResult?.status === 'clean');
 
   for (const r of results) {
-    // If VT says clean, downgrade file-type "suspicious" to "clean"
-    // because VT scanning 70+ engines is more authoritative than a simple extension check
     if (anyEngineClean && r.engine === 'File Type Analysis' && r.status === 'suspicious') {
-      r.status = 'clean';
-      r.description = r.description.replace('requires verification', 'verified clean by VirusTotal');
-      reasons.safe.push({ engine: r.engine, text: r.description });
-      cleanCount++;
-      continue;
+      r.status = 'clean'; r.description = r.description.replace('Requires verification', 'Verified clean by scan engines');
+      reasons.safe.push({ engine: r.engine, text: r.description }); cleanCount++; continue;
     }
-
     if (r.status === 'malicious') { malCount++; threatScore += r.confidence * 0.8; reasons.danger.push({ engine: r.engine, text: r.description }); }
     else if (r.status === 'suspicious') { susCount++; threatScore += r.confidence * 0.3; reasons.caution.push({ engine: r.engine, text: r.description }); }
     else if (r.status === 'clean') { cleanCount++; reasons.safe.push({ engine: r.engine, text: r.description }); }
   }
-
-  // If VT is clean and no other engine found anything malicious, heavily reduce threat score
-  if (anyEngineClean && malCount === 0) {
-    threatScore = Math.max(0, threatScore * 0.2);
-  }
+  if (anyEngineClean && malCount === 0) threatScore = Math.max(0, threatScore * 0.2);
 
   let title, subtitle, level;
-  if (malCount >= 2 || threatScore >= 80) { title = 'DO NOT INSTALL'; subtitle = 'Multiple threat indicators detected in this file'; level = 'danger'; }
-  else if (malCount >= 1 || (susCount >= 2 && threatScore >= 25)) { title = 'REVIEW REQUIRED'; subtitle = 'Suspicious indicators found — requires manual review before proceeding'; level = 'caution'; }
-  else if (susCount >= 1 && !anyEngineClean) { title = 'PROCEED WITH CAUTION'; subtitle = 'Minor concerns detected — verify source and business justification'; level = 'caution'; }
-  else { title = 'SAFE TO PROCEED'; subtitle = 'No significant threats detected in this file'; level = 'safe'; }
-
+  if (malCount >= 2 || threatScore >= 80) { title = 'DO NOT INSTALL'; subtitle = 'Multiple threat indicators detected'; level = 'danger'; }
+  else if (malCount >= 1 || (susCount >= 2 && threatScore >= 25)) { title = 'REVIEW REQUIRED'; subtitle = 'Suspicious indicators found'; level = 'caution'; }
+  else if (susCount >= 1 && !anyEngineClean) { title = 'PROCEED WITH CAUTION'; subtitle = 'Minor concerns detected'; level = 'caution'; }
+  else { title = 'SAFE TO PROCEED'; subtitle = 'No significant threats detected'; level = 'safe'; }
   return { title, subtitle, level, threatScore: Math.min(100, Math.round(threatScore)), reasons };
 }
 
@@ -2217,22 +1951,21 @@ function renderSIAResults(fileName, hash, fileSize, ext, results, verdict) {
   const circ = 2 * Math.PI * 42;
   const safeOff = circ - (safety / 100) * circ;
   const emoji = verdict.level === 'safe' ? '✅' : verdict.level === 'caution' ? '⚠️' : '🚨';
+  const sizeMB = fileSize < 1048576 ? (fileSize/1024).toFixed(1) + ' KB' : (fileSize/1048576).toFixed(2) + ' MB';
 
   let engHTML = '';
   for (const r of results) {
     const bc = r.status==='clean'?'badge-clean':r.status==='suspicious'?'badge-suspicious':r.status==='malicious'?'badge-malicious':r.status==='error'?'badge-error':'badge-unknown';
-    const bl = r.status==='clean'?'✓ Clean':r.status==='suspicious'?'⚠ Suspicious':r.status==='malicious'?'✕ Malicious':r.status==='error'?'⚡ Error':'? Unknown';
+    const bl = r.status==='clean'?'CLEAN':r.status==='suspicious'?'SUSPICIOUS':r.status==='malicious'?'MALICIOUS':r.status==='error'?'ERROR':'UNKNOWN';
     const em = r.status==='clean'?'🟢':r.status==='suspicious'?'🟡':r.status==='malicious'?'🔴':'⚪';
     let dHTML='';for(const[k,v]of Object.entries(r.details))dHTML+=`<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`;
     engHTML+=`<div class="engine-card"><div class="engine-header"><span class="engine-name">${em} ${r.engine}</span><span class="engine-badge ${bc}">${bl}</span></div><p class="engine-desc">${r.description}</p><div class="engine-details">${dHTML}</div></div>`;
   }
 
   let aHTML='';
-  for(const r of verdict.reasons.safe) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-safe"></div><div class="analysis-content"><h4>✓ ${r.engine}</h4><p>${r.text}</p></div></div>`;
-  for(const r of verdict.reasons.caution) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-warn"></div><div class="analysis-content"><h4>⚠ ${r.engine}</h4><p>${r.text}</p></div></div>`;
-  for(const r of verdict.reasons.danger) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>✕ ${r.engine}</h4><p>${r.text}</p></div></div>`;
-
-  const sizeMB = fileSize < 1048576 ? (fileSize/1024).toFixed(1) + ' KB' : (fileSize/1048576).toFixed(2) + ' MB';
+  for(const r of verdict.reasons.safe) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-safe"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
+  for(const r of verdict.reasons.caution) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-warn"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
+  for(const r of verdict.reasons.danger) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
 
   container.innerHTML = `
     <div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease;margin-top:24px">
@@ -2245,21 +1978,575 @@ function renderSIAResults(fileName, hash, fileSize, ext, results, verdict) {
     </div>
     <div class="scores-row">
       <div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${safeOff}"/></svg><div class="score-num" style="color:${vc}">${safety}</div></div><div class="score-label">Safety Score</div></div>
-      <div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">File Summary</div><div style="font-size:12px;color:var(--text-secondary);line-height:2;font-family:var(--font-mono)">📁 ${fileName}<br>📏 ${sizeMB}<br>🔑 SHA-256: <span style="cursor:pointer;border-bottom:1px dashed var(--text-muted)" onclick="navigator.clipboard.writeText('${hash||''}').then(()=>showToast('SHA-256 hash copied!'))" title="Click to copy full hash">${hash ? hash.substring(0,20)+'... 📋' : 'N/A'}</span><br>🔍 ${results.length} checks performed</div></div></div>
+      <div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">File Summary</div><div style="font-size:12px;color:var(--text-secondary);line-height:2;font-family:var(--font-mono)">📁 ${fileName}<br>📏 ${sizeMB}<br>🔑 SHA-256: <span style="cursor:pointer;border-bottom:1px dashed var(--text-muted)" onclick="navigator.clipboard.writeText('${hash||''}').then(()=>showToast('Hash copied!'))" title="Copy">${hash ? hash.substring(0,20)+'...' : 'N/A'}</span><br>🔍 ${results.length} checks</div></div></div>
       <div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Results</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious<br>⚪ <strong>${results.filter(r=>r.status==='error'||r.status==='unknown').length}</strong> other</div></div></div>
+    </div>
+    <div class="export-row">
+      <button class="export-btn sia-report-btn" onclick="generateSIADocx()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Download SIA Report (DOCX)
+      </button>
+      <button class="export-btn sia-report-btn" onclick="generateSIAPdf()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Download SIA Report (PDF)
+      </button>
     </div>
     <div class="analysis-card" style="animation:fadeUp 0.5s ease 0.15s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Analysis Summary</div>${aHTML}</div>
     <div style="animation:fadeUp 0.5s ease 0.25s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Detailed Results</div>${engHTML}</div>
   `;
 }
 
+// ═══════════════════════════════════════════════════
+// SIA REPORT GENERATION — DOCX (using docx.js library)
+// ═══════════════════════════════════════════════════
+
+function generateSIADocx() {
+  if (!lastSIAScanData) { showToast('No scan data available'); return; }
+  showToast('Generating DOCX report...');
+
+  const d = lastSIAScanData;
+  const today = d.scanDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  const sizeMB = d.fileSize < 1048576 ? (d.fileSize/1024).toFixed(1) + ' KB' : (d.fileSize/1048576).toFixed(2) + ' MB';
+  const sizeBytes = d.fileSize.toLocaleString() + ' bytes';
+
+  // Determine app name from filename (strip extension, version numbers, platform identifiers)
+  const appName = d.fileName.replace(/[-_](windows|win|mac|linux|x64|x86|arm|setup|user|installer|portable)[-_]?/gi, ' ')
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Determine scan verdicts text
+  const vtResult = d.results.find(r => r.engine.includes('VirusTotal'));
+  const mdResult = d.results.find(r => r.engine.includes('MetaDefender'));
+  const vtText = vtResult ? `VirusTotal: ${vtResult.status.toUpperCase()} — ${vtResult.description}` : 'VirusTotal: Not scanned';
+  const mdText = mdResult ? `MetaDefender: ${mdResult.status.toUpperCase()} — ${mdResult.description}` : 'MetaDefender: Not scanned';
+  const overallClean = d.verdict.level === 'safe';
+  const yesNo = (val) => val ? 'Yes' : 'No';
+
+  // Get the extension categorization
+  const fileTypeResult = d.results.find(r => r.engine === 'File Type Analysis');
+  const appCategory = fileTypeResult?.details?.Type || 'Unknown';
+
+  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+    Header, Footer, AlignmentType, HeadingLevel, BorderStyle, WidthType,
+    ShadingType, PageNumber, PageBreak, LevelFormat } = docx;
+
+  const border = { style: BorderStyle.SINGLE, size: 1, color: "999999" };
+  const borders = { top: border, bottom: border, left: border, right: border };
+  const cellMargins = { top: 60, bottom: 60, left: 100, right: 100 };
+  const headerShading = { fill: "D5E8F0", type: ShadingType.CLEAR };
+  const tableWidth = 9360;
+  const col1 = 4680;
+  const col2 = 4680;
+
+  function makeInfoRow(label, value) {
+    return new TableRow({
+      children: [
+        new TableCell({ borders, width: { size: col1, type: WidthType.DXA }, margins: cellMargins,
+          children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, size: 20, font: "Arial" })] })] }),
+        new TableCell({ borders, width: { size: col2, type: WidthType.DXA }, margins: cellMargins,
+          children: [new Paragraph({ children: [new TextRun({ text: value, size: 20, font: "Arial" })] })] }),
+      ]
+    });
+  }
+
+  // Build the 17 security control question rows
+  const controls = [
+    {
+      num: '1', code: 'AC', title: 'Access Control',
+      question: 'Will change(s) to system affect how the system limits: (i) information system access to authorized users, processes acting on behalf of authorized users or devices; and (ii) the types of transactions and functions that authorized users are permitted to exercise.',
+      answer: overallClean ? 'No' : 'Yes',
+      detail: overallClean ? 'No access control changes required. File scan results are clear.' : `Review required. Scan detected: ${d.verdict.title}.`
+    },
+    {
+      num: '2', code: 'AT', title: 'Awareness and Training',
+      question: 'Will change(s) affect required system training to ensure personnel are adequately trained?',
+      answer: 'No', detail: 'NA'
+    },
+    {
+      num: '3', code: 'AU', title: 'Audit and Accountability',
+      question: 'Will change(s) affect how system audit requirements to create, protect, and retain audit records?',
+      answer: 'No', detail: 'Audit logs maintained per existing policy.'
+    },
+    {
+      num: '4', code: 'CA', title: 'Security Assessment and Authorization',
+      question: 'All connections (internal and external) should be clearly authorized.',
+      answer: overallClean ? 'No' : 'Yes',
+      detail: overallClean ? 'No authorization boundary changes.' : 'Authorization review recommended based on scan findings.'
+    },
+    {
+      num: '5', code: 'CM', title: 'Configuration Management',
+      question: 'Will change(s) impact baseline configuration, security settings enforcement, or ability to monitor changes?',
+      answer: 'No', detail: 'No configuration management impact.'
+    },
+    {
+      num: '6', code: 'CP', title: 'Contingency Plan',
+      question: 'Will change(s) affect the contingency plan?',
+      answer: 'No', detail: 'NA'
+    },
+    {
+      num: '7', code: 'IA', title: 'Identification and Authentication',
+      question: 'Will change(s) impact how the system identifies or authenticates users?',
+      answer: 'No', detail: 'No authentication changes.'
+    },
+    {
+      num: '8', code: 'IR', title: 'Incident Response',
+      question: 'Will change(s) impact the current incident response plan and process?',
+      answer: 'No', detail: 'NA'
+    },
+    {
+      num: '9', code: 'MA', title: 'Maintenance',
+      question: 'Will change(s) impact how periodic and timely maintenance is performed?',
+      answer: 'No', detail: 'NA'
+    },
+    {
+      num: '10', code: 'MP', title: 'Media Protection',
+      question: 'Will change(s) impact how information on digital media is protected or sanitized?',
+      answer: 'No', detail: 'NA'
+    },
+    {
+      num: '11', code: 'PE', title: 'Physical and Environmental Protection',
+      question: 'Will change(s) change how physical access or environmental controls are provided?',
+      answer: 'No', detail: 'NA'
+    },
+    {
+      num: '12', code: 'PL', title: 'Planning',
+      question: 'Will change(s) impact the SSP or the system architecture?',
+      answer: 'No', detail: 'NA'
+    },
+    {
+      num: '13', code: 'PS', title: 'Personnel Security',
+      question: 'Will change(s) impact the personnel security controls of the system?',
+      answer: 'No', detail: 'NA'
+    },
+    {
+      num: '14', code: 'RA', title: 'Risk Assessment',
+      question: 'Will change(s) impact the security categorization or vulnerability scanning?',
+      answer: overallClean ? 'No' : 'Yes',
+      detail: `Checked on VirusTotal and MetaDefender — results are ${overallClean ? 'clear' : 'flagged'}. SHA-256: ${d.fileHash || 'N/A'}`
+    },
+    {
+      num: '15', code: 'SA', title: 'System and Service Acquisition',
+      question: 'Will change(s) impact system and service acquisition?',
+      answer: 'No', detail: 'NA'
+    },
+    {
+      num: '16', code: 'SC', title: 'System and Communication Protection',
+      question: 'Will change(s) affect how communications are monitored, controlled, and protected?',
+      answer: 'No', detail: 'NA'
+    },
+    {
+      num: '17', code: 'SI', title: 'System and Information Integrity',
+      question: 'Will change(s) affect how system flaws are identified, malicious code protection is employed, or security functions verified?',
+      answer: overallClean ? 'No' : 'Yes',
+      detail: overallClean ? 'No integrity concerns. Scan results clear.' : `Integrity review recommended. Verdict: ${d.verdict.title}`
+    },
+  ];
+
+  function makeControlRow(ctrl) {
+    return new TableRow({
+      children: [
+        new TableCell({
+          borders, width: { size: col1, type: WidthType.DXA }, margins: cellMargins,
+          children: [
+            new Paragraph({ children: [new TextRun({ text: `${ctrl.num}. ${ctrl.code} (${ctrl.title}): `, bold: true, size: 20, font: "Arial" })] }),
+            new Paragraph({ spacing: { before: 60 }, children: [new TextRun({ text: ctrl.question, size: 18, font: "Arial", color: "444444" })] }),
+          ]
+        }),
+        new TableCell({
+          borders, width: { size: col2, type: WidthType.DXA }, margins: cellMargins,
+          children: [
+            new Paragraph({ children: [new TextRun({ text: ctrl.answer === 'Yes' ? '☑ Yes  ☐ No' : '☐ Yes  ☑ No', bold: true, size: 20, font: "Arial" })] }),
+            new Paragraph({ spacing: { before: 80 }, children: [new TextRun({ text: 'If yes, what is changing and how?', italics: true, size: 18, font: "Arial", color: "666666" })] }),
+            new Paragraph({ spacing: { before: 40 }, children: [new TextRun({ text: ctrl.detail, size: 18, font: "Arial" })] }),
+          ]
+        }),
+      ]
+    });
+  }
+
+  const doc = new Document({
+    styles: {
+      default: { document: { run: { font: "Arial", size: 22 } } },
+      paragraphStyles: [
+        { id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true,
+          run: { size: 32, bold: true, font: "Arial", color: "0B1D3A" },
+          paragraph: { spacing: { before: 240, after: 120 }, outlineLevel: 0 } },
+        { id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true,
+          run: { size: 26, bold: true, font: "Arial", color: "0B1D3A" },
+          paragraph: { spacing: { before: 200, after: 100 }, outlineLevel: 1 } },
+      ]
+    },
+    numbering: {
+      config: [{
+        reference: "bullets",
+        levels: [{ level: 0, format: LevelFormat.BULLET, text: "\u2022", alignment: AlignmentType.LEFT,
+          style: { paragraph: { indent: { left: 720, hanging: 360 } } } }]
+      }]
+    },
+    sections: [{
+      properties: {
+        page: {
+          size: { width: 12240, height: 15840 },
+          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+        }
+      },
+      headers: {
+        default: new Header({
+          children: [new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: "Security Impact Analysis", bold: true, size: 18, font: "Arial", color: "666666" })]
+          })]
+        })
+      },
+      footers: {
+        default: new Footer({
+          children: [new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({ text: "Trishul SIA Report — Page ", size: 16, font: "Arial", color: "999999" }),
+              new TextRun({ children: [PageNumber.CURRENT], size: 16, font: "Arial", color: "999999" })
+            ]
+          })]
+        })
+      },
+      children: [
+        // Title
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 60 },
+          children: [new TextRun({ text: "Security Impact Analysis", size: 36, bold: true, font: "Arial", color: "E85D26" })]
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 300 },
+          children: [new TextRun({ text: `Trishul SIA — ${today}`, size: 20, font: "Arial", color: "666666" })]
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 300 },
+          children: [new TextRun({ text: appName, size: 28, bold: true, font: "Arial" })]
+        }),
+
+        // System Information Table
+        new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("System Information")] }),
+        new Table({
+          width: { size: tableWidth, type: WidthType.DXA },
+          columnWidths: [col1, col2],
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({ borders, width: { size: col1, type: WidthType.DXA }, margins: cellMargins, shading: headerShading,
+                  children: [new Paragraph({ children: [new TextRun({ text: "Field", bold: true, size: 20, font: "Arial" })] })] }),
+                new TableCell({ borders, width: { size: col2, type: WidthType.DXA }, margins: cellMargins, shading: headerShading,
+                  children: [new Paragraph({ children: [new TextRun({ text: "Value", bold: true, size: 20, font: "Arial" })] })] }),
+              ]
+            }),
+            makeInfoRow("System/Application Name:", appName),
+            makeInfoRow("File Name:", d.fileName),
+            makeInfoRow("Application Category:", appCategory),
+            makeInfoRow("Change Requested By:", "Security Team"),
+            makeInfoRow("Assessment Agent:", d.assessmentAgent),
+            makeInfoRow("Date:", today),
+          ]
+        }),
+
+        new Paragraph({ spacing: { before: 200 }, children: [] }),
+
+        // Summary Section
+        new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Summary")] }),
+        new Table({
+          width: { size: tableWidth, type: WidthType.DXA },
+          columnWidths: [col1, col2],
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({ borders, width: { size: col1, type: WidthType.DXA }, margins: cellMargins, shading: headerShading,
+                  children: [new Paragraph({ children: [new TextRun({ text: "Property", bold: true, size: 20, font: "Arial" })] })] }),
+                new TableCell({ borders, width: { size: col2, type: WidthType.DXA }, margins: cellMargins, shading: headerShading,
+                  children: [new Paragraph({ children: [new TextRun({ text: "Details", bold: true, size: 20, font: "Arial" })] })] }),
+              ]
+            }),
+            makeInfoRow("Name:", d.fileName),
+            makeInfoRow("Date:", today),
+            makeInfoRow("Size:", `${sizeMB} (${sizeBytes})`),
+            makeInfoRow("SHA-256:", d.fileHash || 'N/A'),
+            makeInfoRow("Verdict:", d.verdict.title),
+            makeInfoRow("Safety Score:", `${100 - d.verdict.threatScore} / 100`),
+            makeInfoRow("Threat Score:", `${d.verdict.threatScore} / 100`),
+          ]
+        }),
+
+        new Paragraph({ spacing: { before: 200 }, children: [] }),
+
+        // Scan Engine Results
+        new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Scan Engine Results")] }),
+        ...d.results.map(r =>
+          new Paragraph({
+            numbering: { reference: "bullets", level: 0 },
+            spacing: { after: 40 },
+            children: [
+              new TextRun({ text: `${r.engine}: `, bold: true, size: 20, font: "Arial" }),
+              new TextRun({ text: r.status.toUpperCase(), bold: true, size: 20, font: "Arial",
+                color: r.status === 'clean' ? '0D9F6E' : r.status === 'suspicious' ? 'D97706' : r.status === 'malicious' ? 'DC2626' : '666666' }),
+              new TextRun({ text: ` — ${r.description}`, size: 20, font: "Arial" }),
+            ]
+          })
+        ),
+
+        new Paragraph({ children: [new PageBreak()] }),
+
+        // Security Controls Assessment
+        new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Security Controls Assessment")] }),
+        new Paragraph({
+          spacing: { after: 200 },
+          children: [new TextRun({ text: "The following assessment evaluates the security impact across 17 NIST control families:", size: 20, font: "Arial", color: "444444" })]
+        }),
+        new Table({
+          width: { size: tableWidth, type: WidthType.DXA },
+          columnWidths: [col1, col2],
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({ borders, width: { size: col1, type: WidthType.DXA }, margins: cellMargins, shading: headerShading,
+                  children: [new Paragraph({ children: [new TextRun({ text: "Does the change:", bold: true, size: 20, font: "Arial" })] })] }),
+                new TableCell({ borders, width: { size: col2, type: WidthType.DXA }, margins: cellMargins, shading: headerShading,
+                  children: [new Paragraph({ children: [new TextRun({ text: "Response", bold: true, size: 20, font: "Arial" })] })] }),
+              ]
+            }),
+            ...controls.map(c => makeControlRow(c))
+          ]
+        }),
+
+        new Paragraph({ spacing: { before: 300 }, children: [] }),
+
+        // Footer note
+        new Paragraph({
+          spacing: { before: 200 },
+          children: [new TextRun({ text: 'If you selected "yes" to any of the above questions, please make sure to update the appropriate document in the security package (SSP, boundary diagram, control implementation, policies, procedures, plans).', italics: true, size: 18, font: "Arial", color: "666666" })]
+        }),
+      ]
+    }]
+  });
+
+  Packer.toBlob(doc).then(blob => {
+    const safeName = appName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `SIA_${safeName}_${d.scanDate.toISOString().split('T')[0]}.docx`;
+    a.click();
+    showToast('SIA DOCX report downloaded!');
+  });
+}
+
+
+// ═══════════════════════════════════════════════════
+// SIA REPORT GENERATION — PDF (using jsPDF)
+// ═══════════════════════════════════════════════════
+
+function generateSIAPdf() {
+  if (!lastSIAScanData) { showToast('No scan data available'); return; }
+  showToast('Generating PDF report...');
+
+  const d = lastSIAScanData;
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageW = 210;
+  const margin = 20;
+  const contentW = pageW - 2 * margin;
+  let y = margin;
+  const today = d.scanDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  const sizeMB = d.fileSize < 1048576 ? (d.fileSize/1024).toFixed(1) + ' KB' : (d.fileSize/1048576).toFixed(2) + ' MB';
+
+  const appName = d.fileName.replace(/[-_](windows|win|mac|linux|x64|x86|arm|setup|user|installer|portable)[-_]?/gi, ' ')
+    .replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  function checkPage(needed) {
+    if (y + needed > 280) { pdf.addPage(); y = margin; addHeader(); }
+  }
+
+  function addHeader() {
+    pdf.setFontSize(8); pdf.setTextColor(150);
+    pdf.text('Security Impact Analysis', pageW / 2, 12, { align: 'center' });
+    pdf.setDrawColor(200); pdf.line(margin, 15, pageW - margin, 15);
+  }
+
+  function addFooter(pageNum) {
+    pdf.setFontSize(8); pdf.setTextColor(150);
+    pdf.text(`Trishul SIA Report — Page ${pageNum}`, pageW / 2, 290, { align: 'center' });
+  }
+
+  // Page 1
+  addHeader();
+  y = 25;
+
+  // Title
+  pdf.setFontSize(22); pdf.setTextColor(232, 93, 38); pdf.setFont('helvetica', 'bold');
+  pdf.text('Security Impact Analysis', pageW / 2, y, { align: 'center' }); y += 8;
+  pdf.setFontSize(10); pdf.setTextColor(100); pdf.setFont('helvetica', 'normal');
+  pdf.text(`Trishul SIA — ${today}`, pageW / 2, y, { align: 'center' }); y += 10;
+  pdf.setFontSize(14); pdf.setTextColor(11, 29, 58); pdf.setFont('helvetica', 'bold');
+  pdf.text(appName, pageW / 2, y, { align: 'center' }); y += 15;
+
+  // System Information
+  pdf.setFontSize(13); pdf.setTextColor(11, 29, 58); pdf.setFont('helvetica', 'bold');
+  pdf.text('System Information', margin, y); y += 2;
+  pdf.setDrawColor(232, 93, 38); pdf.setLineWidth(0.5); pdf.line(margin, y, margin + 50, y); y += 6;
+
+  const sysInfo = [
+    ['System/Application Name', appName],
+    ['File Name', d.fileName],
+    ['Application Category', d.results.find(r => r.engine === 'File Type Analysis')?.details?.Type || 'Unknown'],
+    ['Assessment Agent', d.assessmentAgent],
+    ['Date', today],
+  ];
+
+  pdf.setFontSize(9);
+  for (const [label, value] of sysInfo) {
+    checkPage(8);
+    pdf.setFont('helvetica', 'bold'); pdf.setTextColor(80); pdf.text(label + ':', margin, y);
+    pdf.setFont('helvetica', 'normal'); pdf.setTextColor(40);
+    const valLines = pdf.splitTextToSize(value, contentW - 55);
+    pdf.text(valLines, margin + 55, y);
+    y += Math.max(6, valLines.length * 5);
+  }
+  y += 8;
+
+  // Summary
+  checkPage(60);
+  pdf.setFontSize(13); pdf.setTextColor(11, 29, 58); pdf.setFont('helvetica', 'bold');
+  pdf.text('Summary', margin, y); y += 2;
+  pdf.setDrawColor(232, 93, 38); pdf.line(margin, y, margin + 30, y); y += 6;
+
+  const summaryData = [
+    ['Name', d.fileName],
+    ['Size', `${sizeMB} (${d.fileSize.toLocaleString()} bytes)`],
+    ['SHA-256', d.fileHash || 'N/A'],
+    ['Verdict', d.verdict.title],
+    ['Safety Score', `${100 - d.verdict.threatScore} / 100`],
+    ['Threat Score', `${d.verdict.threatScore} / 100`],
+  ];
+
+  pdf.setFontSize(9);
+  for (const [label, value] of summaryData) {
+    checkPage(8);
+    pdf.setFont('helvetica', 'bold'); pdf.setTextColor(80); pdf.text(label + ':', margin, y);
+    pdf.setFont('helvetica', 'normal'); pdf.setTextColor(40);
+    const valLines = pdf.splitTextToSize(String(value), contentW - 55);
+    pdf.text(valLines, margin + 55, y);
+    y += Math.max(6, valLines.length * 5);
+  }
+  y += 8;
+
+  // Scan Engine Results
+  checkPage(20);
+  pdf.setFontSize(13); pdf.setTextColor(11, 29, 58); pdf.setFont('helvetica', 'bold');
+  pdf.text('Scan Engine Results', margin, y); y += 2;
+  pdf.setDrawColor(232, 93, 38); pdf.line(margin, y, margin + 50, y); y += 6;
+
+  pdf.setFontSize(8);
+  for (const r of d.results) {
+    checkPage(12);
+    const color = r.status === 'clean' ? [13,159,110] : r.status === 'suspicious' ? [217,119,6] : r.status === 'malicious' ? [220,38,38] : [100,100,100];
+
+    // Colored dot
+    pdf.setFillColor(...color);
+    pdf.circle(margin + 2, y - 1.2, 1.2, 'F');
+
+    pdf.setFont('helvetica', 'bold'); pdf.setTextColor(40);
+    pdf.text(r.engine, margin + 6, y);
+
+    pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...color);
+    pdf.text(r.status.toUpperCase(), margin + 65, y);
+
+    pdf.setFont('helvetica', 'normal'); pdf.setTextColor(80);
+    const descLines = pdf.splitTextToSize(r.description, contentW - 6);
+    y += 4;
+    pdf.text(descLines, margin + 6, y);
+    y += descLines.length * 4 + 3;
+  }
+
+  addFooter(1);
+
+  // Page 2+ — Security Controls
+  pdf.addPage(); y = margin; addHeader(); y = 25;
+
+  pdf.setFontSize(16); pdf.setTextColor(11, 29, 58); pdf.setFont('helvetica', 'bold');
+  pdf.text('Security Controls Assessment', pageW / 2, y, { align: 'center' }); y += 10;
+
+  const overallClean = d.verdict.level === 'safe';
+
+  const controls = [
+    { code: 'AC', title: 'Access Control', answer: overallClean ? 'No' : 'Yes', detail: overallClean ? 'No access control changes. Scan clear.' : `Review required. ${d.verdict.title}` },
+    { code: 'AT', title: 'Awareness and Training', answer: 'No', detail: 'NA' },
+    { code: 'AU', title: 'Audit and Accountability', answer: 'No', detail: 'Audit logs maintained.' },
+    { code: 'CA', title: 'Security Assessment & Authorization', answer: overallClean ? 'No' : 'Yes', detail: overallClean ? 'No boundary changes.' : 'Authorization review recommended.' },
+    { code: 'CM', title: 'Configuration Management', answer: 'No', detail: 'No CM impact.' },
+    { code: 'CP', title: 'Contingency Plan', answer: 'No', detail: 'NA' },
+    { code: 'IA', title: 'Identification & Authentication', answer: 'No', detail: 'No auth changes.' },
+    { code: 'IR', title: 'Incident Response', answer: 'No', detail: 'NA' },
+    { code: 'MA', title: 'Maintenance', answer: 'No', detail: 'NA' },
+    { code: 'MP', title: 'Media Protection', answer: 'No', detail: 'NA' },
+    { code: 'PE', title: 'Physical & Environmental', answer: 'No', detail: 'NA' },
+    { code: 'PL', title: 'Planning', answer: 'No', detail: 'NA' },
+    { code: 'PS', title: 'Personnel Security', answer: 'No', detail: 'NA' },
+    { code: 'RA', title: 'Risk Assessment', answer: overallClean ? 'No' : 'Yes', detail: `Checked on VT and MetaDefender. Results ${overallClean ? 'clear' : 'flagged'}. SHA-256: ${d.fileHash ? d.fileHash.substring(0,32)+'...' : 'N/A'}` },
+    { code: 'SA', title: 'System & Service Acquisition', answer: 'No', detail: 'NA' },
+    { code: 'SC', title: 'System & Communication Protection', answer: 'No', detail: 'NA' },
+    { code: 'SI', title: 'System & Information Integrity', answer: overallClean ? 'No' : 'Yes', detail: overallClean ? 'No integrity concerns.' : `Review recommended. ${d.verdict.title}` },
+  ];
+
+  pdf.setFontSize(8);
+  let ctrlNum = 1;
+  for (const ctrl of controls) {
+    checkPage(18);
+
+    // Header row
+    pdf.setFillColor(213, 232, 240);
+    pdf.rect(margin, y - 3, contentW, 7, 'F');
+    pdf.setFont('helvetica', 'bold'); pdf.setTextColor(11, 29, 58);
+    pdf.text(`${ctrlNum}. ${ctrl.code} (${ctrl.title})`, margin + 2, y + 1.5);
+
+    const answerColor = ctrl.answer === 'Yes' ? [220,38,38] : [13,159,110];
+    pdf.setTextColor(...answerColor); pdf.setFont('helvetica', 'bold');
+    pdf.text(ctrl.answer === 'Yes' ? 'YES' : 'NO', pageW - margin - 10, y + 1.5, { align: 'right' });
+    y += 8;
+
+    // Detail
+    pdf.setFont('helvetica', 'normal'); pdf.setTextColor(80); pdf.setFontSize(7.5);
+    const detailLines = pdf.splitTextToSize(ctrl.detail, contentW - 4);
+    pdf.text(detailLines, margin + 2, y);
+    y += detailLines.length * 3.5 + 4;
+
+    pdf.setFontSize(8);
+    ctrlNum++;
+  }
+
+  // Footer note
+  checkPage(15);
+  y += 5;
+  pdf.setFontSize(7); pdf.setTextColor(150); pdf.setFont('helvetica', 'italic');
+  const footNote = 'If you selected "yes" to any of the above, please update the appropriate document in the security package (SSP, boundary diagram, control implementation, policies, procedures, plans).';
+  const fnLines = pdf.splitTextToSize(footNote, contentW);
+  pdf.text(fnLines, margin, y);
+
+  addFooter(pdf.internal.getNumberOfPages());
+
+  // Save
+  const safeName = appName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
+  pdf.save(`SIA_${safeName}_${d.scanDate.toISOString().split('T')[0]}.pdf`);
+  showToast('SIA PDF report downloaded!');
+}
+
+
+// ═══════════════ INIT ═══════════════
+
 document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') startScan(); });
 
 window.addEventListener('DOMContentLoaded', () => {
   loadTheme();
   checkBackend();
-
-  // Auto-route from URL hash
   const hash = window.location.hash.slice(1);
   if (hash) {
     const targetUrl = decodeURIComponent(hash);
@@ -2267,7 +2554,6 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('urlInput').value = targetUrl;
     setTimeout(() => startScan(), 800);
   }
-  // Otherwise show landing page (already active by default)
 });
 </script>
 </body>
