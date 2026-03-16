@@ -1285,12 +1285,64 @@ function analyzeFileName(name) {
 
 async function checkVTHash(hash) {
   try {
-    let data;
-    if(backendAvailable){const resp=await fetch(PROXY_BASE+`/api/virustotal/file-report?hash=${hash}`);data=await resp.json();}
-    else{const resp=await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/files/${hash}`,{headers:{'x-apikey':VT_API_KEY}});data=safeParse(await resp.text());}
-    if(data?.data?.attributes?.last_analysis_stats)return parseVTFileResult(data,hash);
-    return{engine:'VirusTotal (Hash Lookup)',status:'unknown',confidence:40,details:{'SHA-256':hash.substring(0,20)+'...','Result':'Not found in VT database'},description:'File hash not found in VirusTotal database.'};
-  }catch(e){return{engine:'VirusTotal (File Scan)',status:'error',confidence:0,details:{'Error':e.message},description:'VT query failed.'};}
+    const resp = await fetch(
+      `${PROXY_BASE}/api/virustotal/file-report?hash=${encodeURIComponent(hash)}`
+    );
+
+    const data = await resp.json();
+
+    if (!resp.ok || data?.error || data?.error?.code === 'NotFoundError') {
+      return {
+        engine: 'VirusTotal',
+        status: 'unknown',
+        notFound: true,
+        confidence: 0,
+        details: {},
+        description: 'Hash not found in VT database.'
+      };
+    }
+
+    const stats = data?.data?.attributes?.last_analysis_stats || {};
+    const malicious = Number(stats.malicious || 0);
+    const suspicious = Number(stats.suspicious || 0);
+    const harmless = Number(stats.harmless || 0);
+    const undetected = Number(stats.undetected || 0);
+
+    let status = 'clean';
+    let confidence = 80;
+    let description = 'VirusTotal hash lookup completed.';
+
+    if (malicious >= 3) {
+      status = 'malicious';
+      confidence = 90;
+      description = `Detected as malicious by ${malicious} VirusTotal engines.`;
+    } else if (malicious >= 1 || suspicious >= 3) {
+      status = 'suspicious';
+      confidence = 70;
+      description = `VirusTotal found suspicious activity (${malicious} malicious, ${suspicious} suspicious).`;
+    }
+
+    return {
+      engine: 'VirusTotal',
+      status,
+      confidence,
+      details: {
+        'Malicious': String(malicious),
+        'Suspicious': String(suspicious),
+        'Harmless': String(harmless),
+        'Undetected': String(undetected)
+      },
+      description
+    };
+  } catch (e) {
+    return {
+      engine: 'VirusTotal',
+      status: 'error',
+      confidence: 0,
+      details: { Error: e.message },
+      description: 'VirusTotal hash lookup failed.'
+    };
+  }
 }
 
 function parseVTFileResult(data, hash) {
@@ -1305,15 +1357,60 @@ function parseVTFileResult(data, hash) {
   return{engine:'VirusTotal (File Scan)',status,confidence:92,details,description:desc};
 }
 
-async function checkMetaDefender(hash) {
-  const MD_KEY='498a6ecf01d9e5637878be789e58891c';
+async function checkMetaDefenderHash(hash) {
   try {
-    let data;
-    try{if(backendAvailable){const r=await fetch(PROXY_BASE+`/api/metadefender/hash?hash=${hash}`);data=await r.json();}else{const r=await fetch(`https://api.metadefender.com/v4/hash/${hash}`,{headers:{'apikey':MD_KEY}});data=await r.json();}
-    }catch(e){data=null;}
-    if(data?.scan_results?.scan_all_result_a!==undefined)return parseMDResult(data);
-    return{engine:'MetaDefender Cloud',status:'unknown',confidence:40,details:{'Result':'Hash not found'},description:'Not in MetaDefender hash database.'};
-  }catch(e){return{engine:'MetaDefender Cloud',status:'error',confidence:0,details:{'Error':e.message},description:'MetaDefender failed.'};}
+    const resp = await fetch(
+      `${PROXY_BASE}/api/metadefender/hash?hash=${encodeURIComponent(hash)}`
+    );
+
+    const data = await resp.json();
+
+    if (!resp.ok || data?.error || !data?.scan_results) {
+      return {
+        engine: 'MetaDefender',
+        status: 'unknown',
+        notFound: true,
+        confidence: 0,
+        details: {},
+        description: 'Hash not found in MetaDefender.'
+      };
+    }
+
+    const total = Number(data?.scan_results?.total_avs || 0);
+    const positives = Number(data?.scan_results?.total_detected_avs || 0);
+
+    let status = 'clean';
+    let confidence = 80;
+    let description = 'MetaDefender hash lookup completed.';
+
+    if (positives >= 3) {
+      status = 'malicious';
+      confidence = 90;
+      description = `MetaDefender detected malicious content with ${positives}/${total} engines.`;
+    } else if (positives >= 1) {
+      status = 'suspicious';
+      confidence = 70;
+      description = `MetaDefender found ${positives}/${total} detections.`;
+    }
+
+    return {
+      engine: 'MetaDefender',
+      status,
+      confidence,
+      details: {
+        'Detected Engines': `${positives}/${total}`
+      },
+      description
+    };
+  } catch (e) {
+    return {
+      engine: 'MetaDefender',
+      status: 'error',
+      confidence: 0,
+      details: { Error: e.message },
+      description: 'MetaDefender hash lookup failed.'
+    };
+  }
 }
 
 function parseMDResult(data) {
@@ -1324,6 +1421,163 @@ function parseMDResult(data) {
   if(flagged.length>0)details['Flagged By']=flagged.slice(0,8).join(', ');
   return{engine:'MetaDefender Cloud',status,confidence:88,details,description:`MetaDefender: ${total} engines, ${detected} detected.`};
 }
+async function submitVTFile(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const resp = await fetch(`${PROXY_BASE}/api/virustotal/upload`, {
+    method: 'POST',
+    body: formData
+  });
+
+  const data = await resp.json();
+
+  if (!resp.ok) {
+    throw new Error(data.error || 'VirusTotal upload failed');
+  }
+
+  return data;
+}
+
+async function pollVTAnalysis(analysisId, maxAttempts = 12, delayMs = 5000) {
+  for (let i = 0; i < maxAttempts; i++) {
+    const resp = await fetch(
+      `${PROXY_BASE}/api/virustotal/analysis?id=${encodeURIComponent(analysisId)}`
+    );
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      throw new Error(data.error || 'VirusTotal analysis polling failed');
+    }
+
+    if (data.status === 'completed') {
+      return data;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+
+  throw new Error('VirusTotal analysis timed out');
+}
+
+async function submitMetaDefenderFile(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const resp = await fetch(`${PROXY_BASE}/api/metadefender/upload`, {
+    method: 'POST',
+    body: formData
+  });
+
+  const data = await resp.json();
+
+  if (!resp.ok) {
+    throw new Error(data.error || 'MetaDefender upload failed');
+  }
+
+  return data;
+}
+
+async function pollMetaDefenderReport(dataId, maxAttempts = 15, delayMs = 4000) {
+  for (let i = 0; i < maxAttempts; i++) {
+    const resp = await fetch(
+      `${PROXY_BASE}/api/metadefender/report?data_id=${encodeURIComponent(dataId)}`
+    );
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      throw new Error(data.error || 'MetaDefender polling failed');
+    }
+
+    const progress = Number(data?.scan_results?.progress_percentage || 0);
+
+    if (progress >= 100) {
+      return data;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+
+  throw new Error('MetaDefender analysis timed out');
+}
+
+function normalizeVTUploadResult(vtAnalysis) {
+  const stats = vtAnalysis?.stats || {};
+  const malicious = Number(stats.malicious || 0);
+  const suspicious = Number(stats.suspicious || 0);
+  const harmless = Number(stats.harmless || 0);
+  const undetected = Number(stats.undetected || 0);
+
+  let status = 'unknown';
+  let confidence = 0;
+  let description = 'VirusTotal upload scan completed.';
+
+  if (malicious >= 3) {
+    status = 'malicious';
+    confidence = 90;
+    description = `Detected as malicious by ${malicious} engines on VirusTotal upload scan.`;
+  } else if (malicious >= 1 || suspicious >= 3) {
+    status = 'suspicious';
+    confidence = 70;
+    description = `VirusTotal upload scan found suspicious activity (${malicious} malicious, ${suspicious} suspicious).`;
+  } else if (harmless > 0 || undetected > 0) {
+    status = 'clean';
+    confidence = 75;
+    description = 'VirusTotal upload scan completed with no strong detections.';
+  }
+
+  return {
+    engine: 'VirusTotal File Scan',
+    status,
+    confidence,
+    details: {
+      'Malicious': String(malicious),
+      'Suspicious': String(suspicious),
+      'Harmless': String(harmless),
+      'Undetected': String(undetected)
+    },
+    description
+  };
+}
+
+function normalizeMetaDefenderUploadResult(mdData) {
+  const total = Number(mdData?.scan_results?.total_avs || 0);
+  const positives = Number(mdData?.scan_results?.total_detected_avs || 0);
+  const progress = Number(mdData?.scan_results?.progress_percentage || 0);
+
+  let status = 'unknown';
+  let confidence = 0;
+  let description = 'MetaDefender scan completed.';
+
+  if (positives >= 3) {
+    status = 'malicious';
+    confidence = 90;
+    description = `MetaDefender detected malicious content with ${positives}/${total} engines.`;
+  } else if (positives >= 1) {
+    status = 'suspicious';
+    confidence = 70;
+    description = `MetaDefender found ${positives}/${total} detections.`;
+  } else if (progress >= 100) {
+    status = 'clean';
+    confidence = 75;
+    description = 'MetaDefender completed with no detections.';
+  }
+
+  return {
+    engine: 'MetaDefender File Scan',
+    status,
+    confidence,
+    details: {
+      'Detected Engines': `${positives}/${total}`,
+      'Progress': `${progress}%`,
+      'Data ID': mdData?.data_id || 'N/A'
+    },
+    description
+  };
+}
+
 
 // ── NEW SIA ENGINES ──────────────────────────────────────────────────────────
 
@@ -1738,51 +1992,304 @@ function calculateSIAVerdict(results) {
   };
 }
 async function startSIAScan() {
-  if(!siaFile){showToast('Please upload a file first');return;}
-  const btn=document.getElementById('siaScanBtn');
-  const progress=document.getElementById('siaProgress');
-  const pFill=document.getElementById('siaProgressFill');
-  const pText=document.getElementById('siaProgressText');
-  const pEngine=document.getElementById('siaProgressEngine');
-  btn.disabled=true;btn.textContent='SCANNING...';progress.classList.add('active');
-  await checkBackend();
-  pFill.style.width='10%';pText.textContent='Computing file hash...';pEngine.textContent='SHA-256';
-  let fileHash='';
-  try{const buffer=await siaFile.arrayBuffer();const hashBuffer=await crypto.subtle.digest('SHA-256',buffer);fileHash=Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');}catch(e){fileHash='';}
-  const results=[];const fileExt=siaFile.name.split('.').pop().toLowerCase();const fileName=siaFile.name;const fileSize=siaFile.size;
-  pFill.style.width='20%';pText.textContent='Analyzing file type...';pEngine.textContent='File Heuristics';await new Promise(r=>setTimeout(r,400));results.push(analyzeFileType(fileName,fileExt,fileSize));
-  pFill.style.width='35%';pText.textContent='Checking extension risk...';pEngine.textContent='Extension Analysis';await new Promise(r=>setTimeout(r,400));results.push(analyzeExtensionRisk(fileName,fileExt));
-  pFill.style.width='50%';pText.textContent='Analyzing file size...';pEngine.textContent='Size & Metadata';await new Promise(r=>setTimeout(r,400));results.push(analyzeFileSize(fileSize,fileExt));
-  pFill.style.width='44%';pText.textContent='Binary entropy analysis...';pEngine.textContent='Entropy Engine';
-  await new Promise(r=>setTimeout(r,300));
-  try{const buf=await siaFile.arrayBuffer();results.push(analyzeBinaryEntropy(buf,fileExt));}catch(e){results.push({engine:'Binary Entropy Analysis',status:'error',confidence:0,details:{'Error':e.message},description:'Entropy analysis failed.'});}
-  pFill.style.width='49%';pText.textContent='Static string analysis...';pEngine.textContent='String Scanner';
-  results.push(await analyzeStaticStrings(siaFile,fileExt));
-  pFill.style.width='55%';pText.textContent='Querying VirusTotal...';pEngine.textContent='VirusTotal';
-  if(fileHash&&fileSize<=33554432){results.push(await checkVTHash(fileHash));}else{results.push({engine:'VirusTotal (File Scan)',status:'unknown',confidence:0,details:{'Note':'File exceeds 32MB'},description:'File too large for VT free tier.',skipped:true});}
-  pFill.style.width='63%';pText.textContent='Checking MalwareBazaar...';pEngine.textContent='MalwareBazaar';
-  if(fileHash){results.push(await checkMalwareBazaar(fileHash));}else{results.push({engine:'MalwareBazaar (abuse.ch)',status:'error',confidence:0,details:{},description:'No hash available.'});}
-  pFill.style.width='70%';pText.textContent='NSRL hash lookup...';pEngine.textContent='NSRL / CIRCL';
-  if(fileHash){results.push(await checkNSRL(fileHash));}else{results.push({engine:'NSRL / CIRCL Hash DB',status:'error',confidence:0,details:{},description:'No hash available.'});}
-  pFill.style.width='75%';pText.textContent='Scanning with MetaDefender...';pEngine.textContent='MetaDefender';
-  if(siaFile&&fileHash){results.push(await checkMetaDefender(fileHash));}else{results.push({engine:'MetaDefender Cloud',status:'error',confidence:0,details:{'Error':'No hash'},description:'Could not scan.'});}
-  pFill.style.width='82%';pText.textContent='FileScan.io reputation check...';pEngine.textContent='FileScan.io';
-  if(fileHash){results.push(await checkFileScan(fileHash));}else{results.push({engine:'FileScan.io',status:'error',confidence:0,details:{},description:'No hash available.'});}
-  pFill.style.width='88%';pText.textContent='InQuest Labs lookup...';pEngine.textContent='InQuest Labs';
-  if(fileHash){results.push(await checkInQuest(fileHash));}else{results.push({engine:'InQuest Labs',status:'error',confidence:0,details:{},description:'No hash available.'});}
-  pFill.style.width='90%';pText.textContent='Checking filename patterns...';pEngine.textContent='Name Analysis';await new Promise(r=>setTimeout(r,400));results.push(analyzeFileName(fileName));
-  pFill.style.width='95%';pText.textContent='Calculating verdict...';pEngine.textContent='Risk Engine';await new Promise(r=>setTimeout(r,300));
-  pFill.style.width='100%';pText.textContent='Analysis complete';pEngine.textContent='';
-  const verdict=calculateSIAVerdict(results);
-  const appIntel=await fetchAppIntelligence(fileName,fileExt);
-  pFill.style.width='97%';pText.textContent='Generating AI security controls...';pEngine.textContent='Groq AI (Llama 3.3)';
-  const controls=await buildGroqControls(appIntel,verdict,fileHash,results);
-  lastSIAScanData={fileName,fileHash,fileSize,fileExt,results,verdict,controls,appIntel,scanDate:new Date(),assessmentAgent:document.getElementById('assessmentAgent').value.trim()||'N/A'};
-  renderSIAResults(fileName,fileHash,fileSize,fileExt,results,verdict);
-  btn.disabled=false;btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> ANALYZE FILE';
-  setTimeout(()=>progress.classList.remove('active'),2000);
-}
+  if (!siaFile) {
+    showToast('Please upload a file first');
+    return;
+  }
 
+  const btn = document.getElementById('siaScanBtn');
+  const progress = document.getElementById('siaProgress');
+  const pFill = document.getElementById('siaProgressFill');
+  const pText = document.getElementById('siaProgressText');
+  const pEngine = document.getElementById('siaProgressEngine');
+
+  btn.disabled = true;
+  btn.textContent = 'SCANNING...';
+  progress.classList.add('active');
+
+  await checkBackend();
+
+  pFill.style.width = '10%';
+  pText.textContent = 'Computing file hash...';
+  pEngine.textContent = 'SHA-256';
+
+  let fileHash = '';
+  try {
+    const buffer = await siaFile.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    fileHash = Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  } catch (e) {
+    fileHash = '';
+  }
+
+  const results = [];
+  const fileExt = siaFile.name.split('.').pop().toLowerCase();
+  const fileName = siaFile.name;
+  const fileSize = siaFile.size;
+
+  pFill.style.width = '20%';
+  pText.textContent = 'Analyzing file type...';
+  pEngine.textContent = 'File Heuristics';
+  await new Promise(r => setTimeout(r, 400));
+  results.push(analyzeFileType(fileName, fileExt, fileSize));
+
+  pFill.style.width = '35%';
+  pText.textContent = 'Checking extension risk...';
+  pEngine.textContent = 'Extension Analysis';
+  await new Promise(r => setTimeout(r, 400));
+  results.push(analyzeExtensionRisk(fileName, fileExt));
+
+  pFill.style.width = '50%';
+  pText.textContent = 'Analyzing file size...';
+  pEngine.textContent = 'Size & Metadata';
+  await new Promise(r => setTimeout(r, 400));
+  results.push(analyzeFileSize(fileSize, fileExt));
+
+  pFill.style.width = '44%';
+  pText.textContent = 'Binary entropy analysis...';
+  pEngine.textContent = 'Entropy Engine';
+  await new Promise(r => setTimeout(r, 300));
+  try {
+    const buf = await siaFile.arrayBuffer();
+    results.push(analyzeBinaryEntropy(buf, fileExt));
+  } catch (e) {
+    results.push({
+      engine: 'Binary Entropy Analysis',
+      status: 'error',
+      confidence: 0,
+      details: { 'Error': e.message },
+      description: 'Entropy analysis failed.'
+    });
+  }
+
+  pFill.style.width = '49%';
+  pText.textContent = 'Static string analysis...';
+  pEngine.textContent = 'String Scanner';
+  results.push(await analyzeStaticStrings(siaFile, fileExt));
+
+  // VirusTotal: hash lookup first, upload fallback if not found
+  pFill.style.width = '55%';
+  pText.textContent = 'Querying VirusTotal...';
+  pEngine.textContent = 'VirusTotal';
+
+  let vtResult;
+  try {
+    if (fileHash && fileSize <= 33554432) {
+      vtResult = await checkVTHash(fileHash);
+
+      const vtUnknown =
+        !vtResult ||
+        vtResult.status === 'unknown' ||
+        vtResult.notFound === true ||
+        (vtResult.description || '').toLowerCase().includes('not found');
+
+      if (vtUnknown) {
+        pText.textContent = 'Uploading file to VirusTotal...';
+        pEngine.textContent = 'VirusTotal File Scan';
+
+        const vtUpload = await submitVTFile(siaFile);
+        const analysisId = vtUpload?.data?.id || vtUpload?.analysis_id;
+
+        if (analysisId) {
+          pText.textContent = 'Waiting for VirusTotal analysis...';
+          const vtAnalysis = await pollVTAnalysis(analysisId);
+          vtResult = normalizeVTUploadResult(vtAnalysis);
+        } else {
+          vtResult = {
+            engine: 'VirusTotal File Scan',
+            status: 'unknown',
+            confidence: 0,
+            details: { 'Note': 'No analysis ID returned' },
+            description: 'VirusTotal upload completed but no analysis ID was returned.'
+          };
+        }
+      }
+    } else {
+      vtResult = {
+        engine: 'VirusTotal File Scan',
+        status: 'unknown',
+        confidence: 0,
+        details: { 'Note': 'File exceeds 32MB' },
+        description: 'File too large for VT free tier.',
+        skipped: true
+      };
+    }
+  } catch (e) {
+    vtResult = {
+      engine: 'VirusTotal File Scan',
+      status: 'error',
+      confidence: 0,
+      details: { 'Error': e.message },
+      description: 'VirusTotal scan failed.'
+    };
+  }
+
+  results.push(vtResult);
+
+  pFill.style.width = '63%';
+  pText.textContent = 'Checking MalwareBazaar...';
+  pEngine.textContent = 'MalwareBazaar';
+  if (fileHash) {
+    results.push(await checkMalwareBazaar(fileHash));
+  } else {
+    results.push({
+      engine: 'MalwareBazaar (abuse.ch)',
+      status: 'error',
+      confidence: 0,
+      details: {},
+      description: 'No hash available.'
+    });
+  }
+
+  pFill.style.width = '70%';
+  pText.textContent = 'NSRL hash lookup...';
+  pEngine.textContent = 'NSRL / CIRCL';
+  if (fileHash) {
+    results.push(await checkNSRL(fileHash));
+  } else {
+    results.push({
+      engine: 'NSRL / CIRCL Hash DB',
+      status: 'error',
+      confidence: 0,
+      details: {},
+      description: 'No hash available.'
+    });
+  }
+
+  // MetaDefender: hash lookup first, upload fallback if not found
+  pFill.style.width = '75%';
+  pText.textContent = 'Scanning with MetaDefender...';
+  pEngine.textContent = 'MetaDefender';
+
+  let mdResult;
+  try {
+    if (siaFile && fileHash) {
+      mdResult = await checkMetaDefender(fileHash);
+
+      const mdUnknown =
+        !mdResult ||
+        mdResult.status === 'unknown' ||
+        mdResult.notFound === true ||
+        (mdResult.description || '').toLowerCase().includes('not found');
+
+      if (mdUnknown) {
+        pText.textContent = 'Uploading file to MetaDefender...';
+        pEngine.textContent = 'MetaDefender File Scan';
+
+        const mdUpload = await submitMetaDefenderFile(siaFile);
+        const dataId = mdUpload?.data_id;
+
+        if (dataId) {
+          pText.textContent = 'Waiting for MetaDefender analysis...';
+          const mdReport = await pollMetaDefenderReport(dataId);
+          mdResult = normalizeMetaDefenderUploadResult(mdReport);
+        } else {
+          mdResult = {
+            engine: 'MetaDefender File Scan',
+            status: 'unknown',
+            confidence: 0,
+            details: { 'Note': 'No data_id returned' },
+            description: 'MetaDefender upload completed but no data_id was returned.'
+          };
+        }
+      }
+    } else {
+      mdResult = {
+        engine: 'MetaDefender Cloud',
+        status: 'error',
+        confidence: 0,
+        details: { 'Error': 'No hash' },
+        description: 'Could not scan.'
+      };
+    }
+  } catch (e) {
+    mdResult = {
+      engine: 'MetaDefender File Scan',
+      status: 'error',
+      confidence: 0,
+      details: { 'Error': e.message },
+      description: 'MetaDefender scan failed.'
+    };
+  }
+
+  results.push(mdResult);
+
+  pFill.style.width = '82%';
+  pText.textContent = 'FileScan.io reputation check...';
+  pEngine.textContent = 'FileScan.io';
+  if (fileHash) {
+    results.push(await checkFileScan(fileHash));
+  } else {
+    results.push({
+      engine: 'FileScan.io',
+      status: 'error',
+      confidence: 0,
+      details: {},
+      description: 'No hash available.'
+    });
+  }
+
+  pFill.style.width = '88%';
+  pText.textContent = 'InQuest Labs lookup...';
+  pEngine.textContent = 'InQuest Labs';
+  if (fileHash) {
+    results.push(await checkInQuest(fileHash));
+  } else {
+    results.push({
+      engine: 'InQuest Labs',
+      status: 'error',
+      confidence: 0,
+      details: {},
+      description: 'No hash available.'
+    });
+  }
+
+  pFill.style.width = '90%';
+  pText.textContent = 'Checking filename patterns...';
+  pEngine.textContent = 'Name Analysis';
+  await new Promise(r => setTimeout(r, 400));
+  results.push(analyzeFileName(fileName));
+
+  pFill.style.width = '95%';
+  pText.textContent = 'Calculating verdict...';
+  pEngine.textContent = 'Risk Engine';
+  await new Promise(r => setTimeout(r, 300));
+
+  pFill.style.width = '100%';
+  pText.textContent = 'Analysis complete';
+  pEngine.textContent = '';
+
+  const verdict = calculateSIAVerdict(results);
+  const appIntel = await fetchAppIntelligence(fileName, fileExt);
+
+  pFill.style.width = '97%';
+  pText.textContent = 'Generating AI security controls...';
+  pEngine.textContent = 'Groq AI (Llama 3.3)';
+
+  const controls = await buildGroqControls(appIntel, verdict, fileHash, results);
+
+  lastSIAScanData = {
+    fileName,
+    fileHash,
+    fileSize,
+    fileExt,
+    results,
+    verdict,
+    controls,
+    appIntel,
+    scanDate: new Date(),
+    assessmentAgent: document.getElementById('assessmentAgent').value.trim() || 'N/A'
+  };
+
+  renderSIAResults(fileName, fileHash, fileSize, fileExt, results, verdict);
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> ANALYZE FILE';
+
+  setTimeout(() => progress.classList.remove('active'), 2000);
+}
 function renderSIAResults(fileName,hash,fileSize,ext,results,verdict){
   const container=document.getElementById('siaResultsContainer');
   const safety=100-verdict.threatScore;const vc=verdict.level==='safe'?'var(--safe)':verdict.level==='caution'?'var(--warn)':'var(--danger)';
