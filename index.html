@@ -576,30 +576,57 @@ function checkContentRisk(parsed) { const f={};let i=[],s='clean';const pl=parse
 // ═══════════════ NEW ENGINES ═══════════════
 
 // 1. PhishTank — community-verified phishing database
-async function checkPhishTank(url) {
-  try {
-    let data;
-    if (backendAvailable) {
-      const resp = await fetchViaBackend('/api/phishtank', { method: 'POST', body: JSON.stringify({ url }) });
-      data = await resp.json();
-    } else {
-      const resp = await fetchWithCORSFallback('https://checkurl.phishtank.com/checkurl/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `url=${encodeURIComponent(btoa(url))}&format=json&app_key=`
-      });
-      data = safeParse(await resp.text());
+async function checkPhishTank(url){
+
+  try{
+
+    const resp = await fetchViaBackend(
+      '/api/phishtank',
+      {
+        method:'POST',
+        body:JSON.stringify({url})
+      }
+    )
+
+    const data = await resp.json()
+
+    if(data?.results?.in_database){
+
+      const verified = data.results.verified
+
+      return {
+        engine:'PhishTank',
+        status:'malicious',
+        confidence: verified ? 95 : 85,
+        details:{
+          'Phish ID': data.results.phish_id || 'Unknown',
+          'Verified': verified ? 'Yes' : 'No'
+        },
+        description:'URL found in PhishTank database'
+      }
+
     }
-    if (data?.results?.in_database === true && data.results.valid === true) {
-      return { engine: 'PhishTank', status: 'malicious', confidence: 92, details: { 'In Database': 'YES', 'Verified': data.results.verified ? 'Community-verified' : 'Pending', 'PhishTank ID': data.results.phish_id || 'N/A', 'Online': data.results.online ? 'Yes' : 'No' }, description: `Confirmed phishing site in PhishTank database${data.results.verified ? ' (community-verified)' : ''}.` };
+
+    return {
+      engine:'PhishTank',
+      status:'clean',
+      confidence:80,
+      details:{},
+      description:'Not listed in PhishTank'
     }
-    if (data?.results?.in_database === false) {
-      return { engine: 'PhishTank', status: 'clean', confidence: 75, details: { 'In Database': 'No', 'Source': 'PhishTank community database' }, description: 'Not found in PhishTank phishing database.' };
+
+  }catch(e){
+
+    return {
+      engine:'PhishTank',
+      status:'unknown',
+      confidence:40,
+      details:{Error:e.message},
+      description:'PhishTank lookup failed'
     }
-    return { engine: 'PhishTank', status: 'unknown', confidence: 40, details: { 'Result': 'No response / CORS blocked' }, description: 'PhishTank query blocked by CORS — needs backend proxy.' };
-  } catch(e) {
-    return { engine: 'PhishTank', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'PhishTank check failed.' };
+
   }
+
 }
 
 // 2. AbuseIPDB — IP abuse reputation (free 1000/day)
