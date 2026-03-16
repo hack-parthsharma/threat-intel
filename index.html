@@ -732,14 +732,11 @@ async function checkIPInfo(parsed) {
       const aRecord = dnsData?.Answer?.find(a => a.type === 1);
       if (aRecord) ip = aRecord.data; else throw new Error('No A record');
     }
-    let data;
-    if (backendAvailable) {
-      const resp = await fetchViaBackend(`/api/ipinfo?ip=${encodeURIComponent(ip)}`);
-      data = await resp.json();
-    } else {
-      const resp = await fetchWithCORSFallback(`https://ipinfo.io/${ip}/json`);
-      data = safeParse(await resp.text());
-    }
+const resp = await fetchViaBackend(
+  `/api/ipgeo?ip=${encodeURIComponent(ip)}`
+);
+
+const data = await resp.json();
     if (data && data.ip) {
       let issues = [], status = 'clean';
       const org = data.org || '';
