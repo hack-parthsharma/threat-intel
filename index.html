@@ -1405,34 +1405,108 @@ function analyzeBinaryEntropy(buffer, ext) {
     return { engine: 'Binary Entropy Analysis', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'Entropy analysis failed.' };
   }
 }
+function isTelemetryJson(obj) {
+  if (!obj || typeof obj !== 'object') return false;
 
+  const text = JSON.stringify(obj).toLowerCase();
+
+  return (
+    'alert_name' in obj ||
+    'alert_source' in obj ||
+    'severity' in obj ||
+    'generatedTime' in obj ||
+    'edrData' in obj ||
+    text.includes('xdr') ||
+    text.includes('bioc') ||
+    text.includes('event_type') ||
+    text.includes('agent_hostname')
+  );
+}
 // 12. PE Header / Script String Analysis — local static analysis
 async function analyzeStaticStrings(file, ext) {
   try {
     const sample = await file.slice(0, Math.min(file.size, 131072)).arrayBuffer();
     const raw = new TextDecoder('latin1').decode(sample);
-    const iocs = [];
-    const ipRx = /\b(\d{1,3}\.){3}\d{1,3}\b/g;
-    const urlRx = /https?:\/\/[^\s"'<>]{6,}/gi;
-    const b64Rx = /[A-Za-z0-9+/]{40,}={0,2}/g;
-    const ips = [...new Set(raw.match(ipRx) || [])].filter(ip => !ip.startsWith('0.') && !ip.startsWith('127.') && !ip.startsWith('255.'));
-    const urls = [...new Set(raw.match(urlRx) || [])].slice(0, 8);
-    const b64 = (raw.match(b64Rx) || []).length;
-    const suspKeywords = ['cmd.exe', 'powershell', 'wscript', 'cscript', 'regsvr32', 'mshta', 'certutil', 'bitsadmin', 'wget', 'curl ', 'invoke-expression', 'iex ', 'downloadstring', 'shellexecute', 'createobject', 'activexobject', 'base64', 'frombase64string', 'net user ', 'net localgroup', 'mimikatz', 'sekurlsa', 'privilege::debug'];
-    const foundKw = suspKeywords.filter(k => raw.toLowerCase().includes(k));
-    let status = 'clean', issues = [];
-    if (foundKw.length >= 3) { status = 'malicious'; issues.push(`${foundKw.length} high-risk strings found`); }
-    else if (foundKw.length >= 1 || b64 >= 5) { status = 'suspicious'; if (foundKw.length) issues.push(`Suspicious strings: ${foundKw.slice(0,3).join(', ')}`); if (b64 >= 5) issues.push(`${b64} large base64 blocks`); }
-    const details = { 'Embedded IPs': ips.length > 0 ? ips.slice(0, 5).join(', ') : 'None', 'Embedded URLs': urls.length > 0 ? urls.slice(0, 3).join(' | ') : 'None', 'Suspicious Strings': foundKw.length > 0 ? foundKw.slice(0, 4).join(', ') : 'None', 'Base64 Blocks': b64 >= 5 ? `${b64} (suspicious)` : `${b64}` };
+
+    // Special handling for JSON telemetry / alert export files
+    if (ext === 'json') {
+      try {
+        const parsed = JSON.parse(raw);
+
+        if (isTelemetryJson(parsed)) {
+          return {
+            engine: 'Static String Analysis',
+            status: 'clean',
+            confidence: 85,
+            details: {
+              'Content Type': 'Structured telemetry / alert JSON',
+              'Parser': 'JSON parse successful',
+              'Mode': 'Telemetry-aware'
+            },
+            description: 'Structured alert/telemetry JSON detected. Command strings are treated as event content, not executable intent.'
+          };
+        }
+      } catch (e) {
+        // if JSON parsing fails, continue with generic static scan
+      }
+    }
+
+    const suspiciousStrings = [
+      'powershell',
+      'cmd.exe',
+      'wscript',
+      'cscript',
+      'regsvr32',
+      'mshta',
+      'certutil',
+      'bitsadmin',
+      'wget ',
+      'curl ',
+      'invoke-expression',
+      'downloadstring',
+      'frombase64string',
+      'mimikatz'
+    ];
+
+    const lower = raw.toLowerCase();
+    const found = suspiciousStrings.filter(s => lower.includes(s));
+
+    const base64Matches = raw.match(/[A-Za-z0-9+/]{40,}={0,2}/g) || [];
+    const filteredBase64 = base64Matches.filter(s => {
+      const looksHex = /^[a-f0-9]{32,}$/i.test(s);
+      const looksUuidish = /^[A-Za-z0-9_-]{20,}$/.test(s) && !/[+/=]/.test(s);
+      return !looksHex && !looksUuidish;
+    });
+
+    let status = 'clean';
+    let description = 'No suspicious static strings found.';
+
+    if (found.length >= 3) {
+      status = 'malicious';
+      description = `Static analysis flagged high-risk strings: ${found.slice(0, 5).join(', ')}`;
+    } else if (found.length >= 1 || filteredBase64.length >= 5) {
+      status = 'suspicious';
+      description = `Static analysis flagged: ${found.length ? 'Suspicious strings: ' + found.slice(0, 5).join(', ') : ''}${found.length && filteredBase64.length >= 5 ? '. ' : ''}${filteredBase64.length >= 5 ? filteredBase64.length + ' large base64-like blocks' : ''}`;
+    }
+
     return {
       engine: 'Static String Analysis',
       status,
-      confidence: 70,
-      details,
-      description: issues.length > 0 ? `Static analysis flagged: ${issues.join('. ')}.` : `No suspicious strings, IPs, or encoded payloads found in first 128KB.`
+      confidence: status === 'malicious' ? 85 : status === 'suspicious' ? 65 : 90,
+      details: {
+        'Suspicious Strings': found.length ? found.join(', ') : 'None',
+        'Base64-like Blocks': String(filteredBase64.length)
+      },
+      description
     };
-  } catch(e) {
-    return { engine: 'Static String Analysis', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'String analysis failed.' };
+  } catch (e) {
+    return {
+      engine: 'Static String Analysis',
+      status: 'error',
+      confidence: 0,
+      details: { Error: e.message },
+      description: 'Static analysis failed.'
+    };
   }
 }
 
