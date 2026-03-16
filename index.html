@@ -1156,14 +1156,104 @@ function analyzeFileType(name, ext, size) {
   const documents = ['pdf','doc','docx','xls','xlsx','ppt','pptx','rtf','odt'];
   const safe = ['txt','csv','json','xml','yml','yaml','md','png','jpg','jpeg','gif','svg','mp4','mp3','wav','webp','ico','bmp'];
   const certificates = ['pem','cer','crt','der','p12','pfx','p7b','key','pub','csr','jks'];
+
   const category = getAppCategory(ext);
-  if (dangerous.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 65, details: { 'Type': category, 'Extension': '.'+ext, 'Risk': 'REQUIRES REVIEW' }, description: `${category} (.${ext}) that can execute code. Requires verification.` };
-  if (macroEnabled.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 70, details: { 'Type': category, 'Extension': '.'+ext, 'Risk': 'MODERATE' }, description: `${category} (.${ext}) can execute embedded macros.` };
-  if (archives.includes(ext)) return { engine: 'File Type Analysis', status: 'suspicious', confidence: 55, details: { 'Type': category, 'Extension': '.'+ext, 'Risk': 'MODERATE' }, description: `${category} (.${ext}) can contain hidden executables.` };
-  if (certificates.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 80, details: { 'Type': category, 'Extension': '.'+ext, 'Risk': 'LOW' }, description: `${category} — verify source and chain of trust.` };
-  if (documents.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 80, details: { 'Type': category, 'Extension': '.'+ext, 'Risk': 'LOW' }, description: `${category} — standard document format.` };
-  if (safe.includes(ext)) return { engine: 'File Type Analysis', status: 'clean', confidence: 85, details: { 'Type': category, 'Extension': '.'+ext, 'Risk': 'LOW' }, description: `${category} with low inherent risk.` };
-  return { engine: 'File Type Analysis', status: 'suspicious', confidence: 50, details: { 'Type': category, 'Extension': '.'+ext, 'Risk': 'REVIEW RECOMMENDED' }, description: `${category} — review recommended before proceeding.` };
+
+  if (dangerous.includes(ext)) {
+    return {
+      engine: 'File Type Analysis',
+      status: 'clean',
+      confidence: 55,
+      details: {
+        'Type': category,
+        'Extension': '.' + ext,
+        'Risk': 'EXECUTABLE / REVIEW NEEDED'
+      },
+      description: `${category} (.${ext}) is an executable-capable format. This alone is not malicious and should be correlated with scan results.`
+    };
+  }
+
+  if (macroEnabled.includes(ext)) {
+    return {
+      engine: 'File Type Analysis',
+      status: 'suspicious',
+      confidence: 65,
+      details: {
+        'Type': category,
+        'Extension': '.' + ext,
+        'Risk': 'MACRO-CAPABLE'
+      },
+      description: `${category} (.${ext}) can execute embedded macros.`
+    };
+  }
+
+  if (archives.includes(ext)) {
+    return {
+      engine: 'File Type Analysis',
+      status: 'clean',
+      confidence: 50,
+      details: {
+        'Type': category,
+        'Extension': '.' + ext,
+        'Risk': 'CONTAINER FORMAT'
+      },
+      description: `${category} (.${ext}) may contain embedded files and should be reviewed, but is not suspicious by itself.`
+    };
+  }
+
+  if (certificates.includes(ext)) {
+    return {
+      engine: 'File Type Analysis',
+      status: 'clean',
+      confidence: 80,
+      details: {
+        'Type': category,
+        'Extension': '.' + ext,
+        'Risk': 'LOW'
+      },
+      description: `${category} — verify source and chain of trust.`
+    };
+  }
+
+  if (documents.includes(ext)) {
+    return {
+      engine: 'File Type Analysis',
+      status: 'clean',
+      confidence: 80,
+      details: {
+        'Type': category,
+        'Extension': '.' + ext,
+        'Risk': 'LOW'
+      },
+      description: `${category} — standard document format.`
+    };
+  }
+
+  if (safe.includes(ext)) {
+    return {
+      engine: 'File Type Analysis',
+      status: 'clean',
+      confidence: 85,
+      details: {
+        'Type': category,
+        'Extension': '.' + ext,
+        'Risk': 'LOW'
+      },
+      description: `${category} with low inherent risk.`
+    };
+  }
+
+  return {
+    engine: 'File Type Analysis',
+    status: 'clean',
+    confidence: 45,
+    details: {
+      'Type': category,
+      'Extension': '.' + ext,
+      'Risk': 'UNKNOWN TYPE'
+    },
+    description: `${category} — uncommon file type. Review recommended, but not suspicious by default.`
+  };
 }
 
 function analyzeExtensionRisk(name, ext) {
@@ -1369,40 +1459,95 @@ async function checkFileScan(hash) {
 function analyzeBinaryEntropy(buffer, ext) {
   try {
     const bytes = new Uint8Array(buffer.slice(0, Math.min(buffer.byteLength, 65536)));
-    if (bytes.length === 0) return { engine: 'Binary Entropy Analysis', status: 'unknown', confidence: 0, details: {}, description: 'Empty file.' };
-    // Shannon entropy
+    if (bytes.length === 0) {
+      return {
+        engine: 'Binary Entropy Analysis',
+        status: 'unknown',
+        confidence: 0,
+        details: {},
+        description: 'Empty file.'
+      };
+    }
+
     const freq = new Array(256).fill(0);
     for (const b of bytes) freq[b]++;
+
     let entropy = 0;
-    for (const f of freq) { if (f > 0) { const p = f / bytes.length; entropy -= p * Math.log2(p); } }
+    for (const f of freq) {
+      if (f > 0) {
+        const p = f / bytes.length;
+        entropy -= p * Math.log2(p);
+      }
+    }
     entropy = Math.round(entropy * 100) / 100;
-    // Magic byte checks
-    const magic = Array.from(bytes.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join('');
-    const magicMap = { '4d5a': 'Windows PE (EXE/DLL)', '7f454c46': 'Linux ELF', 'cafebabe': 'Java Class / Mach-O', '504b0304': 'ZIP/JAR/APK/DOCX', '25504446': 'PDF', 'd0cf11e0': 'MS Office (OLE)', '52617221': 'RAR Archive', '1f8b0800': 'GZIP', '377abcaf': '7-Zip Archive', 'ffd8ffe0': 'JPEG Image', '89504e47': 'PNG Image' };
-    const detectedType = magicMap[magic.substring(0, 8)] || magicMap[magic.substring(0, 6)] || magicMap[magic.substring(0, 4)] || 'Unknown';
-    // Extension vs magic mismatch
+
+    const magic = Array.from(bytes.slice(0, 4))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    const magicMap = {
+      '4d5a': 'Windows PE (EXE/DLL)',
+      '7f454c46': 'Linux ELF',
+      'cafebabe': 'Java Class / Mach-O',
+      '504b0304': 'ZIP/JAR/APK/DOCX',
+      '25504446': 'PDF',
+      'd0cf11e0': 'MS Office (OLE)',
+      '52617221': 'RAR Archive',
+      '1f8b0800': 'GZIP',
+      '377abcaf': '7-Zip Archive',
+      'ffd8ffe0': 'JPEG Image',
+      '89504e47': 'PNG Image'
+    };
+
+    const detectedType =
+      magicMap[magic.substring(0, 8)] ||
+      magicMap[magic.substring(0, 6)] ||
+      magicMap[magic.substring(0, 4)] ||
+      'Unknown';
+
     const execExts = ['exe', 'dll', 'scr', 'bat', 'cmd', 'ps1', 'vbs', 'js', 'hta', 'jar', 'com'];
     const isExec = execExts.includes(ext) || detectedType.includes('PE') || detectedType.includes('ELF');
-    let status = 'clean', issues = [];
-    if (entropy > 7.5) { issues.push(`Very high entropy (${entropy}) — possible packing or encryption`); status = 'suspicious'; }
-    else if (entropy > 7.0 && isExec) { issues.push(`High entropy for executable (${entropy}) — possible packer`); status = 'suspicious'; }
+
+    let status = 'clean';
+    let issues = [];
+
     if (detectedType.includes('PE') || detectedType.includes('ELF') || detectedType.includes('Java')) {
-      if (!execExts.includes(ext)) { issues.push(`Magic bytes show executable but extension is .${ext}`); status = 'suspicious'; }
+      if (!execExts.includes(ext)) {
+        issues.push(`Magic bytes show executable but extension is .${ext}`);
+        status = 'suspicious';
+      }
     }
+
+    if (entropy >= 7.85) {
+      issues.push(`Very high entropy (${entropy}) — possible packing or encryption`);
+      if (status === 'clean') status = 'suspicious';
+    } else if (entropy >= 7.55 && isExec) {
+      issues.push(`High entropy executable (${entropy}) — may be packed, but not necessarily malicious`);
+      if (status === 'clean') status = 'suspicious';
+    }
+
     return {
       engine: 'Binary Entropy Analysis',
       status,
-      confidence: 65,
+      confidence: status === 'suspicious' ? 45 : 75,
       details: {
         'Shannon Entropy': `${entropy} / 8.0`,
         'Magic Bytes': magic.substring(0, 8).toUpperCase(),
         'Detected Type': detectedType,
         'Sample Size': `${bytes.length.toLocaleString()} bytes`
       },
-      description: issues.length > 0 ? issues.join('. ') : `Entropy ${entropy}/8.0 is normal. Magic bytes match .${ext} expectation.`
+      description: issues.length
+        ? issues.join('. ')
+        : `Entropy ${entropy}/8.0 is within normal range. Magic bytes are consistent with .${ext}.`
     };
-  } catch(e) {
-    return { engine: 'Binary Entropy Analysis', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'Entropy analysis failed.' };
+  } catch (e) {
+    return {
+      engine: 'Binary Entropy Analysis',
+      status: 'error',
+      confidence: 0,
+      details: { 'Error': e.message },
+      description: 'Entropy analysis failed.'
+    };
   }
 }
 function isTelemetryJson(obj) {
@@ -1422,90 +1567,92 @@ function isTelemetryJson(obj) {
     text.includes('agent_hostname')
   );
 }
-// 12. PE Header / Script String Analysis — local static analysis
 async function analyzeStaticStrings(file, ext) {
   try {
     const sample = await file.slice(0, Math.min(file.size, 131072)).arrayBuffer();
     const raw = new TextDecoder('latin1').decode(sample);
-
-    // Special handling for JSON telemetry / alert export files
-    if (ext === 'json') {
-      try {
-        const parsed = JSON.parse(raw);
-
-        if (isTelemetryJson(parsed)) {
-          return {
-            engine: 'Static String Analysis',
-            status: 'clean',
-            confidence: 85,
-            details: {
-              'Content Type': 'Structured telemetry / alert JSON',
-              'Parser': 'JSON parse successful',
-              'Mode': 'Telemetry-aware'
-            },
-            description: 'Structured alert/telemetry JSON detected. Command strings are treated as event content, not executable intent.'
-          };
-        }
-      } catch (e) {
-        // if JSON parsing fails, continue with generic static scan
-      }
-    }
-
-    const suspiciousStrings = [
-      'powershell',
-      'cmd.exe',
-      'wscript',
-      'cscript',
-      'regsvr32',
-      'mshta',
-      'certutil',
-      'bitsadmin',
-      'wget ',
-      'curl ',
-      'invoke-expression',
-      'downloadstring',
-      'frombase64string',
-      'mimikatz'
-    ];
-
     const lower = raw.toLowerCase();
-    const found = suspiciousStrings.filter(s => lower.includes(s));
 
-    const base64Matches = raw.match(/[A-Za-z0-9+/]{40,}={0,2}/g) || [];
+    const ipRx = /\b(\d{1,3}\.){3}\d{1,3}\b/g;
+    const urlRx = /https?:\/\/[^\s"'<>]{6,}/gi;
+    const b64Rx = /[A-Za-z0-9+/]{40,}={0,2}/g;
+
+    const ips = [...new Set(raw.match(ipRx) || [])]
+      .filter(ip => !ip.startsWith('0.') && !ip.startsWith('127.') && !ip.startsWith('255.'));
+    const urls = [...new Set(raw.match(urlRx) || [])].slice(0, 8);
+
+    const base64Matches = raw.match(b64Rx) || [];
     const filteredBase64 = base64Matches.filter(s => {
       const looksHex = /^[a-f0-9]{32,}$/i.test(s);
       const looksUuidish = /^[A-Za-z0-9_-]{20,}$/.test(s) && !/[+/=]/.test(s);
       return !looksHex && !looksUuidish;
     });
 
-    let status = 'clean';
-    let description = 'No suspicious static strings found.';
+    const suspKeywords = [
+      'cmd.exe', 'powershell', 'wscript', 'cscript', 'regsvr32', 'mshta',
+      'certutil', 'bitsadmin', 'wget ', 'curl ', 'invoke-expression', 'iex ',
+      'downloadstring', 'shellexecute', 'createobject', 'activexobject',
+      'frombase64string', 'net user ', 'net localgroup', 'mimikatz',
+      'sekurlsa', 'privilege::debug'
+    ];
 
-    if (found.length >= 3) {
-      status = 'malicious';
-      description = `Static analysis flagged high-risk strings: ${found.slice(0, 5).join(', ')}`;
-    } else if (found.length >= 1 || filteredBase64.length >= 5) {
-      status = 'suspicious';
-      description = `Static analysis flagged: ${found.length ? 'Suspicious strings: ' + found.slice(0, 5).join(', ') : ''}${found.length && filteredBase64.length >= 5 ? '. ' : ''}${filteredBase64.length >= 5 ? filteredBase64.length + ' large base64-like blocks' : ''}`;
+    const foundKw = suspKeywords.filter(k => lower.includes(k));
+    const execLikeExts = ['exe', 'dll', 'msi', 'scr', 'com', 'sys', 'jar'];
+
+    let status = 'clean';
+    let issues = [];
+
+    if (execLikeExts.includes(ext)) {
+      if (foundKw.length >= 4) {
+        status = 'suspicious';
+        issues.push(`${foundKw.length} high-risk strings found in executable`);
+      }
+      if (filteredBase64.length >= 10) {
+        status = 'suspicious';
+        issues.push(`${filteredBase64.length} large base64-like blocks`);
+      }
+      if (
+        (lower.includes('downloadstring') && lower.includes('powershell')) ||
+        (lower.includes('frombase64string') && lower.includes('iex ')) ||
+        (lower.includes('mimikatz')) ||
+        (lower.includes('sekurlsa')) ||
+        (lower.includes('privilege::debug'))
+      ) {
+        status = 'malicious';
+        issues.push('Strong malicious execution pattern found');
+      }
+    } else {
+      if (foundKw.length >= 3) {
+        status = 'malicious';
+        issues.push(`${foundKw.length} high-risk strings found`);
+      } else if (foundKw.length >= 1 || filteredBase64.length >= 5) {
+        status = 'suspicious';
+        if (foundKw.length) issues.push(`Suspicious strings: ${foundKw.slice(0, 3).join(', ')}`);
+        if (filteredBase64.length >= 5) issues.push(`${filteredBase64.length} large base64-like blocks`);
+      }
     }
 
     return {
       engine: 'Static String Analysis',
       status,
-      confidence: status === 'malicious' ? 85 : status === 'suspicious' ? 65 : 90,
+      confidence: status === 'malicious' ? 85 : status === 'suspicious' ? 55 : 85,
       details: {
-        'Suspicious Strings': found.length ? found.join(', ') : 'None',
+        'Embedded IPs': ips.length ? ips.slice(0, 5).join(', ') : 'None',
+        'Embedded URLs': urls.length ? urls.slice(0, 3).join(' | ') : 'None',
+        'Suspicious Strings': foundKw.length ? foundKw.slice(0, 6).join(', ') : 'None',
         'Base64-like Blocks': String(filteredBase64.length)
       },
-      description
+      description: issues.length
+        ? `Static analysis flagged: ${issues.join('. ')}.`
+        : `No strong suspicious string patterns found in first 128KB.`
     };
   } catch (e) {
     return {
       engine: 'Static String Analysis',
       status: 'error',
       confidence: 0,
-      details: { Error: e.message },
-      description: 'Static analysis failed.'
+      details: { 'Error': e.message },
+      description: 'String analysis failed.'
     };
   }
 }
@@ -1513,25 +1660,83 @@ async function analyzeStaticStrings(file, ext) {
 // ── END NEW SIA ENGINES ───────────────────────────────────────────────────────
 
 function calculateSIAVerdict(results) {
-  let threatScore=0,reasons={safe:[],caution:[],danger:[]};let malCount=0,susCount=0,cleanCount=0;
-  const vtResult=results.find(r=>r.engine.includes('VirusTotal')&&!r.skipped);
-  const mdResult=results.find(r=>r.engine.includes('MetaDefender'));
-  const anyEngineClean=(vtResult?.status==='clean')||(mdResult?.status==='clean');
-  for(const r of results){
-    if(anyEngineClean&&r.engine==='File Type Analysis'&&r.status==='suspicious'){r.status='clean';r.description=r.description.replace('Requires verification','Verified clean by scan engines');reasons.safe.push({engine:r.engine,text:r.description});cleanCount++;continue;}
-    if(r.status==='malicious'){malCount++;threatScore+=r.confidence*0.8;reasons.danger.push({engine:r.engine,text:r.description});}
-    else if(r.status==='suspicious'){susCount++;threatScore+=r.confidence*0.3;reasons.caution.push({engine:r.engine,text:r.description});}
-    else if(r.status==='clean'){cleanCount++;reasons.safe.push({engine:r.engine,text:r.description});}
-  }
-  if(anyEngineClean&&malCount===0)threatScore=Math.max(0,threatScore*0.2);
-  let title,subtitle,level;
-  if(malCount>=2||threatScore>=80){title='DO NOT INSTALL';subtitle='Multiple threat indicators detected';level='danger';}
-  else if(malCount>=1||(susCount>=2&&threatScore>=25)){title='REVIEW REQUIRED';subtitle='Suspicious indicators found';level='caution';}
-  else if(susCount>=1&&!anyEngineClean){title='PROCEED WITH CAUTION';subtitle='Minor concerns detected';level='caution';}
-  else{title='SAFE TO PROCEED';subtitle='No significant threats detected';level='safe';}
-  return{title,subtitle,level,threatScore:Math.min(100,Math.round(threatScore)),reasons};
-}
+  let threatScore = 0;
+  let reasons = { safe: [], caution: [], danger: [] };
+  let malCount = 0, susCount = 0, cleanCount = 0;
 
+  const strongReputationEngines = [
+    'VirusTotal',
+    'MetaDefender',
+    'MalwareBazaar',
+    'FileScan.io',
+    'InQuest Labs',
+    'NSRL / CIRCL Hash DB'
+  ];
+
+  const hasStrongClean = results.some(r =>
+    strongReputationEngines.some(e => r.engine.includes(e)) && r.status === 'clean'
+  );
+
+  const hasStrongMalicious = results.some(r =>
+    strongReputationEngines.some(e => r.engine.includes(e)) && r.status === 'malicious'
+  );
+
+  for (const r of results) {
+    let weight = 1.0;
+
+    if (r.engine === 'File Type Analysis') weight = 0.15;
+    else if (r.engine === 'Extension & Name Analysis') weight = 0.35;
+    else if (r.engine === 'File Size Analysis') weight = 0.25;
+    else if (r.engine === 'Binary Entropy Analysis') weight = 0.35;
+    else if (r.engine === 'Static String Analysis') weight = 0.45;
+    else if (strongReputationEngines.some(e => r.engine.includes(e))) weight = 1.0;
+
+    if (r.status === 'malicious') {
+      malCount++;
+      threatScore += r.confidence * 0.8 * weight;
+      reasons.danger.push({ engine: r.engine, text: r.description });
+    } else if (r.status === 'suspicious') {
+      susCount++;
+      threatScore += r.confidence * 0.3 * weight;
+      reasons.caution.push({ engine: r.engine, text: r.description });
+    } else if (r.status === 'clean') {
+      cleanCount++;
+      reasons.safe.push({ engine: r.engine, text: r.description });
+    }
+  }
+
+  if (hasStrongClean && !hasStrongMalicious) {
+    threatScore *= 0.35;
+  }
+
+  let title, subtitle, level;
+
+  if (hasStrongMalicious || malCount >= 2 || threatScore >= 80) {
+    title = 'DO NOT INSTALL';
+    subtitle = 'Multiple threat indicators detected';
+    level = 'danger';
+  } else if (malCount >= 1 || threatScore >= 45) {
+    title = 'REVIEW REQUIRED';
+    subtitle = 'Suspicious indicators found';
+    level = 'caution';
+  } else if (susCount >= 2 || threatScore >= 20) {
+    title = 'PROCEED WITH CAUTION';
+    subtitle = 'Minor concerns detected';
+    level = 'caution';
+  } else {
+    title = 'SAFE TO PROCEED';
+    subtitle = 'No significant threats detected';
+    level = 'safe';
+  }
+
+  return {
+    title,
+    subtitle,
+    level,
+    threatScore: Math.min(100, Math.round(threatScore)),
+    reasons
+  };
+}
 async function startSIAScan() {
   if(!siaFile){showToast('Please upload a file first');return;}
   const btn=document.getElementById('siaScanBtn');
