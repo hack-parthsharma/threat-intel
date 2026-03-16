@@ -2166,7 +2166,7 @@ async function startSIAScan() {
   let mdResult;
   try {
     if (siaFile && fileHash) {
-      mdResult = await checkMetaDefender(fileHash);
+      mdResult = await checkMetaDefenderHash(fileHash);
 
       const mdUnknown =
         !mdResult ||
