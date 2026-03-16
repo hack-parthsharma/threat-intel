@@ -514,7 +514,7 @@ async function checkPhishTank(url) {
 
 // 2. AbuseIPDB — IP abuse reputation (free 1000/day)
 async function checkAbuseIPDB(parsed) {
-  const AIPDB_KEY = 'YOUR_FREE_KEY_FROM_ABUSEIPDB.COM'; // register free at abuseipdb.com
+  const AIPDB_KEY = 'fac56139c9f726c2789972e5cbfd8189f82a77c265e1545dd173e225004a59e42f30f1d84eed8bbe'; // register free at abuseipdb.com
   if (!parsed) return { engine: 'AbuseIPDB', status: 'error', confidence: 0, details: { 'Error': 'No parsed URL' }, description: 'Could not parse URL.' };
   try {
     let ip = parsed.hostname;
