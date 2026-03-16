@@ -457,8 +457,98 @@ function isKnownSafe(parsed) { return KNOWN_SAFE_DOMAINS.some(d => parsed.domain
 
 async function checkURLhaus(url) { try { let data; if (backendAvailable) { const resp = await fetchViaBackend('/api/urlhaus', { method: 'POST', body: JSON.stringify({ url }) }); data = await resp.json(); } else { const resp = await fetchWithCORSFallback('https://urlhaus-api.abuse.ch/v1/url/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'url=' + encodeURIComponent(url) }); data = safeParse(await resp.text()); } if (!data) throw new Error('Invalid response'); if (data.query_status === 'ok' && data.id) { return { engine: 'URLhaus (abuse.ch)', status: 'malicious', confidence: 95, details: { 'Threat Type': data.threat || 'malware', 'Date Added': data.date_added || 'Unknown', 'Tags': (data.tags || []).join(', ') || 'None', 'URLhaus ID': data.id, 'Reporter': data.reporter || 'N/A', 'Status': data.url_status || 'active' }, description: `Reported to URLhaus as distributing ${data.threat || 'malware'}. Flagged by "${data.reporter || 'anonymous'}".` }; } return { engine: 'URLhaus (abuse.ch)', status: 'clean', confidence: 70, details: { 'Result': 'Not found in database', 'Database': 'URLhaus Malware URL Exchange' }, description: 'Not present in URLhaus malware database. Positive signal.' }; } catch(e) { return { engine: 'URLhaus (abuse.ch)', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'Could not reach URLhaus API.' }; } }
 
-async function checkVirusTotal(url) { try { let analysisData = null; const urlId = btoa(url).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_'); try { if (backendAvailable) { const resp = await fetchViaBackend('/api/virustotal/lookup', { method: 'POST', body: JSON.stringify({ url }) }); analysisData = await resp.json(); } else { const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/urls/${urlId}`, { headers: { 'x-apikey': VT_API_KEY } }); analysisData = safeParse(await resp.text()); } if (analysisData?.error) analysisData = null; } catch(e) { analysisData = null; } if (!analysisData?.data?.attributes?.last_analysis_stats) { try { if (backendAvailable) { await fetchViaBackend('/api/virustotal/submit', { method: 'POST', body: JSON.stringify({ url }) }); } else { await fetchWithCORSFallback('https://www.virustotal.com/api/v3/urls', { method: 'POST', headers: { 'x-apikey': VT_API_KEY, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'url=' + encodeURIComponent(url) }); } } catch(e) {} await new Promise(r => setTimeout(r, 15000)); try { if (backendAvailable) { const resp = await fetchViaBackend('/api/virustotal/lookup', { method: 'POST', body: JSON.stringify({ url }) }); analysisData = await resp.json(); } else { const resp = await fetchWithCORSFallback(`https://www.virustotal.com/api/v3/urls/${urlId}`, { headers: { 'x-apikey': VT_API_KEY } }); analysisData = safeParse(await resp.text()); } } catch(e) { analysisData = null; } } if (analysisData?.data?.attributes) { const attrs = analysisData.data.attributes; const stats = attrs.last_analysis_stats || {}; const mal = stats.malicious||0, sus = stats.suspicious||0, harm = stats.harmless||0, undet = stats.undetected||0, tout = stats.timeout||0, total = mal+sus+harm+undet+tout; const flagged = []; for (const [v,r] of Object.entries(attrs.last_analysis_results||{})) { if (r.category==='malicious'||r.category==='suspicious') flagged.push(`${v}: ${r.result||r.category}`); } let status='clean'; if(mal>=3) status='malicious'; else if(mal>=1||sus>=2) status='suspicious'; const details = { 'Malicious': `${mal}/${total}`, 'Suspicious': `${sus}/${total}`, 'Harmless': `${harm}/${total}`, 'Total Engines': total, 'Reputation': attrs.reputation??'N/A' }; if(flagged.length>0) details['Flagged By']=flagged.join(', '); if(attrs.last_analysis_date) details['Last Scanned']=new Date(attrs.last_analysis_date*1000).toLocaleString(); let desc=`Scanned with ${total} engines. ${mal} malicious, ${sus} suspicious.`; if(flagged.length>0) desc+=` Flagged by: ${flagged.join(', ')}.`; return { engine:'VirusTotal', status, confidence:92, details, vtStats:stats, description:desc }; } return { engine:'VirusTotal', status:'unknown', confidence:50, details:{'Result':'No analysis available'}, description:'No VirusTotal analysis results.' }; } catch(e) { return { engine:'VirusTotal', status:'error', confidence:0, details:{'Error':e.message}, description:`VirusTotal failed: ${e.message}` }; } }
+async function checkVirusTotal(url) {
 
+  try {
+
+    const domain = new URL(url).hostname;
+
+    let resp;
+
+    if (backendAvailable) {
+
+      resp = await fetchViaBackend(
+        `/api/virustotal/domain?domain=${encodeURIComponent(domain)}`
+      );
+
+    } else {
+
+      resp = await fetch(
+        `https://www.virustotal.com/api/v3/domains/${domain}`,
+        { headers: { 'x-apikey': VT_API_KEY } }
+      );
+
+    }
+
+    const data = await resp.json();
+
+    const results = data?.data?.attributes?.last_analysis_results;
+
+    if (!results) {
+      return {
+        engine: 'VirusTotal',
+        status: 'unknown',
+        confidence: 50,
+        details: { Result: 'No analysis available' },
+        description: 'No VirusTotal domain analysis results.'
+      };
+    }
+
+    let malicious = 0;
+    let suspicious = 0;
+    let harmless = 0;
+    let total = 0;
+    const flagged = [];
+
+    for (const [engine, r] of Object.entries(results)) {
+
+      total++;
+
+      if (r.category === 'malicious') malicious++;
+      if (r.category === 'suspicious') suspicious++;
+      if (r.category === 'harmless') harmless++;
+
+      if (r.category === 'malicious' || r.category === 'suspicious') {
+        flagged.push(`${engine}: ${r.result || r.category}`);
+      }
+
+    }
+
+    let status = 'clean';
+
+    if (malicious >= 3) status = 'malicious';
+    else if (malicious >= 1 || suspicious >= 2) status = 'suspicious';
+
+    const details = {
+      'Malicious': `${malicious}/${total}`,
+      'Suspicious': `${suspicious}/${total}`,
+      'Harmless': `${harmless}/${total}`,
+      'Total Engines': total
+    };
+
+    if (flagged.length) details['Flagged By'] = flagged.join(', ');
+
+    return {
+      engine: 'VirusTotal',
+      status,
+      confidence: 92,
+      details,
+      description: `${malicious} malicious, ${suspicious} suspicious out of ${total} engines`
+    };
+
+  } catch (e) {
+
+    return {
+      engine: 'VirusTotal',
+      status: 'error',
+      confidence: 0,
+      details: { Error: e.message },
+      description: `VirusTotal failed: ${e.message}`
+    };
+
+  }
+
+}
 function checkSSL(parsed) { const f={}; let s='clean',i=[]; if(!parsed.isHTTPS){s='suspicious';i.push('No HTTPS');f['Protocol']='HTTP (Insecure)';} else f['Protocol']='HTTPS'; if(parsed.hasPort&&!['443','80','8080','8443'].includes(parsed.port)){i.push(`Non-standard port ${parsed.port}`);if(s==='clean')s='suspicious';f['Port']=parsed.port+' (Non-standard)';} else f['Port']=parsed.port||'Standard'; f['Transport']=parsed.isHTTPS?'TLS Encrypted':'None'; return {engine:'SSL/TLS Analysis',status:s,confidence:75,details:f,issues:i,description:i.length>0?`Concerns: ${i.join('. ')}.`:'HTTPS with standard config.'}; }
 
 function checkDomainReputation(parsed) { const f={}; let score=100,i=[],p=[]; if(isKnownSafe(parsed)){return{engine:'Domain & URL Heuristics',status:'clean',confidence:90,details:{'Known Domain':'Verified safe','Reputation Score':'100/100'},issues:[],positives:['Trusted domain'],reputationScore:100,description:`${parsed.domain} is a trusted domain.`};} if(SUSPICIOUS_TLDS.includes(parsed.tld.toLowerCase())){f['TLD Risk']=parsed.tld+' — High risk';i.push(`Suspicious TLD "${parsed.tld}"`);score-=30;} if(parsed.isIP){i.push('Raw IP address');score-=35;} if(URL_SHORTENERS.includes(parsed.fullDomain)){i.push('URL shortener');score-=15;} const sub=parsed.subdomain.split('.').filter(Boolean); if(sub.length>=3){i.push(`Deep subdomains (${sub.length} levels)`);score-=20;} const kw=SUSPICIOUS_KEYWORDS.filter(k=>parsed.full.toLowerCase().includes(k)); if(kw.length>=2){i.push(`Phishing keywords: ${kw.join(', ')}`);score-=20*Math.min(kw.length,3);} if(parsed.pathname.length>100){i.push('Long path');score-=10;} if(/xn--/.test(parsed.hostname)){i.push('IDN/Punycode');score-=25;} if(parsed.full.includes('@')){i.push('@ symbol');score-=30;} score=Math.max(0,Math.min(100,score)); let s='clean';if(score<40)s='malicious';else if(score<70)s='suspicious'; f['Reputation Score']=score+'/100'; return{engine:'Domain & URL Heuristics',status:s,confidence:65,details:f,issues:i,positives:p,reputationScore:score,description:i.length>0?`Found ${i.length} concern(s): ${i[0]}.`:'No suspicious patterns.'}; }
