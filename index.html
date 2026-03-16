@@ -843,11 +843,19 @@ async function checkCloudflareRadar(parsed) {
   try {
     let data;
     if (backendAvailable) {
-      const resp = await fetchViaBackend(`/api/cfradar?domain=${encodeURIComponent(parsed.domain)}`);
+      const domain = parsed.fullDomain || parsed.hostname;
+
+const resp = await fetchViaBackend(
+  `/api/cfradar?domain=${encodeURIComponent(domain)}`
+);
       data = await resp.json();
     } else {
-      const resp = await fetchWithCORSFallback(`https://radar.cloudflare.com/api/v0/domains/rank?domain=${encodeURIComponent(parsed.domain)}`, { headers: { 'Accept': 'application/json' } });
-      data = safeParse(await resp.text());
+const domain = parsed.fullDomain || parsed.hostname;
+
+const resp = await fetchWithCORSFallback(
+  `https://radar.cloudflare.com/api/v0/domains/rank?domain=${encodeURIComponent(domain)}`,
+  { headers: { 'Accept': 'application/json' } }
+);      data = safeParse(await resp.text());
     }
     if (data?.result?.rank) {
       const rank = data.result.rank;
