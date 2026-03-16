@@ -873,7 +873,7 @@ const resp = await fetchWithCORSFallback(
     if (data?.result !== undefined) {
       return { engine: 'Cloudflare Radar', status: 'suspicious', confidence: 48, details: { 'Rank': 'Not ranked', 'Note': 'Very low traffic or brand-new domain' }, description: 'Domain not ranked by Cloudflare — very low traffic or newly created.' };
     }
-    return { engine: 'Cloudflare Radar', status: 'unknown', confidence: 30, details: { 'Result': 'No data returned' }, description: 'Cloudflare Radar returned no data.' };
+    return { engine: 'Cloudflare Radar', status: 'unknown', confidence: 30, details: { 'Result': 'No data returned' }, description: 'Domain not ranked by Cloudflare Radar (very low traffic or newly registered).' };
   } catch(e) {
     return { engine: 'Cloudflare Radar', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'Cloudflare Radar check failed.' };
   }
