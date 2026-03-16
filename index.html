@@ -604,7 +604,6 @@ async function checkPhishTank(url) {
 
 // 2. AbuseIPDB — IP abuse reputation (free 1000/day)
 async function checkAbuseIPDB(parsed) {
-  const AIPDB_KEY = 'fac56139c9f726c2789972e5cbfd8189f82a77c265e1545dd173e225004a59e42f30f1d84eed8bbe'; // register free at abuseipdb.com
   if (!parsed) return { engine: 'AbuseIPDB', status: 'error', confidence: 0, details: { 'Error': 'No parsed URL' }, description: 'Could not parse URL.' };
   try {
     let ip = parsed.hostname;
@@ -618,16 +617,11 @@ async function checkAbuseIPDB(parsed) {
     if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|::1)/.test(ip)) {
       return { engine: 'AbuseIPDB', status: 'clean', confidence: 60, details: { 'IP': ip, 'Type': 'Private/Loopback' }, description: 'Private IP address — not publicly routable.' };
     }
-    let data;
-    if (backendAvailable) {
-      const resp = await fetchViaBackend(`/api/abuseipdb?ip=${encodeURIComponent(ip)}`);
-      data = await resp.json();
-    } else {
-      const resp = await fetchWithCORSFallback(`https://api.abuseipdb.com/api/v2/check?ipAddress=${encodeURIComponent(ip)}&maxAgeInDays=90`, {
-        headers: { 'Key': AIPDB_KEY, 'Accept': 'application/json' }
-      });
-      data = safeParse(await resp.text());
-    }
+const resp = await fetchViaBackend(
+  `/api/abuseipdb?ip=${encodeURIComponent(ip)}`
+);
+
+const data = await resp.json();
     if (data?.data) {
       const d = data.data;
       const score = d.abuseConfidenceScore || 0;
