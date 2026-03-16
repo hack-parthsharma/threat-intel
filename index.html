@@ -1083,10 +1083,65 @@ function downloadReport(format) {
     win.document.close();
     setTimeout(() => { win.print(); }, 500);
     showToast('Print dialog opened — Save as PDF');
-  } else if (format === 'docx') {
-    const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `trishul-report-${Date.now()}.doc`; a.click();
+ } else if (format === 'docx') {
+  try {
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
+
+    const doc = new Document({
+      sections: [
+        {
+          children: [
+            new Paragraph({
+              heading: HeadingLevel.TITLE,
+              children: [
+                new TextRun({
+                  text: 'Trishul Security Report',
+                  bold: true,
+                  size: 32
+                })
+              ]
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Generated: ${new Date().toLocaleString()}`,
+                  size: 20
+                })
+              ]
+            }),
+            new Paragraph({ text: '' }),
+
+            new Paragraph({
+              heading: HeadingLevel.HEADING_1,
+              children: [new TextRun('Report Summary')]
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: reportText || 'No report content available.',
+                  size: 20
+                })
+              ]
+            })
+          ]
+        }
+      ]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `trishul-report-${Date.now()}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     showToast('DOCX downloaded');
+  } catch (err) {
+    console.error('DOCX export failed:', err);
+    showToast('DOCX generation failed');
+  }
+}
   } else {
     const blob = new Blob([html], { type: 'text/html' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `trishul-report-${Date.now()}.html`; a.click();
