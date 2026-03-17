@@ -210,6 +210,15 @@ body.dark .agent-input:focus { background: #141B2D; }
 .sia-scan-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .page { display: none; } .page.active { display: block; }
 .landing-page { display: none; } .landing-page.active { display: flex; }
+.sia-controls-card { background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-top: 24px; box-shadow: var(--shadow-sm); }
+.sia-controls-grid { display: grid; gap: 16px; margin-top: 12px; }
+.sia-control-item { border: 1px solid var(--border-light); border-radius: var(--radius); padding: 14px; background: var(--bg); }
+.sia-control-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.sia-control-head strong { font-size: 13px; }
+.sia-control-question { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.5; }
+.sia-control-input { width: 100%; min-height: 74px; resize: vertical; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-white); color: var(--text); padding: 10px; font-family: var(--font); font-size: 13px; }
+.sia-control-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,93,38,0.1); }
+.sia-summary-box { margin-top: 14px; border: 1px solid var(--info-border); background: var(--info-bg); border-radius: var(--radius); padding: 12px; color: var(--text-secondary); font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
 @media (max-width: 768px) {
   .module-cards { grid-template-columns: 1fr; }
   .landing-title { font-size: 24px; }
@@ -410,6 +419,22 @@ const SUSPICIOUS_KEYWORDS = ['login','verify','account','secure','update','confi
 const URL_SHORTENERS = ['bit.ly','tinyurl.com','t.co','goo.gl','is.gd','buff.ly','ow.ly','rebrand.ly','bl.ink','short.io','cutt.ly','lnkd.in'];
 
 let scanHistory = [];
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function safeDecodeURIComponent(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
 
 async function checkBackend() {
   try {
@@ -1125,9 +1150,10 @@ function handleFile(file) {
   const sizeStr = file.size < 1024 ? file.size + ' B' : file.size < 1048576 ? (file.size / 1024).toFixed(1) + ' KB' : (file.size / 1048576).toFixed(2) + ' MB';
   const icons = { exe:'⚙️',msi:'📦',dmg:'💿',pkg:'📦',deb:'🐧',apk:'📱',jar:'☕',zip:'🗜️',rar:'🗜️','7z':'🗜️',tar:'🗜️',gz:'🗜️',pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ps1:'💻',bat:'💻',sh:'💻',py:'🐍',js:'📜' };
   const icon = icons[ext] || '📁';
+  const safeFileName = escapeHtml(file.name);
   document.getElementById('uploadZone').style.display = 'none';
   document.getElementById('siaFileInfo').style.display = 'flex';
-  document.getElementById('siaFileInfo').innerHTML = `<div class="file-info"><div class="file-icon">${icon}</div><div class="file-meta"><div class="file-name">${file.name}</div><div class="file-details">${sizeStr} · ${file.type || ext.toUpperCase()} · Last modified: ${new Date(file.lastModified).toLocaleDateString()}</div></div><button class="file-remove" onclick="removeFile()">Remove</button></div>`;
+  document.getElementById('siaFileInfo').innerHTML = `<div class="file-info"><div class="file-icon">${icon}</div><div class="file-meta"><div class="file-name">${safeFileName}</div><div class="file-details">${sizeStr} · ${file.type || ext.toUpperCase()} · Last modified: ${new Date(file.lastModified).toLocaleDateString()}</div></div><button class="file-remove" onclick="removeFile()">Remove</button></div>`;
   document.getElementById('siaScanBtn').disabled = false;
 }
 
@@ -2283,21 +2309,113 @@ async function startSIAScan() {
     assessmentAgent: document.getElementById('assessmentAgent').value.trim() || 'N/A'
   };
 
-  renderSIAResults(fileName, fileHash, fileSize, fileExt, results, verdict);
+  renderSIAResults(fileName, fileHash, fileSize, fileExt, results, verdict, controls);
 
   btn.disabled = false;
   btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> ANALYZE FILE';
 
   setTimeout(() => progress.classList.remove('active'), 2000);
 }
-function renderSIAResults(fileName,hash,fileSize,ext,results,verdict){
+function renderSIAResults(fileName,hash,fileSize,ext,results,verdict,controls=[]){
   const container=document.getElementById('siaResultsContainer');
   const safety=100-verdict.threatScore;const vc=verdict.level==='safe'?'var(--safe)':verdict.level==='caution'?'var(--warn)':'var(--danger)';
   const circ=2*Math.PI*42;const safeOff=circ-(safety/100)*circ;const emoji=verdict.level==='safe'?'✅':verdict.level==='caution'?'⚠️':'🚨';
   const sizeMB=fileSize<1048576?(fileSize/1024).toFixed(1)+' KB':(fileSize/1048576).toFixed(2)+' MB';
   let engHTML='';for(const r of results){const bc=r.status==='clean'?'badge-clean':r.status==='suspicious'?'badge-suspicious':r.status==='malicious'?'badge-malicious':r.status==='error'?'badge-error':'badge-unknown';const bl=r.status==='clean'?'CLEAN':r.status==='suspicious'?'SUSPICIOUS':r.status==='malicious'?'MALICIOUS':r.status==='error'?'ERROR':'UNKNOWN';const em=r.status==='clean'?'🟢':r.status==='suspicious'?'🟡':r.status==='malicious'?'🔴':'⚪';let dHTML='';for(const[k,v]of Object.entries(r.details))dHTML+=`<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`;engHTML+=`<div class="engine-card"><div class="engine-header"><span class="engine-name">${em} ${r.engine}</span><span class="engine-badge ${bc}">${bl}</span></div><p class="engine-desc">${r.description}</p><div class="engine-details">${dHTML}</div></div>`;}
   let aHTML='';for(const r of verdict.reasons.safe)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-safe"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;for(const r of verdict.reasons.caution)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-warn"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;for(const r of verdict.reasons.danger)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
-  container.innerHTML=`<div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease;margin-top:24px"><div class="verdict-icon">${emoji}</div><div class="verdict-text"><div class="verdict-title">${verdict.title}</div><div class="verdict-subtitle">${verdict.subtitle}</div></div><div class="verdict-url">${fileName}<br><span style="font-size:10px;opacity:0.7">${sizeMB} · .${ext}</span></div></div><div class="scores-row"><div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${safeOff}"/></svg><div class="score-num" style="color:${vc}">${safety}</div></div><div class="score-label">Safety Score</div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">File Summary</div><div style="font-size:12px;color:var(--text-secondary);line-height:2;font-family:var(--font-mono)">📁 ${fileName}<br>📏 ${sizeMB}<br>🔑 SHA-256: <span style="cursor:pointer;border-bottom:1px dashed var(--text-muted)" onclick="navigator.clipboard.writeText('${hash||''}').then(()=>showToast('Hash copied!'))">${hash?hash.substring(0,20)+'...':'N/A'}</span></div></div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Results</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious</div></div></div></div><div class="export-row"><button class="export-btn sia-report-btn" onclick="generateSIADocx()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Download SIA Report (DOCX)</button><button class="export-btn sia-report-btn" onclick="generateSIAPdf()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Download SIA Report (PDF)</button></div><div class="analysis-card" style="animation:fadeUp 0.5s ease 0.15s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Analysis Summary</div>${aHTML}</div><div style="animation:fadeUp 0.5s ease 0.25s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Detailed Results</div>${engHTML}</div>`;
+  const controlsMarkup = (controls || []).map((ctrl, idx) => {
+    const detail = escapeHtml(ctrl.detail || '');
+    const question = escapeHtml(ctrl.question || '');
+    const answer = escapeHtml(ctrl.answer || 'No');
+    const userText = escapeHtml(lastSIAScanData?.userControlInputs?.[ctrl.code] || '');
+    return `<div class="sia-control-item"><div class="sia-control-head"><strong>${idx+1}. ${ctrl.code} — ${escapeHtml(ctrl.title || '')}</strong><span class="module-badge ${answer==='Yes'?'badge-new':'badge-live'}">AI: ${answer}</span></div><div class="sia-control-question">${question || detail}</div><textarea class="sia-control-input" id="controlInput_${ctrl.code}" placeholder="Add assessment notes for this control based on the uploaded file..." oninput="updateSIAControlInput('${ctrl.code}', this.value)">${userText}</textarea></div>`;
+  }).join('');
+  const additionalNotes = escapeHtml(lastSIAScanData?.additionalNotes || '');
+  const cerebrasSummary = escapeHtml(lastSIAScanData?.cerebrasSummary || '');
+  container.innerHTML=`<div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease;margin-top:24px"><div class="verdict-icon">${emoji}</div><div class="verdict-text"><div class="verdict-title">${verdict.title}</div><div class="verdict-subtitle">${verdict.subtitle}</div></div><div class="verdict-url">${fileName}<br><span style="font-size:10px;opacity:0.7">${sizeMB} · .${ext}</span></div></div><div class="scores-row"><div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${safeOff}"/></svg><div class="score-num" style="color:${vc}">${safety}</div></div><div class="score-label">Safety Score</div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">File Summary</div><div style="font-size:12px;color:var(--text-secondary);line-height:2;font-family:var(--font-mono)">📁 ${fileName}<br>📏 ${sizeMB}<br>🔑 SHA-256: <span style="cursor:pointer;border-bottom:1px dashed var(--text-muted)" onclick="navigator.clipboard.writeText('${hash||''}').then(()=>showToast('Hash copied!'))">${hash?hash.substring(0,20)+'...':'N/A'}</span></div></div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Results</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious</div></div></div></div><div class="export-row"><button class="export-btn sia-report-btn" onclick="generateSIADocx()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Download SIA Report (DOCX)</button><button class="export-btn sia-report-btn" onclick="generateSIAPdf()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Download SIA Report (PDF)</button></div><div class="analysis-card" style="animation:fadeUp 0.5s ease 0.15s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Analysis Summary</div>${aHTML}</div><div style="animation:fadeUp 0.5s ease 0.25s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Detailed Results</div>${engHTML}</div><div class="sia-controls-card" style="animation:fadeUp 0.5s ease 0.3s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Control Inputs & Additional Notes</div><p style="font-size:12px;color:var(--text-secondary)">Add your assessment notes for each control. Then summarize all notes and considerations with Cerebras AI.</p><div class="sia-controls-grid">${controlsMarkup || '<div class="sia-control-item">No controls available.</div>'}</div><div style="margin-top:14px"><label class="input-label" style="margin-bottom:8px">Additional Notes</label><textarea id="siaAdditionalNotes" class="sia-control-input" placeholder="Add environment-specific concerns, compensating controls, deployment decisions, or approvals..." oninput="updateSIAAdditionalNotes(this.value)">${additionalNotes}</textarea></div><div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap"><button class="scan-btn" type="button" onclick="summarizeWithCerebras()">Summarize Notes with Cerebras AI</button></div><div id="cerebrasSummaryBox" class="sia-summary-box" style="display:${cerebrasSummary?'block':'none'}">${cerebrasSummary}</div></div>`;
+}
+
+function updateSIAControlInput(controlCode, value) {
+  if (!lastSIAScanData) return;
+  if (!lastSIAScanData.userControlInputs) lastSIAScanData.userControlInputs = {};
+  lastSIAScanData.userControlInputs[controlCode] = value;
+}
+
+function updateSIAAdditionalNotes(value) {
+  if (!lastSIAScanData) return;
+  lastSIAScanData.additionalNotes = value;
+}
+
+const CEREBRAS_API_KEY = 'csk-r88m9wwddye35vdmvtkmdfdcd4jjejjj9cpc39jkyk4fpd6n';
+const CEREBRAS_MODEL = 'llama-3.3-70b';
+
+async function summarizeWithCerebras() {
+  if (!lastSIAScanData) {
+    showToast('No SIA scan data available.');
+    return;
+  }
+  if (!CEREBRAS_API_KEY) {
+    showToast('Cerebras API key missing. Share key and we will hardcode it.');
+    return;
+  }
+
+  const controls = lastSIAScanData.controls || [];
+  const userInputs = lastSIAScanData.userControlInputs || {};
+  const controlText = controls.map((ctrl) => {
+    const note = userInputs[ctrl.code] || 'No user input provided.';
+    return `${ctrl.code} (${ctrl.title})
+AI Answer: ${ctrl.answer || 'N/A'}
+AI Detail: ${ctrl.detail || 'N/A'}
+User Note: ${note}`;
+  }).join('\n\n');
+
+  const prompt = `Summarize this Security Impact Analysis information for a file review.
+
+File: ${lastSIAScanData.fileName}
+SHA-256: ${lastSIAScanData.fileHash || 'N/A'}
+Verdict: ${lastSIAScanData.verdict?.title || 'N/A'}
+
+Control notes:
+${controlText}
+
+Additional Notes:
+${lastSIAScanData.additionalNotes || 'None'}
+
+Provide:
+1) Executive summary (short)
+2) Key risks
+3) Recommended actions
+4) Final disposition suggestion.`;
+
+  try {
+    showToast('Summarizing with Cerebras AI...');
+    const resp = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${CEREBRAS_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: CEREBRAS_MODEL,
+        temperature: 0.2,
+        max_tokens: 900,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!resp.ok) throw new Error(`Cerebras HTTP ${resp.status}`);
+    const data = await resp.json();
+    const summary = data?.choices?.[0]?.message?.content?.trim() || 'No summary returned.';
+    lastSIAScanData.cerebrasSummary = summary;
+    const box = document.getElementById('cerebrasSummaryBox');
+    if (box) {
+      box.textContent = summary;
+      box.style.display = 'block';
+    }
+    showToast('Cerebras summary ready.');
+  } catch (err) {
+    console.error('Cerebras summary error:', err);
+    showToast('Unable to summarize with Cerebras AI.');
+  }
 }
 
 // App intelligence and SIA report functions (preserved from original)
@@ -2454,7 +2572,7 @@ window.addEventListener('DOMContentLoaded', () => {
   checkBackend();
   const hash = window.location.hash.slice(1);
   if (hash) {
-    const targetUrl = decodeURIComponent(hash);
+    const targetUrl = safeDecodeURIComponent(hash);
     showModule('security');
     document.getElementById('urlInput').value = targetUrl;
     setTimeout(() => startScan(), 800);
