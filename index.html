@@ -357,14 +357,11 @@ body.dark .agent-input:focus { background: #141B2D; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       Pre-Analysis Control Inputs
     </div>
-    <p style="font-size:12px;color:var(--text-secondary)">Fill in control-specific notes before running file analysis. These notes are summarized via Cerebras and used to guide Groq's control updates.</p>
+    <p style="font-size:12px;color:var(--text-secondary)">Fill in control-specific notes before running file analysis. If notes are provided, they are summarized via backend Cerebras and used to guide Groq's control updates.</p>
     <div class="sia-controls-grid" id="siaPreControlsGrid"></div>
     <div style="margin-top:14px">
       <label class="input-label" style="margin-bottom:8px">Additional Notes</label>
       <textarea id="siaPreAdditionalNotes" class="sia-control-input" placeholder="Add environment-specific concerns, approvals, exceptions, or compensating controls..." oninput="updatePreSIAAdditionalNotes(this.value)"></textarea>
-    </div>
-    <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
-      <button class="scan-btn" type="button" onclick="summarizeSIAInputsPreScan()">Summarize Inputs with Cerebras AI</button>
     </div>
     <div id="preCerebrasSummaryBox" class="sia-summary-box" style="display:none"></div>
   </div>
@@ -2324,7 +2321,7 @@ async function startSIAScan() {
   pText.textContent = 'Generating AI security controls...';
   pEngine.textContent = 'Groq AI (Llama 3.3)';
 
-  const preScanSummary = await summarizeSIAInputsPreScan(true);
+  const preScanSummary = await summarizeSIAInputsPreScan();
   const controls = await buildGroqControls(appIntel, verdict, fileHash, results, preScanSummary);
 
   lastSIAScanData = {
@@ -2386,10 +2383,19 @@ function updatePreSIAAdditionalNotes(value) {
   siaDraftInputs.additionalNotes = value;
 }
 
-const CEREBRAS_API_KEY = 'csk-r88m9wwddye35vdmvtkmdfdcd4jjejjj9cpc39jkyk4fpd6n';
-const CEREBRAS_MODEL = 'llama-3.3-70b';
+async function summarizeSIAInputsPreScan() {
+  const enteredNotes = Object.values(siaDraftInputs.controlInputs || {}).filter(v => String(v || '').trim().length > 0);
+  const additional = String(siaDraftInputs.additionalNotes || '').trim();
+  const hasInput = enteredNotes.length > 0 || additional.length > 0;
+  if (!hasInput) {
+    siaDraftInputs.cerebrasSummary = '';
+    return '';
+  }
+  if (!backendAvailable) {
+    console.warn('Skipping Cerebras summarization: backend unavailable.');
+    return '';
+  }
 
-async function summarizeSIAInputsPreScan(silent = false) {
   const controlText = SIA_PRE_CONTROLS.map((ctrl) => {
     const note = (siaDraftInputs.controlInputs?.[ctrl.code] || '').trim() || 'No user input provided.';
     return `${ctrl.code} (${ctrl.title})
@@ -2402,7 +2408,7 @@ Control notes:
 ${controlText}
 
 Additional Notes:
-${siaDraftInputs.additionalNotes || 'None'}
+${additional || 'None'}
 
 Provide concise output with:
 1) Executive summary
@@ -2411,24 +2417,20 @@ Provide concise output with:
 4) Recommended disposition.`;
 
   try {
-    if (!silent) showToast('Summarizing pre-analysis inputs with Cerebras AI...');
-    const resp = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+    const resp = await fetchViaBackend('/api/cerebras-summary', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${CEREBRAS_API_KEY}` },
-      body: JSON.stringify({ model: CEREBRAS_MODEL, temperature: 0.2, max_tokens: 700, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ prompt, model: 'llama-3.3-70b', max_tokens: 700, temperature: 0.2 })
     });
-    if (!resp.ok) throw new Error(`Cerebras HTTP ${resp.status}`);
+    if (!resp.ok) throw new Error(`Cerebras backend HTTP ${resp.status}`);
     const data = await resp.json();
-    const summary = data?.choices?.[0]?.message?.content?.trim() || 'No summary returned.';
+    const summary = (data?.summary || data?.content || data?.choices?.[0]?.message?.content || '').trim();
     siaDraftInputs.cerebrasSummary = summary;
     const box = document.getElementById('preCerebrasSummaryBox');
-    if (box) { box.textContent = summary; box.style.display = 'block'; }
-    if (!silent) showToast('Cerebras summary ready.');
+    if (box && summary) { box.textContent = summary; box.style.display = 'block'; }
     return summary;
   } catch (err) {
-    console.error('Cerebras summary error:', err);
-    if (!silent) showToast('Unable to summarize with Cerebras AI.');
-    return siaDraftInputs.cerebrasSummary || '';
+    console.error('Cerebras backend summary error:', err);
+    return '';
   }
 }
 
