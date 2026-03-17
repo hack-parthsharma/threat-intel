@@ -2322,7 +2322,9 @@ async function startSIAScan() {
   pEngine.textContent = 'Groq AI (Llama 3.3)';
 
   const preScanSummary = await summarizeSIAInputsPreScan();
-  const controls = await buildGroqControls(appIntel, verdict, fileHash, results, preScanSummary || collectSIAUserContext());
+  const userContext = collectSIAUserContext();
+  const aiContext = preScanSummary || userContext;
+  const controls = await buildGroqControls(appIntel, verdict, fileHash, results, aiContext);
 
   lastSIAScanData = {
     fileName,
@@ -2337,7 +2339,7 @@ async function startSIAScan() {
     assessmentAgent: document.getElementById('assessmentAgent').value.trim() || 'N/A',
     userControlInputs: { ...(siaDraftInputs.controlInputs || {}) },
     additionalNotes: siaDraftInputs.additionalNotes || '',
-    preScanSummary: preScanSummary || ''
+    preScanSummary: aiContext || ''
   };
 
   renderSIAResults(fileName, fileHash, fileSize, fileExt, results, verdict, controls);
@@ -2354,7 +2356,7 @@ function renderSIAResults(fileName,hash,fileSize,ext,results,verdict,controls=[]
   const sizeMB=fileSize<1048576?(fileSize/1024).toFixed(1)+' KB':(fileSize/1048576).toFixed(2)+' MB';
   let engHTML='';for(const r of results){const bc=r.status==='clean'?'badge-clean':r.status==='suspicious'?'badge-suspicious':r.status==='malicious'?'badge-malicious':r.status==='error'?'badge-error':'badge-unknown';const bl=r.status==='clean'?'CLEAN':r.status==='suspicious'?'SUSPICIOUS':r.status==='malicious'?'MALICIOUS':r.status==='error'?'ERROR':'UNKNOWN';const em=r.status==='clean'?'🟢':r.status==='suspicious'?'🟡':r.status==='malicious'?'🔴':'⚪';let dHTML='';for(const[k,v]of Object.entries(r.details))dHTML+=`<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`;engHTML+=`<div class="engine-card"><div class="engine-header"><span class="engine-name">${em} ${r.engine}</span><span class="engine-badge ${bc}">${bl}</span></div><p class="engine-desc">${r.description}</p><div class="engine-details">${dHTML}</div></div>`;}
   let aHTML='';for(const r of verdict.reasons.safe)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-safe"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;for(const r of verdict.reasons.caution)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-warn"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;for(const r of verdict.reasons.danger)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
-  const aiSummary = escapeHtml(lastSIAScanData?.preScanSummary || 'No pre-analysis summary was provided.');
+  const aiSummary = escapeHtml(lastSIAScanData?.preScanSummary || 'No pre-analysis context provided.');
   container.innerHTML=`<div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease;margin-top:24px"><div class="verdict-icon">${emoji}</div><div class="verdict-text"><div class="verdict-title">${verdict.title}</div><div class="verdict-subtitle">${verdict.subtitle}</div></div><div class="verdict-url">${fileName}<br><span style="font-size:10px;opacity:0.7">${sizeMB} · .${ext}</span></div></div><div class="scores-row"><div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${safeOff}"/></svg><div class="score-num" style="color:${vc}">${safety}</div></div><div class="score-label">Safety Score</div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">File Summary</div><div style="font-size:12px;color:var(--text-secondary);line-height:2;font-family:var(--font-mono)">📁 ${fileName}<br>📏 ${sizeMB}<br>🔑 SHA-256: <span style="cursor:pointer;border-bottom:1px dashed var(--text-muted)" onclick="navigator.clipboard.writeText('${hash||''}').then(()=>showToast('Hash copied!'))">${hash?hash.substring(0,20)+'...':'N/A'}</span></div></div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Results</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious</div></div></div></div><div class="export-row"><button class="export-btn sia-report-btn" onclick="generateSIADocx()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Download SIA Report (DOCX)</button><button class="export-btn sia-report-btn" onclick="generateSIAPdf()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Download SIA Report (PDF)</button></div><div class="analysis-card" style="animation:fadeUp 0.5s ease 0.15s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Analysis Summary</div>${aHTML}</div><div style="animation:fadeUp 0.5s ease 0.25s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Detailed Results</div>${engHTML}</div><div class="sia-controls-card" style="animation:fadeUp 0.5s ease 0.3s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Pre-Analysis Summary Used for AI Control Update</div><div class="sia-summary-box" style="display:block">${aiSummary}</div></div>`;
 }
 
@@ -2566,8 +2568,7 @@ MALWARE SCAN RESULTS:
 ${scanLines}
 SHA-256: ${fileHash || 'N/A'}
 
-PRE-ANALYSIS USER CONTEXT (CEREBRAS SUMMARY):
-${preSummary}
+PRE-ANALYSIS USER CONTEXT (CEREBRAS SUMMARY OR RAW INPUTS):\n${preSummary}
 
 NIST 800-53 CONTROL FAMILIES TO ASSESS:
 ${controlsBlock}
