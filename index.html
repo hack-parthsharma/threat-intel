@@ -1463,7 +1463,7 @@ async function lookupVirusTotalFile(hash) {
   try {
     let resp;
     if (backendAvailable) {
-      resp = await fetchViaBackend(`/api/virustotal/file?hash=${encodeURIComponent(hash)}`);
+      resp = await fetchViaBackend(`/api/virustotal/file-report?hash=${encodeURIComponent(hash)}`);
     } else {
       resp = await fetch(`https://www.virustotal.com/api/v3/files/${encodeURIComponent(hash)}`, {
         headers: { 'x-apikey': VT_API_KEY },
@@ -1508,7 +1508,7 @@ async function lookupVirusTotalFile(hash) {
 
 async function lookupMetaDefender(hash) {
   try {
-    const resp = await fetchViaBackend(`/api/metadefender?hash=${encodeURIComponent(hash)}`);
+    const resp = await fetchViaBackend(`/api/metadefendefetchViaBackend(`/api/metadefender/hash?hash=${encodeURIComponent(hash)}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     const scan = data?.scan_results;
