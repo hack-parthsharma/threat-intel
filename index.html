@@ -435,18 +435,6 @@ const SUSPICIOUS_KEYWORDS = ['login','verify','account','secure','update','confi
 const URL_SHORTENERS = ['bit.ly','tinyurl.com','t.co','goo.gl','is.gd','buff.ly','ow.ly','rebrand.ly','bl.ink','short.io','cutt.ly','lnkd.in'];
 
 let scanHistory = [];
-const SIA_PRE_CONTROLS = [
-  { code: 'AC', title: 'Access Control' }, { code: 'AT', title: 'Awareness and Training' },
-  { code: 'AU', title: 'Audit and Accountability' }, { code: 'CA', title: 'Security Assessment and Authorization' },
-  { code: 'CM', title: 'Configuration Management' }, { code: 'CP', title: 'Contingency Plan' },
-  { code: 'IA', title: 'Identification and Authentication' }, { code: 'IR', title: 'Incident Response' },
-  { code: 'MA', title: 'Maintenance' }, { code: 'MP', title: 'Media Protection' },
-  { code: 'PE', title: 'Physical and Environmental Protection' }, { code: 'PL', title: 'Planning' },
-  { code: 'PS', title: 'Personnel Security' }, { code: 'RA', title: 'Risk Assessment' },
-  { code: 'SA', title: 'System and Service Acquisition' }, { code: 'SC', title: 'System and Communication Protection' },
-  { code: 'SI', title: 'System and Information Integrity' }
-];
-let siaDraftInputs = { controlInputs: {}, additionalNotes: '', cerebrasSummary: '' };
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -1160,6 +1148,18 @@ function showModule(module) {
 }
 
 // ═══════════════ SIA MODULE ═══════════════
+const SIA_PRE_CONTROLS = [
+  { code: 'AC', title: 'Access Control' }, { code: 'AT', title: 'Awareness and Training' },
+  { code: 'AU', title: 'Audit and Accountability' }, { code: 'CA', title: 'Security Assessment and Authorization' },
+  { code: 'CM', title: 'Configuration Management' }, { code: 'CP', title: 'Contingency Plan' },
+  { code: 'IA', title: 'Identification and Authentication' }, { code: 'IR', title: 'Incident Response' },
+  { code: 'MA', title: 'Maintenance' }, { code: 'MP', title: 'Media Protection' },
+  { code: 'PE', title: 'Physical and Environmental Protection' }, { code: 'PL', title: 'Planning' },
+  { code: 'PS', title: 'Personnel Security' }, { code: 'RA', title: 'Risk Assessment' },
+  { code: 'SA', title: 'System and Service Acquisition' }, { code: 'SC', title: 'System and Communication Protection' },
+  { code: 'SI', title: 'System and Information Integrity' }
+];
+let siaDraftInputs = { controlInputs: {}, additionalNotes: '', cerebrasSummary: '' };
 let siaFile = null;
 
 document.addEventListener('DOMContentLoaded', () => {
