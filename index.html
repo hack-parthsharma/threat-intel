@@ -349,7 +349,19 @@ body.dark .agent-input:focus { background: #141B2D; }
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Assessment Agent
     </label>
-    <input type="text" class="agent-input" id="assessmentAgent" placeholder="Enter your name (e.g., Parth)" spellcheck="false">
+    <input type="text" class="agent-input" id="assessmentAgent" placeholder="Enter your name (e.g., Parth)" spellcheck="false" required>
+  </div>
+  <div class="sia-controls-card" id="siaPreInputCard">
+    <div class="section-heading">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Pre-Analysis Control Inputs
+    </div>
+    <p style="font-size:12px;color:var(--text-secondary)">Fill in control-specific notes before running file analysis. If notes are provided, they are summarized via Cerebras and used to guide Cerebras-generated control updates.</p>
+    <div class="sia-controls-grid" id="siaPreControlsGrid"></div>
+    <div style="margin-top:14px">
+      <label class="input-label" style="margin-bottom:8px">Additional Notes</label>
+      <textarea id="siaPreAdditionalNotes" class="sia-control-input" placeholder="Add environment-specific concerns, approvals, exceptions, or compensating controls..." oninput="updatePreSIAAdditionalNotes(this.value)"></textarea>
+    </div>
   </div>
   <div class="sia-controls-card" id="siaPreInputCard">
     <div class="section-heading">
@@ -2056,6 +2068,12 @@ async function startSIAScan() {
     showToast('Please upload a file first');
     return;
   }
+  const assessmentAgent = document.getElementById('assessmentAgent').value.trim();
+  if (!assessmentAgent) {
+    showToast('Please enter the Assessment Agent name');
+    document.getElementById('assessmentAgent').focus();
+    return;
+  }
 
   const btn = document.getElementById('siaScanBtn');
   const progress = document.getElementById('siaProgress');
@@ -2342,7 +2360,7 @@ async function startSIAScan() {
     controls,
     appIntel,
     scanDate: new Date(),
-    assessmentAgent: document.getElementById('assessmentAgent').value.trim() || 'N/A',
+    assessmentAgent,
     userControlInputs: { ...(siaDraftInputs.controlInputs || {}) },
     additionalNotes: siaDraftInputs.additionalNotes || '',
     preScanSummary: ''
@@ -2459,6 +2477,100 @@ Provide concise output with:
     siaDraftInputs.cerebrasSummary = summary;
     const box = document.getElementById('preCerebrasSummaryBox');
     if (box && summary) { box.textContent = summary; box.style.display = 'block'; }
+    return summary;
+  } catch (err) {
+    console.error('Cerebras summary error:', err);
+    return '';
+  }
+}
+
+function renderPreSIAControlInputs() {
+  const grid = document.getElementById('siaPreControlsGrid');
+  if (!grid) return;
+  grid.innerHTML = SIA_PRE_CONTROLS.map((ctrl, idx) => {
+    const saved = escapeHtml(siaDraftInputs.controlInputs?.[ctrl.code] || '');
+    return `<div class="sia-control-item"><div class="sia-control-head"><strong>${idx + 1}. ${ctrl.code} — ${escapeHtml(ctrl.title)}</strong></div><textarea class="sia-control-input" id="preControl_${ctrl.code}" placeholder="Add notes for ${ctrl.code} based on this file and environment..." oninput="updatePreSIAControlInput('${ctrl.code}', this.value)">${saved}</textarea></div>`;
+  }).join('');
+  const extra = document.getElementById('siaPreAdditionalNotes');
+  if (extra) extra.value = siaDraftInputs.additionalNotes || '';
+}
+
+function updatePreSIAControlInput(controlCode, value) {
+  if (!siaDraftInputs.controlInputs) siaDraftInputs.controlInputs = {};
+  siaDraftInputs.controlInputs[controlCode] = value;
+}
+
+function updatePreSIAAdditionalNotes(value) {
+  siaDraftInputs.additionalNotes = value;
+}
+
+function collectSIAUserContext() {
+  const controlLines = SIA_PRE_CONTROLS.map((ctrl) => {
+    const note = String(siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
+    return note ? `${ctrl.code}: ${note}` : '';
+  }).filter(Boolean);
+  const additional = String(siaDraftInputs.additionalNotes || '').trim();
+  if (!controlLines.length && !additional) return '';
+  return `Control Notes:
+${controlLines.join('\n')}
+
+Additional Notes:
+${additional || 'None'}`;
+}
+
+
+function getCerebrasModel() {
+  if (!window.__TRISHUL_CEREBRAS_MODEL__) window.__TRISHUL_CEREBRAS_MODEL__ = 'llama3.1-8b';
+  return window.__TRISHUL_CEREBRAS_MODEL__;
+}
+
+async function requestCerebras(prompt, maxTokens = 700, temperature = 0.2) {
+  await ensureBackendChecked();
+  if (!backendAvailable) {
+    throw new Error('Backend unavailable for Cerebras request');
+  }
+
+  const resp = await fetchViaBackend('/api/cerebras-summary', {
+    method: 'POST',
+    body: JSON.stringify({ prompt, model: getCerebrasModel(), max_tokens: maxTokens, temperature })
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data?.error || `Cerebras backend HTTP ${resp.status}`);
+
+  const content = (data?.summary || data?.content || data?.choices?.[0]?.message?.content || '').trim();
+  if (!content) throw new Error('Empty Cerebras response');
+  return content;
+}
+
+async function summarizeSIAInputsPreScan() {
+  const enteredNotes = Object.values(siaDraftInputs.controlInputs || {}).filter(v => String(v || '').trim().length > 0);
+  const additional = String(siaDraftInputs.additionalNotes || '').trim();
+  const hasInput = enteredNotes.length > 0 || additional.length > 0;
+  if (!hasInput) {
+    return '';
+  }
+  const controlText = SIA_PRE_CONTROLS.map((ctrl) => {
+    const note = (siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
+    return note ? `${ctrl.code} (${ctrl.title})
+User Note: ${note}` : '';
+  }).filter(Boolean).join('\n\n');
+
+  const prompt = `Summarize these pre-analysis security impact notes for file review and control tailoring.
+
+Control notes:
+${controlText}
+
+Additional Notes:
+${additional || 'None'}
+
+Provide concise output with:
+1) Executive summary
+2) Key risk flags
+3) Control considerations
+4) Recommended disposition.`;
+
+  try {
+    const summary = await requestCerebras(prompt, 700, 0.2);
     return summary;
   } catch (err) {
     console.error('Cerebras summary error:', err);
