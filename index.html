@@ -210,6 +210,14 @@ body.dark .agent-input:focus { background: #141B2D; }
 .sia-scan-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .page { display: none; } .page.active { display: block; }
 .landing-page { display: none; } .landing-page.active { display: flex; }
+.sia-controls-card { background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-top: 24px; box-shadow: var(--shadow-sm); }
+.sia-controls-grid { display: grid; gap: 16px; margin-top: 12px; }
+.sia-control-item { border: 1px solid var(--border-light); border-radius: var(--radius); padding: 14px; background: var(--bg); }
+.sia-control-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.sia-control-head strong { font-size: 13px; }
+.sia-control-question { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.5; }
+.sia-control-input { width: 100%; min-height: 74px; resize: vertical; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-white); color: var(--text); padding: 10px; font-family: var(--font); font-size: 13px; }
+.sia-control-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,93,38,0.1); }
 @media (max-width: 768px) {
   .module-cards { grid-template-columns: 1fr; }
   .landing-title { font-size: 24px; }
@@ -343,6 +351,18 @@ body.dark .agent-input:focus { background: #141B2D; }
     </label>
     <input type="text" class="agent-input" id="assessmentAgent" placeholder="Enter your name (e.g., Parth)" spellcheck="false">
   </div>
+  <div class="sia-controls-card" id="siaPreInputCard">
+    <div class="section-heading">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Pre-Analysis Control Inputs
+    </div>
+    <p style="font-size:12px;color:var(--text-secondary)">Fill in control-specific notes before running file analysis. If notes are provided, they are summarized via Cerebras and used to guide Cerebras-generated control updates.</p>
+    <div class="sia-controls-grid" id="siaPreControlsGrid"></div>
+    <div style="margin-top:14px">
+      <label class="input-label" style="margin-bottom:8px">Additional Notes</label>
+      <textarea id="siaPreAdditionalNotes" class="sia-control-input" placeholder="Add environment-specific concerns, approvals, exceptions, or compensating controls..." oninput="updatePreSIAAdditionalNotes(this.value)"></textarea>
+    </div>
+  </div>
   <div class="upload-zone" id="uploadZone">
     <input type="file" id="siaFileInput" onchange="handleFileSelect(event)">
     <div class="upload-icon">
@@ -372,7 +392,7 @@ body.dark .agent-input:focus { background: #141B2D; }
 
 <script>
 // ================================================================
-// TRISHUL v5.0 — 21-Engine URL Threat Intelligence + SIA (12 File Engines + Groq AI Controls)
+// TRISHUL v5.0 — 21-Engine URL Threat Intelligence + SIA (12 File Engines + Cerebras AI Controls)
 // NEW: PhishTank, AbuseIPDB, Cloudflare Radar, Cert Transparency,
 //      IP Geolocation/ASN, Google Safe Browsing, VT Community Votes
 // ================================================================
@@ -380,6 +400,7 @@ body.dark .agent-input:focus { background: #141B2D; }
 const PROXY_BASE = 'https://threatintel.ps191240.workers.dev';
 const VT_API_KEY = '5bcaccb925cb630787f05b9ef5ec6f91ecf4acaa354c9c0459bcfaf5fd2a9055';
 let backendAvailable = false;
+let backendCheckPromise = null;
 let lastSIAScanData = null;
 
 const KNOWN_SAFE_DOMAINS = [
@@ -410,6 +431,22 @@ const SUSPICIOUS_KEYWORDS = ['login','verify','account','secure','update','confi
 const URL_SHORTENERS = ['bit.ly','tinyurl.com','t.co','goo.gl','is.gd','buff.ly','ow.ly','rebrand.ly','bl.ink','short.io','cutt.ly','lnkd.in'];
 
 let scanHistory = [];
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function safeDecodeURIComponent(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
 
 async function checkBackend() {
   try {
@@ -417,6 +454,14 @@ async function checkBackend() {
     const data = await resp.json();
     if (data.status === 'ok') backendAvailable = true; else throw new Error();
   } catch(e) { backendAvailable = false; }
+  return backendAvailable;
+}
+
+async function ensureBackendChecked() {
+  if (!backendCheckPromise) {
+    backendCheckPromise = checkBackend().finally(() => { backendCheckPromise = null; });
+  }
+  return backendCheckPromise;
 }
 
 function toggleTheme() {
@@ -1107,6 +1152,18 @@ function showModule(module) {
 }
 
 // ═══════════════ SIA MODULE ═══════════════
+const SIA_PRE_CONTROLS = [
+  { code: 'AC', title: 'Access Control' }, { code: 'AT', title: 'Awareness and Training' },
+  { code: 'AU', title: 'Audit and Accountability' }, { code: 'CA', title: 'Security Assessment and Authorization' },
+  { code: 'CM', title: 'Configuration Management' }, { code: 'CP', title: 'Contingency Plan' },
+  { code: 'IA', title: 'Identification and Authentication' }, { code: 'IR', title: 'Incident Response' },
+  { code: 'MA', title: 'Maintenance' }, { code: 'MP', title: 'Media Protection' },
+  { code: 'PE', title: 'Physical and Environmental Protection' }, { code: 'PL', title: 'Planning' },
+  { code: 'PS', title: 'Personnel Security' }, { code: 'RA', title: 'Risk Assessment' },
+  { code: 'SA', title: 'System and Service Acquisition' }, { code: 'SC', title: 'System and Communication Protection' },
+  { code: 'SI', title: 'System and Information Integrity' }
+];
+let siaDraftInputs = { controlInputs: {}, additionalNotes: '' };
 let siaFile = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1125,9 +1182,10 @@ function handleFile(file) {
   const sizeStr = file.size < 1024 ? file.size + ' B' : file.size < 1048576 ? (file.size / 1024).toFixed(1) + ' KB' : (file.size / 1048576).toFixed(2) + ' MB';
   const icons = { exe:'⚙️',msi:'📦',dmg:'💿',pkg:'📦',deb:'🐧',apk:'📱',jar:'☕',zip:'🗜️',rar:'🗜️','7z':'🗜️',tar:'🗜️',gz:'🗜️',pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ps1:'💻',bat:'💻',sh:'💻',py:'🐍',js:'📜' };
   const icon = icons[ext] || '📁';
+  const safeFileName = escapeHtml(file.name);
   document.getElementById('uploadZone').style.display = 'none';
   document.getElementById('siaFileInfo').style.display = 'flex';
-  document.getElementById('siaFileInfo').innerHTML = `<div class="file-info"><div class="file-icon">${icon}</div><div class="file-meta"><div class="file-name">${file.name}</div><div class="file-details">${sizeStr} · ${file.type || ext.toUpperCase()} · Last modified: ${new Date(file.lastModified).toLocaleDateString()}</div></div><button class="file-remove" onclick="removeFile()">Remove</button></div>`;
+  document.getElementById('siaFileInfo').innerHTML = `<div class="file-info"><div class="file-icon">${icon}</div><div class="file-meta"><div class="file-name">${safeFileName}</div><div class="file-details">${sizeStr} · ${file.type || ext.toUpperCase()} · Last modified: ${new Date(file.lastModified).toLocaleDateString()}</div></div><button class="file-remove" onclick="removeFile()">Remove</button></div>`;
   document.getElementById('siaScanBtn').disabled = false;
 }
 
@@ -1140,6 +1198,8 @@ function removeFile() {
   document.getElementById('siaFileInput').value = '';
   document.getElementById('siaResultsContainer').innerHTML = '';
   lastSIAScanData = null;
+  siaDraftInputs = { controlInputs: {}, additionalNotes: '' };
+  renderPreSIAControlInputs();
 }
 
 // [SIA functions kept identical to original — omitted here for length]
@@ -2266,9 +2326,11 @@ async function startSIAScan() {
 
   pFill.style.width = '97%';
   pText.textContent = 'Generating AI security controls...';
-  pEngine.textContent = 'Groq AI (Llama 3.3)';
+  pEngine.textContent = 'Cerebras AI (Llama 3.3)';
 
-  const controls = await buildGroqControls(appIntel, verdict, fileHash, results);
+  const userContext = collectSIAUserContext();
+  const aiContext = userContext;
+  const controls = await buildCerebrasControls(appIntel, verdict, fileHash, results, aiContext, siaDraftInputs.controlInputs || {}, siaDraftInputs.additionalNotes || "");
 
   lastSIAScanData = {
     fileName,
@@ -2280,17 +2342,20 @@ async function startSIAScan() {
     controls,
     appIntel,
     scanDate: new Date(),
-    assessmentAgent: document.getElementById('assessmentAgent').value.trim() || 'N/A'
+    assessmentAgent: document.getElementById('assessmentAgent').value.trim() || 'N/A',
+    userControlInputs: { ...(siaDraftInputs.controlInputs || {}) },
+    additionalNotes: siaDraftInputs.additionalNotes || '',
+    preScanSummary: ''
   };
 
-  renderSIAResults(fileName, fileHash, fileSize, fileExt, results, verdict);
+  renderSIAResults(fileName, fileHash, fileSize, fileExt, results, verdict, controls);
 
   btn.disabled = false;
   btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> ANALYZE FILE';
 
   setTimeout(() => progress.classList.remove('active'), 2000);
 }
-function renderSIAResults(fileName,hash,fileSize,ext,results,verdict){
+function renderSIAResults(fileName,hash,fileSize,ext,results,verdict,controls=[]){
   const container=document.getElementById('siaResultsContainer');
   const safety=100-verdict.threatScore;const vc=verdict.level==='safe'?'var(--safe)':verdict.level==='caution'?'var(--warn)':'var(--danger)';
   const circ=2*Math.PI*42;const safeOff=circ-(safety/100)*circ;const emoji=verdict.level==='safe'?'✅':verdict.level==='caution'?'⚠️':'🚨';
@@ -2298,6 +2363,100 @@ function renderSIAResults(fileName,hash,fileSize,ext,results,verdict){
   let engHTML='';for(const r of results){const bc=r.status==='clean'?'badge-clean':r.status==='suspicious'?'badge-suspicious':r.status==='malicious'?'badge-malicious':r.status==='error'?'badge-error':'badge-unknown';const bl=r.status==='clean'?'CLEAN':r.status==='suspicious'?'SUSPICIOUS':r.status==='malicious'?'MALICIOUS':r.status==='error'?'ERROR':'UNKNOWN';const em=r.status==='clean'?'🟢':r.status==='suspicious'?'🟡':r.status==='malicious'?'🔴':'⚪';let dHTML='';for(const[k,v]of Object.entries(r.details))dHTML+=`<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`;engHTML+=`<div class="engine-card"><div class="engine-header"><span class="engine-name">${em} ${r.engine}</span><span class="engine-badge ${bc}">${bl}</span></div><p class="engine-desc">${r.description}</p><div class="engine-details">${dHTML}</div></div>`;}
   let aHTML='';for(const r of verdict.reasons.safe)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-safe"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;for(const r of verdict.reasons.caution)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-warn"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;for(const r of verdict.reasons.danger)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
   container.innerHTML=`<div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease;margin-top:24px"><div class="verdict-icon">${emoji}</div><div class="verdict-text"><div class="verdict-title">${verdict.title}</div><div class="verdict-subtitle">${verdict.subtitle}</div></div><div class="verdict-url">${fileName}<br><span style="font-size:10px;opacity:0.7">${sizeMB} · .${ext}</span></div></div><div class="scores-row"><div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${safeOff}"/></svg><div class="score-num" style="color:${vc}">${safety}</div></div><div class="score-label">Safety Score</div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">File Summary</div><div style="font-size:12px;color:var(--text-secondary);line-height:2;font-family:var(--font-mono)">📁 ${fileName}<br>📏 ${sizeMB}<br>🔑 SHA-256: <span style="cursor:pointer;border-bottom:1px dashed var(--text-muted)" onclick="navigator.clipboard.writeText('${hash||''}').then(()=>showToast('Hash copied!'))">${hash?hash.substring(0,20)+'...':'N/A'}</span></div></div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Results</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious</div></div></div></div><div class="export-row"><button class="export-btn sia-report-btn" onclick="generateSIADocx()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Download SIA Report (DOCX)</button><button class="export-btn sia-report-btn" onclick="generateSIAPdf()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Download SIA Report (PDF)</button></div><div class="analysis-card" style="animation:fadeUp 0.5s ease 0.15s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Analysis Summary</div>${aHTML}</div><div style="animation:fadeUp 0.5s ease 0.25s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Detailed Results</div>${engHTML}</div>`;
+}
+
+function renderPreSIAControlInputs() {
+  const grid = document.getElementById('siaPreControlsGrid');
+  if (!grid) return;
+  grid.innerHTML = SIA_PRE_CONTROLS.map((ctrl, idx) => {
+    const saved = escapeHtml(siaDraftInputs.controlInputs?.[ctrl.code] || '');
+    return `<div class="sia-control-item"><div class="sia-control-head"><strong>${idx + 1}. ${ctrl.code} — ${escapeHtml(ctrl.title)}</strong></div><textarea class="sia-control-input" id="preControl_${ctrl.code}" placeholder="Add notes for ${ctrl.code} based on this file and environment..." oninput="updatePreSIAControlInput('${ctrl.code}', this.value)">${saved}</textarea></div>`;
+  }).join('');
+  const extra = document.getElementById('siaPreAdditionalNotes');
+  if (extra) extra.value = siaDraftInputs.additionalNotes || '';
+}
+
+function updatePreSIAControlInput(controlCode, value) {
+  if (!siaDraftInputs.controlInputs) siaDraftInputs.controlInputs = {};
+  siaDraftInputs.controlInputs[controlCode] = value;
+}
+
+function updatePreSIAAdditionalNotes(value) {
+  siaDraftInputs.additionalNotes = value;
+}
+
+function collectSIAUserContext() {
+  const controlLines = SIA_PRE_CONTROLS.map((ctrl) => {
+    const note = String(siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
+    return note ? `${ctrl.code}: ${note}` : '';
+  }).filter(Boolean);
+  const additional = String(siaDraftInputs.additionalNotes || '').trim();
+  if (!controlLines.length && !additional) return '';
+  return `Control Notes:
+${controlLines.join('\n')}
+
+Additional Notes:
+${additional || 'None'}`;
+}
+
+
+function getCerebrasModel() {
+  if (!window.__TRISHUL_CEREBRAS_MODEL__) window.__TRISHUL_CEREBRAS_MODEL__ = 'llama3.1-8b';
+  return window.__TRISHUL_CEREBRAS_MODEL__;
+}
+
+async function requestCerebras(prompt, maxTokens = 700, temperature = 0.2) {
+  await ensureBackendChecked();
+  if (!backendAvailable) {
+    throw new Error('Backend unavailable for Cerebras request');
+  }
+
+  const resp = await fetchViaBackend('/api/cerebras-summary', {
+    method: 'POST',
+    body: JSON.stringify({ prompt, model: getCerebrasModel(), max_tokens: maxTokens, temperature })
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data?.error || `Cerebras backend HTTP ${resp.status}`);
+
+  const content = (data?.summary || data?.content || data?.choices?.[0]?.message?.content || '').trim();
+  if (!content) throw new Error('Empty Cerebras response');
+  return content;
+}
+
+async function summarizeSIAInputsPreScan() {
+  const enteredNotes = Object.values(siaDraftInputs.controlInputs || {}).filter(v => String(v || '').trim().length > 0);
+  const additional = String(siaDraftInputs.additionalNotes || '').trim();
+  const hasInput = enteredNotes.length > 0 || additional.length > 0;
+  if (!hasInput) {
+    return '';
+  }
+  const controlText = SIA_PRE_CONTROLS.map((ctrl) => {
+    const note = (siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
+    return note ? `${ctrl.code} (${ctrl.title})
+User Note: ${note}` : '';
+  }).filter(Boolean).join('\n\n');
+
+  const prompt = `Summarize these pre-analysis security impact notes for file review and control tailoring.
+
+Control notes:
+${controlText}
+
+Additional Notes:
+${additional || 'None'}
+
+Provide concise output with:
+1) Executive summary
+2) Key risk flags
+3) Control considerations
+4) Recommended disposition.`;
+
+  try {
+    const summary = await requestCerebras(prompt, 700, 0.2);
+    return summary;
+  } catch (err) {
+    console.error('Cerebras summary error:', err);
+    return '';
+  }
 }
 
 // App intelligence and SIA report functions (preserved from original)
@@ -2308,14 +2467,12 @@ async function fetchAppIntelligence(fileName,ext){const appName=extractAppName(f
 async function fetchWikipedia(query){try{const resp=await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query.replace(/\s+/g,'_'))}`,{signal:AbortSignal.timeout(5000)});if(!resp.ok)return null;const data=await resp.json();return{description:data.extract||'',raw:data.extract||''};}catch(e){return null;}}
 async function fetchDuckDuckGo(query){try{const resp=await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`,{signal:AbortSignal.timeout(5000)});const data=await resp.json();const desc=data.Abstract||data.AbstractText||'';return{description:desc,raw:desc,developer:''};}catch(e){return null;}}
 
-// ── GROQ AI — Dynamic NIST Controls Generator ────────────────────────────────
-const GROQ_API_KEY = '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';
-const GROQ_MODEL   = 'llama-3.3-70b-versatile';
-
-async function buildGroqControls(intel, verdict, fileHash, results) {
+// ── CEREBRAS AI — Dynamic NIST Controls Generator ────────────────────────────
+async function buildCerebrasControls(intel, verdict, fileHash, results, preScanSummary = "", userInputs = {}, additionalNotes = "") {
   const appName    = intel.name || 'Unknown Application';
   const scanLines  = results.map(r => `- ${r.engine}: ${r.status.toUpperCase()} — ${r.description}`).join('\n');
-  const staticFallback = () => buildIntelligentControls(intel, verdict, fileHash, results);
+  const preSummary = preScanSummary || "No pre-analysis summary provided.";
+  const staticFallback = () => buildIntelligentControls(intel, verdict, fileHash, results, userInputs, preSummary, additionalNotes);
 
   const NIST_CONTROLS = [
   { code:'AC', title:'Access Control',
@@ -2371,9 +2528,10 @@ async function buildGroqControls(intel, verdict, fileHash, results) {
     considerations:'' }
 ];
 
-  const controlsBlock = NIST_CONTROLS.map(c =>
-    `### ${c.code} — ${c.title}\nQuestion: ${c.question}${c.considerations ? '\nConsiderations: ' + c.considerations : ''}`
-  ).join('\n\n');
+  const controlsBlock = NIST_CONTROLS.map(c => {
+    const note = String(userInputs?.[c.code] || '').trim();
+    return `### ${c.code} — ${c.title}\nQuestion: ${c.question}${c.considerations ? '\nConsiderations: ' + c.considerations : ''}${note ? '\nUser Input Note: ' + note : ''}`;
+  }).join('\n\n');
 
   const prompt = `You are a senior cybersecurity analyst completing a NIST 800-53 Security Impact Analysis (SIA) form for a software deployment.
 
@@ -2399,7 +2557,7 @@ MALWARE SCAN RESULTS:
 ${scanLines}
 SHA-256: ${fileHash || 'N/A'}
 
-NIST 800-53 CONTROL FAMILIES TO ASSESS:
+PRE-ANALYSIS USER CONTEXT (CEREBRAS SUMMARY OR RAW INPUTS):\n${preSummary}\n\nADDITIONAL NOTES FROM USER:\n${additionalNotes || 'None'}\n\nNIST 800-53 CONTROL FAMILIES TO ASSESS:
 ${controlsBlock}
 
 INSTRUCTIONS:
@@ -2410,41 +2568,129 @@ INSTRUCTIONS:
 - Reference the actual file name, ports, protocols, auth methods, scan results, and encryption status where relevant.
 - For RA (Risk Assessment), always include the SHA-256 hash and mention virustotal/any.run scan sites.
 - For SC, address FIPS encryption, data at rest/in transit, and port authorization.
-- Do NOT write generic answers. Every answer must be tailored to this specific file.
+- Do NOT write generic answers. Every answer must be tailored to this specific file.\n- If a control has a "User Input Note", explicitly incorporate it and adjust Yes/No accordingly.\n- Ensure controls mentioned by user notes are materially updated in detail text.
 
 Respond ONLY with a valid JSON array, no markdown, no preamble:
 [{"code":"AC","title":"Access Control","answer":"Yes","detail":"..."},...]`;
 
   try {
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        max_tokens: 3500,
-        temperature: 0.3,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    if (!resp.ok) throw new Error(`Groq HTTP ${resp.status}`);
-    const data = await resp.json();
-    const raw  = data.choices?.[0]?.message?.content || '';
+    const raw = await requestCerebras(prompt, 2048, 0.3);
     const clean = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
     if (!Array.isArray(parsed) || parsed.length < 10) throw new Error('Invalid response shape');
     return parsed.map((c, i) => ({ num: String(i + 1), code: c.code, title: c.title, answer: c.answer, detail: c.detail }));
   } catch (e) {
-    console.warn('Groq fallback to static controls:', e.message);
+    console.warn('Cerebras fallback to static controls:', e.message, 'backendAvailable=', backendAvailable);
     return staticFallback();
   }
 }
-// ── END GROQ ─────────────────────────────────────────────────────────────────
+// ── END CEREBRAS ─────────────────────────────────────────────────────────────
 
-function buildIntelligentControls(intel,verdict,fileHash,results){const clean=verdict.level==='safe';const appName=intel.name;const vtResult=results.find(r=>r.engine.includes('VirusTotal'));const mdResult=results.find(r=>r.engine.includes('MetaDefender'));const vtSummary=vtResult?vtResult.description:'Not scanned';const mdSummary=mdResult?mdResult.description:'Not scanned';const scanSummary=`Checked on VirusTotal and MetaDefender — results are ${clean?'clear':'flagged'}. SHA-256: ${fileHash||'N/A'}`;let acAnswer='No',acDetail='';if(intel.authMethods.length>0){acAnswer='Yes';acDetail=`${appName} supports: ${intel.authMethods.join(', ')}. Roles should be defined with least privilege.`;}else if(intel.isServer||intel.isDatabase){acAnswer='Yes';acDetail=`${appName} is a ${intel.isDatabase?'database':'server'}. Access control should be configured with least privilege.`;}else{acDetail=`${appName} does not introduce new access control requirements.`;}let atAnswer='No',atDetail='';if(intel.isDatabase||intel.isServer||intel.requiresAdmin){atAnswer='Yes';atDetail=`Personnel managing ${appName} should be trained on its security configuration and standard operating procedures.`;}else{atDetail=`No additional training required for ${appName}.`;}let auAnswer='No',auDetail='';if(intel.isDatabase||intel.isServer||intel.hasWebInterface){auAnswer='Yes';auDetail=`${appName} should have logging enabled. Logs should be forwarded to the centralized SIEM.${intel.ports.length>0?' Network connections on port(s) '+intel.ports.join(', ')+' should be logged.':''}`;}else{auDetail=`${appName} does not generate security-relevant audit events beyond standard OS-level logging.`;}let caAnswer='No',caDetail='';if(intel.ports.length>0||intel.networkAccess){caAnswer='Yes';caDetail=intel.networkAccess||`${appName} communicates over port(s) ${intel.ports.join(', ')}.`;caDetail+=' All connections should be authorized. ';if(intel.usesEncryption)caDetail+='SSL/TLS supported.';else caDetail+='Encryption should be configured if not enabled by default.';}else{caDetail=`${appName} does not establish external network connections.`;}let cmAnswer='No',cmDetail='';if(intel.isServer||intel.isDatabase||intel.requiresAdmin){cmAnswer='Yes';cmDetail=`${appName} should be hardened per vendor guidelines or CIS benchmarks. Configuration baseline should be documented.`;}else{cmDetail=`Standard vulnerability scanning and patch management apply to ${appName}.`;}let cpAnswer='No',cpDetail='';if(intel.isDatabase&&intel.storesData){cpAnswer='Yes';cpDetail=`${appName} stores data requiring backup and disaster recovery planning. RPO/RTO should be defined.`;}else{cpDetail=`${appName} does not impact contingency planning.`;}let iaAnswer='No',iaDetail='';if(intel.authMethods.length>0){iaAnswer='Yes';iaDetail=`${appName} uses: ${intel.authMethods.join(', ')}. Integration with AD/IAM should be considered.`;}else{iaDetail=`Standard OS-level authentication applies. No additional identity management changes required.`;}let irAnswer='No',irDetail='';if(intel.isServer||intel.isDatabase||intel.hasWebInterface){irAnswer='Yes';irDetail=`IR procedures should include ${appName} in monitoring scope.`;}else{irDetail=`${appName} does not impact the current incident response plan.`;}let maDetail='';if(intel.isServer||intel.isDatabase){maDetail=`${appName} should be included in the maintenance schedule for patching.`;}else{maDetail=`Standard maintenance and patching procedures apply to ${appName}.`;}let mpDetail='';if(intel.storesData||intel.isDatabase){mpDetail=`${appName} stores data on disk. Data at rest should be encrypted. Media containing its data should be sanitized before disposal.`;}else{mpDetail=`${appName} does not introduce new media protection requirements.`;}let plAnswer='No',plDetail='';if(intel.isServer||intel.isDatabase||(intel.ports.length>0)){plAnswer='Yes';plDetail=`System architecture documentation should be updated to reflect ${appName}${intel.ports.length>0?' including ports '+intel.ports.join(', '):''}. Boundary diagrams may need updating.`;}else{plDetail=`${appName} does not impact the SSP or system architecture.`;}let scAnswer='No',scDetail='';if(intel.ports.length>0||intel.usesEncryption||intel.networkAccess){scAnswer='Yes';scDetail=intel.networkAccess?intel.networkAccess+' ':'';if(intel.usesEncryption)scDetail+='SSL/TLS supported. FIPS-compliant encryption should be verified. ';else if(intel.ports.length>0)scDetail+=`Communication on port(s) ${intel.ports.join(', ')} should be encrypted. `;scDetail+='All data traversing outside the authorization boundary should be encrypted using FIPS-compliant protocols.';if(intel.storesData)scDetail+=' Data at rest should be encrypted.';}else{scDetail=`${appName} does not establish network communications requiring additional protection.`;}let siAnswer=clean?'No':'Yes',siDetail='';if(!clean){siDetail=`Scan results indicate concerns: ${verdict.title}. Integrity review recommended before deployment.`;}else{siDetail=`Scanned clean by VirusTotal and MetaDefender. ${intel.isServer||intel.isDatabase?'Security patches should be applied promptly.':'Standard malicious code protection applies.'}`;};let saAnswer='No',saDetail='';if(intel.isOpenSource||intel.license){saAnswer='No';saDetail=`${appName} is ${intel.isOpenSource?'open-source software':'third-party software'}${intel.license?' licensed under '+intel.license:''}. No procurement cost — free to use.`;}else{saDetail=`${appName}${intel.developer?' by '+intel.developer:''} — licensing terms should be verified.`;}return[{num:'1',code:'AC',title:'Access Control',answer:acAnswer,detail:acDetail},{num:'2',code:'AT',title:'Awareness and Training',answer:atAnswer,detail:atDetail},{num:'3',code:'AU',title:'Audit and Accountability',answer:auAnswer,detail:auDetail},{num:'4',code:'CA',title:'Security Assessment and Authorization',answer:caAnswer,detail:caDetail},{num:'5',code:'CM',title:'Configuration Management',answer:cmAnswer,detail:cmDetail},{num:'6',code:'CP',title:'Contingency Plan',answer:cpAnswer,detail:cpDetail},{num:'7',code:'IA',title:'Identification and Authentication',answer:iaAnswer,detail:iaDetail},{num:'8',code:'IR',title:'Incident Response',answer:irAnswer,detail:irDetail},{num:'9',code:'MA',title:'Maintenance',answer:'No',detail:maDetail},{num:'10',code:'MP',title:'Media Protection',answer:'No',detail:mpDetail},{num:'11',code:'PE',title:'Physical and Environmental Protection',answer:'No',detail:`${appName} does not change physical protection requirements.`},{num:'12',code:'PL',title:'Planning',answer:plAnswer,detail:plDetail},{num:'13',code:'PS',title:'Personnel Security',answer:'No',detail:`${appName} does not change personnel security requirements.`},{num:'14',code:'RA',title:'Risk Assessment',answer:clean?'No':'Yes',detail:`${scanSummary}. ${vtSummary}. ${mdSummary}.`},{num:'15',code:'SA',title:'System and Service Acquisition',answer:saAnswer,detail:saDetail},{num:'16',code:'SC',title:'System and Communication Protection',answer:scAnswer,detail:scDetail},{num:'17',code:'SI',title:'System and Information Integrity',answer:siAnswer,detail:siDetail}];}
+function buildIntelligentControls(intel, verdict, fileHash, results, userInputs = {}, preScanSummary = '', additionalNotes = '') {
+  const clean = verdict.level === 'safe';
+  const appName = intel.name;
+  const vtResult = results.find(r => r.engine.includes('VirusTotal'));
+  const mdResult = results.find(r => r.engine.includes('MetaDefender'));
+  const vtSummary = vtResult ? vtResult.description : 'Not scanned';
+  const mdSummary = mdResult ? mdResult.description : 'Not scanned';
+  const scanSummary = `Checked on VirusTotal and MetaDefender — results are ${clean ? 'clear' : 'flagged'}. SHA-256: ${fileHash || 'N/A'}`;
+  const summarizedContext = [preScanSummary, additionalNotes].filter(Boolean).join(' ');
 
-function generateSIADocx(){if(!lastSIAScanData){showToast('No scan data available');return;}showToast('Generating DOCX report...');const d=lastSIAScanData;const today=d.scanDate.toLocaleDateString('en-US',{day:'numeric',month:'long',year:'numeric'});const sizeMB=d.fileSize<1048576?(d.fileSize/1024).toFixed(1)+' KB':(d.fileSize/1048576).toFixed(2)+' MB';const sizeBytes=d.fileSize.toLocaleString()+' bytes';const appName=d.fileName.replace(/[-_](windows|win|mac|linux|x64|x86|arm|setup|user|installer|portable)[-_]?/gi,' ').replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\s+/g,' ').trim();const appCategory=getAppCategory(d.fileExt);const{Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,Header,Footer,AlignmentType,HeadingLevel,BorderStyle,WidthType,ShadingType,PageNumber,PageBreak,LevelFormat}=docx;const border={style:BorderStyle.SINGLE,size:1,color:"999999"};const borders={top:border,bottom:border,left:border,right:border};const cellMargins={top:60,bottom:60,left:100,right:100};const headerShading={fill:"D5E8F0",type:ShadingType.CLEAR};const tableWidth=9360;const col1=4680;const col2=4680;function makeInfoRow(label,value){return new TableRow({children:[new TableCell({borders,width:{size:col1,type:WidthType.DXA},margins:cellMargins,children:[new Paragraph({children:[new TextRun({text:String(label||''),bold:true,size:20,font:"Arial"})]})]})  ,new TableCell({borders,width:{size:col2,type:WidthType.DXA},margins:cellMargins,children:[new Paragraph({children:[new TextRun({text:String(value||'N/A'),size:20,font:"Arial"})]})]})]});}function makeControlRow(ctrl){return new TableRow({children:[new TableCell({borders,width:{size:col1,type:WidthType.DXA},margins:cellMargins,children:[new Paragraph({children:[new TextRun({text:`${ctrl.num}. ${ctrl.code} (${ctrl.title})`,bold:true,size:20,font:"Arial"})]})]}),new TableCell({borders,width:{size:col2,type:WidthType.DXA},margins:cellMargins,children:[new Paragraph({children:[new TextRun({text:ctrl.answer==='Yes'?'☑ Yes  ☐ No':'☐ Yes  ☑ No',bold:true,size:20,font:"Arial"})]}),new Paragraph({spacing:{before:80},children:[new TextRun({text:'If yes, what is changing and how?',italics:true,size:18,font:"Arial",color:"666666"})]}),new Paragraph({spacing:{before:40},children:[new TextRun({text:String(ctrl.detail||'NA'),size:18,font:"Arial"})]})]})]});}const controls=d.controls;const doc=new Document({styles:{default:{document:{run:{font:"Arial",size:22}}},paragraphStyles:[{id:"Heading1",name:"Heading 1",basedOn:"Normal",next:"Normal",quickFormat:true,run:{size:32,bold:true,font:"Arial",color:"0B1D3A"},paragraph:{spacing:{before:240,after:120},outlineLevel:0}},{id:"Heading2",name:"Heading 2",basedOn:"Normal",next:"Normal",quickFormat:true,run:{size:26,bold:true,font:"Arial",color:"0B1D3A"},paragraph:{spacing:{before:200,after:100},outlineLevel:1}}]},numbering:{config:[{reference:"bullets",levels:[{level:0,format:LevelFormat.BULLET,text:"\u2022",alignment:AlignmentType.LEFT,style:{paragraph:{indent:{left:720,hanging:360}}}}]}]},sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:1440,right:1440,bottom:1440,left:1440}}},headers:{default:new Header({children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:"Security Impact Analysis",bold:true,size:18,font:"Arial",color:"666666"})]})]})},footers:{default:new Footer({children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:"Trishul SIA Report — Page ",size:16,font:"Arial",color:"999999"}),new TextRun({children:[PageNumber.CURRENT],size:16,font:"Arial",color:"999999"})]})]})},children:[new Paragraph({alignment:AlignmentType.CENTER,spacing:{after:60},children:[new TextRun({text:"Security Impact Analysis",size:36,bold:true,font:"Arial",color:"E85D26"})]}),new Paragraph({alignment:AlignmentType.CENTER,spacing:{after:300},children:[new TextRun({text:`Trishul SIA — ${today}`,size:20,font:"Arial",color:"666666"})]}),new Paragraph({alignment:AlignmentType.CENTER,spacing:{after:300},children:[new TextRun({text:appName,size:28,bold:true,font:"Arial"})]}),new Paragraph({heading:HeadingLevel.HEADING_2,children:[new TextRun("System Information")]}),new Table({width:{size:tableWidth,type:WidthType.DXA},columnWidths:[col1,col2],rows:[new TableRow({children:[new TableCell({borders,width:{size:col1,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Field",bold:true,size:20,font:"Arial"})]})]}),new TableCell({borders,width:{size:col2,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Value",bold:true,size:20,font:"Arial"})]})]})]}),makeInfoRow("System/Application Name:",appName),makeInfoRow("File Name:",d.fileName),makeInfoRow("Application Category:",appCategory),makeInfoRow("Change Requested By:","Security Team"),makeInfoRow("Assessment Agent:",d.assessmentAgent),makeInfoRow("Date:",today)]}),new Paragraph({spacing:{before:200},children:[]}),new Paragraph({heading:HeadingLevel.HEADING_2,children:[new TextRun("Summary")]}),new Table({width:{size:tableWidth,type:WidthType.DXA},columnWidths:[col1,col2],rows:[new TableRow({children:[new TableCell({borders,width:{size:col1,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Property",bold:true,size:20,font:"Arial"})]})]}),new TableCell({borders,width:{size:col2,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Details",bold:true,size:20,font:"Arial"})]})]})]}),makeInfoRow("Name:",d.fileName),makeInfoRow("Date:",today),makeInfoRow("Size:",`${sizeMB} (${sizeBytes})`),makeInfoRow("SHA-256:",d.fileHash||'N/A'),makeInfoRow("Verdict:",d.verdict.title),makeInfoRow("Safety Score:",`${100-d.verdict.threatScore} / 100`),makeInfoRow("Threat Score:",`${d.verdict.threatScore} / 100`)]}),new Paragraph({spacing:{before:200},children:[]}),new Paragraph({heading:HeadingLevel.HEADING_2,children:[new TextRun("Scan Engine Results")]}),...d.results.map(r=>new Paragraph({numbering:{reference:"bullets",level:0},spacing:{after:40},children:[new TextRun({text:`${r.engine}: `,bold:true,size:20,font:"Arial"}),new TextRun({text:r.status.toUpperCase(),bold:true,size:20,font:"Arial",color:r.status==='clean'?'0D9F6E':r.status==='suspicious'?'D97706':r.status==='malicious'?'DC2626':'666666'}),new TextRun({text:` — ${r.description}`,size:20,font:"Arial"})]})),new Paragraph({children:[new PageBreak()]}),new Paragraph({heading:HeadingLevel.HEADING_1,children:[new TextRun("Security Controls Assessment")]}),new Paragraph({spacing:{after:200},children:[new TextRun({text:"The following assessment evaluates the security impact across 17 NIST control families:",size:20,font:"Arial",color:"444444"})]}),new Table({width:{size:tableWidth,type:WidthType.DXA},columnWidths:[col1,col2],rows:[new TableRow({children:[new TableCell({borders,width:{size:col1,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Does the change:",bold:true,size:20,font:"Arial"})]})]}),new TableCell({borders,width:{size:col2,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Response",bold:true,size:20,font:"Arial"})]})]})]}), ...controls.map(c=>makeControlRow(c))]}),new Paragraph({spacing:{before:300},children:[]}),new Paragraph({spacing:{before:200},children:[new TextRun({text:'If you selected "yes" to any of the above questions, please update the appropriate document in the security package (SSP, boundary diagram, control implementation, policies, procedures, plans).',italics:true,size:18,font:"Arial",color:"666666"})]})]}]});Packer.toBlob(doc).then(blob=>{const safeName=appName.replace(/[^a-zA-Z0-9]/g,'_').substring(0,40);const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`SIA_${safeName}_${d.scanDate.toISOString().split('T')[0]}.docx`;document.body.appendChild(a);a.click();document.body.removeChild(a);showToast('SIA DOCX report downloaded!');}).catch(err=>{console.error('DOCX generation failed:',err);showToast('DOCX generation failed — check console');});}
+  let acAnswer = 'No', acDetail = '';
+  if (intel.authMethods.length > 0) { acAnswer = 'Yes'; acDetail = `${appName} supports: ${intel.authMethods.join(', ')}. Roles should be defined with least privilege.`; }
+  else if (intel.isServer || intel.isDatabase) { acAnswer = 'Yes'; acDetail = `${appName} is a ${intel.isDatabase ? 'database' : 'server'}. Access control should be configured with least privilege.`; }
+  else { acDetail = `${appName} does not introduce new access control requirements.`; }
 
-function generateSIAPdf(){if(!lastSIAScanData){showToast('No scan data available');return;}showToast('Generating PDF report...');const d=lastSIAScanData;const{jsPDF}=window.jspdf;const pdf=new jsPDF('p','mm','a4');const pageW=210;const margin=20;const contentW=pageW-2*margin;let y=margin;const today=d.scanDate.toLocaleDateString('en-US',{day:'numeric',month:'long',year:'numeric'});const sizeMB=d.fileSize<1048576?(d.fileSize/1024).toFixed(1)+' KB':(d.fileSize/1048576).toFixed(2)+' MB';const appName=d.fileName.replace(/[-_](windows|win|mac|linux|x64|x86|arm|setup|user|installer|portable)[-_]?/gi,' ').replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\s+/g,' ').trim();function checkPage(needed){if(y+needed>280){pdf.addPage();y=margin;addHeader();}}function addHeader(){pdf.setFontSize(8);pdf.setTextColor(150);pdf.text('Security Impact Analysis',pageW/2,12,{align:'center'});pdf.setDrawColor(200);pdf.line(margin,15,pageW-margin,15);}function addFooter(){pdf.setFontSize(8);pdf.setTextColor(150);pdf.text(`Trishul SIA Report — Page ${pdf.internal.getNumberOfPages()}`,pageW/2,290,{align:'center'});}addHeader();y=25;pdf.setFontSize(22);pdf.setTextColor(232,93,38);pdf.setFont('helvetica','bold');pdf.text('Security Impact Analysis',pageW/2,y,{align:'center'});y+=8;pdf.setFontSize(10);pdf.setTextColor(100);pdf.setFont('helvetica','normal');pdf.text(`Trishul SIA — ${today}`,pageW/2,y,{align:'center'});y+=10;pdf.setFontSize(14);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text(appName,pageW/2,y,{align:'center'});y+=15;pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('System Information',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.setLineWidth(0.5);pdf.line(margin,y,margin+50,y);y+=6;const sysInfo=[['System/Application Name',appName],['File Name',d.fileName],['Application Category',getAppCategory(d.fileExt)],['Assessment Agent',d.assessmentAgent],['Date',today]];pdf.setFontSize(9);for(const[label,value]of sysInfo){checkPage(8);pdf.setFont('helvetica','bold');pdf.setTextColor(80);pdf.text(label+':',margin,y);pdf.setFont('helvetica','normal');pdf.setTextColor(40);const valLines=pdf.splitTextToSize(value,contentW-55);pdf.text(valLines,margin+55,y);y+=Math.max(6,valLines.length*5);}y+=8;checkPage(60);pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Summary',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.line(margin,y,margin+30,y);y+=6;const summaryData=[['Name',d.fileName],['Size',`${sizeMB} (${d.fileSize.toLocaleString()} bytes)`],['SHA-256',d.fileHash||'N/A'],['Verdict',d.verdict.title],['Safety Score',`${100-d.verdict.threatScore} / 100`],['Threat Score',`${d.verdict.threatScore} / 100`]];pdf.setFontSize(9);for(const[label,value]of summaryData){checkPage(8);pdf.setFont('helvetica','bold');pdf.setTextColor(80);pdf.text(label+':',margin,y);pdf.setFont('helvetica','normal');pdf.setTextColor(40);const valLines=pdf.splitTextToSize(String(value),contentW-55);pdf.text(valLines,margin+55,y);y+=Math.max(6,valLines.length*5);}y+=8;checkPage(20);pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Scan Engine Results',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.line(margin,y,margin+50,y);y+=6;pdf.setFontSize(8);for(const r of d.results){checkPage(12);const color=r.status==='clean'?[13,159,110]:r.status==='suspicious'?[217,119,6]:r.status==='malicious'?[220,38,38]:[100,100,100];pdf.setFillColor(...color);pdf.circle(margin+2,y-1.2,1.2,'F');pdf.setFont('helvetica','bold');pdf.setTextColor(40);pdf.text(r.engine,margin+6,y);pdf.setFont('helvetica','bold');pdf.setTextColor(...color);pdf.text(r.status.toUpperCase(),margin+65,y);pdf.setFont('helvetica','normal');pdf.setTextColor(80);const descLines=pdf.splitTextToSize(r.description,contentW-6);y+=4;pdf.text(descLines,margin+6,y);y+=descLines.length*4+3;}pdf.addPage();y=margin;addHeader();y=25;pdf.setFontSize(16);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Security Controls Assessment',pageW/2,y,{align:'center'});y+=10;const controls=d.controls;pdf.setFontSize(8);let ctrlNum=1;for(const ctrl of controls){checkPage(18);pdf.setFillColor(213,232,240);pdf.rect(margin,y-3,contentW,7,'F');pdf.setFont('helvetica','bold');pdf.setTextColor(11,29,58);pdf.text(`${ctrlNum}. ${ctrl.code} (${ctrl.title})`,margin+2,y+1.5);const answerColor=ctrl.answer==='Yes'?[220,38,38]:[13,159,110];pdf.setTextColor(...answerColor);pdf.setFont('helvetica','bold');pdf.text(ctrl.answer==='Yes'?'YES':'NO',pageW-margin-10,y+1.5,{align:'right'});y+=8;pdf.setFont('helvetica','normal');pdf.setTextColor(80);pdf.setFontSize(7.5);const detailLines=pdf.splitTextToSize(ctrl.detail,contentW-4);pdf.text(detailLines,margin+2,y);y+=detailLines.length*3.5+4;pdf.setFontSize(8);ctrlNum++;}checkPage(15);y+=5;pdf.setFontSize(7);pdf.setTextColor(150);pdf.setFont('helvetica','italic');const fnLines=pdf.splitTextToSize('If you selected "yes" to any of the above, please update the appropriate document in the security package (SSP, boundary diagram, control implementation, policies, procedures, plans).',contentW);pdf.text(fnLines,margin,y);addFooter();const safeName=appName.replace(/[^a-zA-Z0-9]/g,'_').substring(0,40);pdf.save(`SIA_${safeName}_${d.scanDate.toISOString().split('T')[0]}.pdf`);showToast('SIA PDF report downloaded!');}
+  let atAnswer = 'No', atDetail = '';
+  if (intel.isDatabase || intel.isServer || intel.requiresAdmin) { atAnswer = 'Yes'; atDetail = `Personnel managing ${appName} should be trained on its security configuration and standard operating procedures.`; }
+  else { atDetail = `No additional training required for ${appName}.`; }
+
+  let auAnswer = 'No', auDetail = '';
+  if (intel.isDatabase || intel.isServer || intel.hasWebInterface) { auAnswer = 'Yes'; auDetail = `${appName} should have logging enabled. Logs should be forwarded to the centralized SIEM.${intel.ports.length > 0 ? ' Network connections on port(s) ' + intel.ports.join(', ') + ' should be logged.' : ''}`; }
+  else { auDetail = `${appName} does not generate security-relevant audit events beyond standard OS-level logging.`; }
+
+  let caAnswer = 'No', caDetail = '';
+  if (intel.ports.length > 0 || intel.networkAccess) { caAnswer = 'Yes'; caDetail = intel.networkAccess || `${appName} communicates over port(s) ${intel.ports.join(', ')}.`; caDetail += ' All connections should be authorized. '; if (intel.usesEncryption) caDetail += 'SSL/TLS supported.'; else caDetail += 'Encryption should be configured if not enabled by default.'; }
+  else { caDetail = `${appName} does not establish external network connections.`; }
+
+  let cmAnswer = 'No', cmDetail = '';
+  if (intel.isServer || intel.isDatabase || intel.requiresAdmin) { cmAnswer = 'Yes'; cmDetail = `${appName} should be hardened per vendor guidelines or CIS benchmarks. Configuration baseline should be documented.`; }
+  else { cmDetail = `Standard vulnerability scanning and patch management apply to ${appName}.`; }
+
+  let cpAnswer = 'No', cpDetail = '';
+  if (intel.isDatabase && intel.storesData) { cpAnswer = 'Yes'; cpDetail = `${appName} stores data requiring backup and disaster recovery planning. RPO/RTO should be defined.`; }
+  else { cpDetail = `${appName} does not impact contingency planning.`; }
+
+  let iaAnswer = 'No', iaDetail = '';
+  if (intel.authMethods.length > 0) { iaAnswer = 'Yes'; iaDetail = `${appName} uses: ${intel.authMethods.join(', ')}. Integration with AD/IAM should be considered.`; }
+  else { iaDetail = `Standard OS-level authentication applies. No additional identity management changes required.`; }
+
+  let irAnswer = 'No', irDetail = '';
+  if (intel.isServer || intel.isDatabase || intel.hasWebInterface) { irAnswer = 'Yes'; irDetail = `IR procedures should include ${appName} in monitoring scope.`; }
+  else { irDetail = `${appName} does not impact the current incident response plan.`; }
+
+  const maDetail = (intel.isServer || intel.isDatabase) ? `${appName} should be included in the maintenance schedule for patching.` : `Standard maintenance and patching procedures apply to ${appName}.`;
+  const mpDetail = (intel.storesData || intel.isDatabase) ? `${appName} stores data on disk. Data at rest should be encrypted. Media containing its data should be sanitized before disposal.` : `${appName} does not introduce new media protection requirements.`;
+
+  let plAnswer = 'No', plDetail = '';
+  if (intel.isServer || intel.isDatabase || intel.ports.length > 0) { plAnswer = 'Yes'; plDetail = `System architecture documentation should be updated to reflect ${appName}${intel.ports.length > 0 ? ' including ports ' + intel.ports.join(', ') : ''}. Boundary diagrams may need updating.`; }
+  else { plDetail = `${appName} does not impact the SSP or system architecture.`; }
+
+  let scAnswer = 'No', scDetail = '';
+  if (intel.ports.length > 0 || intel.usesEncryption || intel.networkAccess) {
+    scAnswer = 'Yes';
+    scDetail = intel.networkAccess ? intel.networkAccess + ' ' : '';
+    if (intel.usesEncryption) scDetail += 'SSL/TLS supported. FIPS-compliant encryption should be verified. ';
+    else if (intel.ports.length > 0) scDetail += `Communication on port(s) ${intel.ports.join(', ')} should be encrypted. `;
+    scDetail += 'All data traversing outside the authorization boundary should be encrypted using FIPS-compliant protocols.';
+    if (intel.storesData) scDetail += ' Data at rest should be encrypted.';
+  } else {
+    scDetail = `${appName} does not establish network communications requiring additional protection.`;
+  }
+
+  const siAnswer = clean ? 'No' : 'Yes';
+  const siDetail = !clean
+    ? `Scan results indicate concerns: ${verdict.title}. Integrity review recommended before deployment.`
+    : `Scanned clean by VirusTotal and MetaDefender. ${intel.isServer || intel.isDatabase ? 'Security patches should be applied promptly.' : 'Standard malicious code protection applies.'}`;
+
+  let saAnswer = 'No', saDetail = '';
+  if (intel.isOpenSource || intel.license) { saAnswer = 'No'; saDetail = `${appName} is ${intel.isOpenSource ? 'open-source software' : 'third-party software'}${intel.license ? ' licensed under ' + intel.license : ''}. No procurement cost — free to use.`; }
+  else { saDetail = `${appName}${intel.developer ? ' by ' + intel.developer : ''} — licensing terms should be verified.`; }
+
+  const controls = [
+    { num:'1', code:'AC', title:'Access Control', answer:acAnswer, detail:acDetail },
+    { num:'2', code:'AT', title:'Awareness and Training', answer:atAnswer, detail:atDetail },
+    { num:'3', code:'AU', title:'Audit and Accountability', answer:auAnswer, detail:auDetail },
+    { num:'4', code:'CA', title:'Security Assessment and Authorization', answer:caAnswer, detail:caDetail },
+    { num:'5', code:'CM', title:'Configuration Management', answer:cmAnswer, detail:cmDetail },
+    { num:'6', code:'CP', title:'Contingency Plan', answer:cpAnswer, detail:cpDetail },
+    { num:'7', code:'IA', title:'Identification and Authentication', answer:iaAnswer, detail:iaDetail },
+    { num:'8', code:'IR', title:'Incident Response', answer:irAnswer, detail:irDetail },
+    { num:'9', code:'MA', title:'Maintenance', answer:'No', detail:maDetail },
+    { num:'10', code:'MP', title:'Media Protection', answer:'No', detail:mpDetail },
+    { num:'11', code:'PE', title:'Physical and Environmental Protection', answer:'No', detail:`${appName} does not change physical protection requirements.` },
+    { num:'12', code:'PL', title:'Planning', answer:plAnswer, detail:plDetail },
+    { num:'13', code:'PS', title:'Personnel Security', answer:'No', detail:`${appName} does not change personnel security requirements.` },
+    { num:'14', code:'RA', title:'Risk Assessment', answer:clean ? 'No' : 'Yes', detail:`${scanSummary}. ${vtSummary}. ${mdSummary}.` },
+    { num:'15', code:'SA', title:'System and Service Acquisition', answer:saAnswer, detail:saDetail },
+    { num:'16', code:'SC', title:'System and Communication Protection', answer:scAnswer, detail:scDetail },
+    { num:'17', code:'SI', title:'System and Information Integrity', answer:siAnswer, detail:siDetail }
+  ];
+
+  return controls.map(ctrl => {
+    const note = String(userInputs?.[ctrl.code] || '').trim();
+    if (!note) return ctrl;
+    return {
+      ...ctrl,
+      answer: 'Yes',
+      detail: `${ctrl.detail} User input note for ${ctrl.code}: ${note}.${summarizedContext ? ' Context: ' + summarizedContext : ''}`
+    };
+  });
+}
+
+function generateSIADocx(){if(!lastSIAScanData){showToast('No scan data available');return;}showToast('Generating DOCX report...');const d=lastSIAScanData;const today=d.scanDate.toLocaleDateString('en-US',{day:'numeric',month:'long',year:'numeric'});const sizeMB=d.fileSize<1048576?(d.fileSize/1024).toFixed(1)+' KB':(d.fileSize/1048576).toFixed(2)+' MB';const sizeBytes=d.fileSize.toLocaleString()+' bytes';const appName=d.fileName.replace(/[-_](windows|win|mac|linux|x64|x86|arm|setup|user|installer|portable)[-_]?/gi,' ').replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\s+/g,' ').trim();const appCategory=getAppCategory(d.fileExt);const preSummary=d.preScanSummary||'';const additionalNotes=d.additionalNotes||'None';const{Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,Header,Footer,AlignmentType,HeadingLevel,BorderStyle,WidthType,ShadingType,PageNumber,PageBreak,LevelFormat}=docx;const border={style:BorderStyle.SINGLE,size:1,color:"999999"};const borders={top:border,bottom:border,left:border,right:border};const cellMargins={top:60,bottom:60,left:100,right:100};const headerShading={fill:"D5E8F0",type:ShadingType.CLEAR};const tableWidth=9360;const col1=4680;const col2=4680;function makeInfoRow(label,value){return new TableRow({children:[new TableCell({borders,width:{size:col1,type:WidthType.DXA},margins:cellMargins,children:[new Paragraph({children:[new TextRun({text:String(label||''),bold:true,size:20,font:"Arial"})]})]})  ,new TableCell({borders,width:{size:col2,type:WidthType.DXA},margins:cellMargins,children:[new Paragraph({children:[new TextRun({text:String(value||'N/A'),size:20,font:"Arial"})]})]})]});}function makeControlRow(ctrl){return new TableRow({children:[new TableCell({borders,width:{size:col1,type:WidthType.DXA},margins:cellMargins,children:[new Paragraph({children:[new TextRun({text:`${ctrl.num}. ${ctrl.code} (${ctrl.title})`,bold:true,size:20,font:"Arial"})]})]}),new TableCell({borders,width:{size:col2,type:WidthType.DXA},margins:cellMargins,children:[new Paragraph({children:[new TextRun({text:ctrl.answer==='Yes'?'☑ Yes  ☐ No':'☐ Yes  ☑ No',bold:true,size:20,font:"Arial"})]}),new Paragraph({spacing:{before:80},children:[new TextRun({text:'If yes, what is changing and how?',italics:true,size:18,font:"Arial",color:"666666"})]}),new Paragraph({spacing:{before:40},children:[new TextRun({text:String(ctrl.detail||'NA'),size:18,font:"Arial"})]})]})]});}const controls=d.controls;const doc=new Document({styles:{default:{document:{run:{font:"Arial",size:22}}},paragraphStyles:[{id:"Heading1",name:"Heading 1",basedOn:"Normal",next:"Normal",quickFormat:true,run:{size:32,bold:true,font:"Arial",color:"0B1D3A"},paragraph:{spacing:{before:240,after:120},outlineLevel:0}},{id:"Heading2",name:"Heading 2",basedOn:"Normal",next:"Normal",quickFormat:true,run:{size:26,bold:true,font:"Arial",color:"0B1D3A"},paragraph:{spacing:{before:200,after:100},outlineLevel:1}}]},numbering:{config:[{reference:"bullets",levels:[{level:0,format:LevelFormat.BULLET,text:"\u2022",alignment:AlignmentType.LEFT,style:{paragraph:{indent:{left:720,hanging:360}}}}]}]},sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:1440,right:1440,bottom:1440,left:1440}}},headers:{default:new Header({children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:"Security Impact Analysis",bold:true,size:18,font:"Arial",color:"666666"})]})]})},footers:{default:new Footer({children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:"Trishul SIA Report — Page ",size:16,font:"Arial",color:"999999"}),new TextRun({children:[PageNumber.CURRENT],size:16,font:"Arial",color:"999999"})]})]})},children:[new Paragraph({alignment:AlignmentType.CENTER,spacing:{after:60},children:[new TextRun({text:"Security Impact Analysis",size:36,bold:true,font:"Arial",color:"E85D26"})]}),new Paragraph({alignment:AlignmentType.CENTER,spacing:{after:300},children:[new TextRun({text:`Trishul SIA — ${today}`,size:20,font:"Arial",color:"666666"})]}),new Paragraph({alignment:AlignmentType.CENTER,spacing:{after:300},children:[new TextRun({text:appName,size:28,bold:true,font:"Arial"})]}),new Paragraph({heading:HeadingLevel.HEADING_2,children:[new TextRun("System Information")]}),new Table({width:{size:tableWidth,type:WidthType.DXA},columnWidths:[col1,col2],rows:[new TableRow({children:[new TableCell({borders,width:{size:col1,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Field",bold:true,size:20,font:"Arial"})]})]}),new TableCell({borders,width:{size:col2,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Value",bold:true,size:20,font:"Arial"})]})]})]}),makeInfoRow("System/Application Name:",appName),makeInfoRow("File Name:",d.fileName),makeInfoRow("Application Category:",appCategory),makeInfoRow("Change Requested By:","Security Team"),makeInfoRow("Assessment Agent:",d.assessmentAgent),makeInfoRow("Date:",today)]}),new Paragraph({spacing:{before:200},children:[]}),new Paragraph({heading:HeadingLevel.HEADING_2,children:[new TextRun("Summary")]}),new Table({width:{size:tableWidth,type:WidthType.DXA},columnWidths:[col1,col2],rows:[new TableRow({children:[new TableCell({borders,width:{size:col1,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Property",bold:true,size:20,font:"Arial"})]})]}),new TableCell({borders,width:{size:col2,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Details",bold:true,size:20,font:"Arial"})]})]})]}),makeInfoRow("Name:",d.fileName),makeInfoRow("Date:",today),makeInfoRow("Size:",`${sizeMB} (${sizeBytes})`),makeInfoRow("SHA-256:",d.fileHash||'N/A'),makeInfoRow("Verdict:",d.verdict.title),makeInfoRow("Safety Score:",`${100-d.verdict.threatScore} / 100`),makeInfoRow("Threat Score:",`${d.verdict.threatScore} / 100`),...(preSummary?[makeInfoRow("Pre-Analysis Summary:",preSummary)]:[]),makeInfoRow("Additional Notes:",additionalNotes)]}),new Paragraph({spacing:{before:200},children:[]}),new Paragraph({heading:HeadingLevel.HEADING_2,children:[new TextRun("Scan Engine Results")]}),...d.results.map(r=>new Paragraph({numbering:{reference:"bullets",level:0},spacing:{after:40},children:[new TextRun({text:`${r.engine}: `,bold:true,size:20,font:"Arial"}),new TextRun({text:r.status.toUpperCase(),bold:true,size:20,font:"Arial",color:r.status==='clean'?'0D9F6E':r.status==='suspicious'?'D97706':r.status==='malicious'?'DC2626':'666666'}),new TextRun({text:` — ${r.description}`,size:20,font:"Arial"})]})),new Paragraph({children:[new PageBreak()]}),new Paragraph({heading:HeadingLevel.HEADING_1,children:[new TextRun("Security Controls Assessment")]}),new Paragraph({spacing:{after:200},children:[new TextRun({text:"The following assessment evaluates the security impact across 17 NIST control families:",size:20,font:"Arial",color:"444444"})]}),new Table({width:{size:tableWidth,type:WidthType.DXA},columnWidths:[col1,col2],rows:[new TableRow({children:[new TableCell({borders,width:{size:col1,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Does the change:",bold:true,size:20,font:"Arial"})]})]}),new TableCell({borders,width:{size:col2,type:WidthType.DXA},margins:cellMargins,shading:headerShading,children:[new Paragraph({children:[new TextRun({text:"Response",bold:true,size:20,font:"Arial"})]})]})]}), ...controls.map(c=>makeControlRow(c))]}),new Paragraph({spacing:{before:300},children:[]}),new Paragraph({spacing:{before:200},children:[new TextRun({text:'If you selected "yes" to any of the above questions, please update the appropriate document in the security package (SSP, boundary diagram, control implementation, policies, procedures, plans).',italics:true,size:18,font:"Arial",color:"666666"})]})]}]});Packer.toBlob(doc).then(blob=>{const safeName=appName.replace(/[^a-zA-Z0-9]/g,'_').substring(0,40);const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`SIA_${safeName}_${d.scanDate.toISOString().split('T')[0]}.docx`;document.body.appendChild(a);a.click();document.body.removeChild(a);showToast('SIA DOCX report downloaded!');}).catch(err=>{console.error('DOCX generation failed:',err);showToast('DOCX generation failed — check console');});}
+
+function generateSIAPdf(){if(!lastSIAScanData){showToast('No scan data available');return;}showToast('Generating PDF report...');const d=lastSIAScanData;const{jsPDF}=window.jspdf;const pdf=new jsPDF('p','mm','a4');const pageW=210;const margin=20;const contentW=pageW-2*margin;let y=margin;const today=d.scanDate.toLocaleDateString('en-US',{day:'numeric',month:'long',year:'numeric'});const sizeMB=d.fileSize<1048576?(d.fileSize/1024).toFixed(1)+' KB':(d.fileSize/1048576).toFixed(2)+' MB';const appName=d.fileName.replace(/[-_](windows|win|mac|linux|x64|x86|arm|setup|user|installer|portable)[-_]?/gi,' ').replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\s+/g,' ').trim();const additionalNotes=d.additionalNotes||'None';function checkPage(needed){if(y+needed>280){pdf.addPage();y=margin;addHeader();}}function addHeader(){pdf.setFontSize(8);pdf.setTextColor(150);pdf.text('Security Impact Analysis',pageW/2,12,{align:'center'});pdf.setDrawColor(200);pdf.line(margin,15,pageW-margin,15);}function addFooter(){pdf.setFontSize(8);pdf.setTextColor(150);pdf.text(`Trishul SIA Report — Page ${pdf.internal.getNumberOfPages()}`,pageW/2,290,{align:'center'});}addHeader();y=25;pdf.setFontSize(22);pdf.setTextColor(232,93,38);pdf.setFont('helvetica','bold');pdf.text('Security Impact Analysis',pageW/2,y,{align:'center'});y+=8;pdf.setFontSize(10);pdf.setTextColor(100);pdf.setFont('helvetica','normal');pdf.text(`Trishul SIA — ${today}`,pageW/2,y,{align:'center'});y+=10;pdf.setFontSize(14);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text(appName,pageW/2,y,{align:'center'});y+=15;pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('System Information',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.setLineWidth(0.5);pdf.line(margin,y,margin+50,y);y+=6;const sysInfo=[['System/Application Name',appName],['File Name',d.fileName],['Application Category',getAppCategory(d.fileExt)],['Assessment Agent',d.assessmentAgent],['Date',today]];pdf.setFontSize(9);for(const[label,value]of sysInfo){checkPage(8);pdf.setFont('helvetica','bold');pdf.setTextColor(80);pdf.text(label+':',margin,y);pdf.setFont('helvetica','normal');pdf.setTextColor(40);const valLines=pdf.splitTextToSize(value,contentW-55);pdf.text(valLines,margin+55,y);y+=Math.max(6,valLines.length*5);}y+=8;checkPage(60);pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Summary',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.line(margin,y,margin+30,y);y+=6;const summaryData=[['Name',d.fileName],['Size',`${sizeMB} (${d.fileSize.toLocaleString()} bytes)`],['SHA-256',d.fileHash||'N/A'],['Verdict',d.verdict.title],['Safety Score',`${100-d.verdict.threatScore} / 100`],['Threat Score',`${d.verdict.threatScore} / 100`],['Additional Notes',additionalNotes]];pdf.setFontSize(9);for(const[label,value]of summaryData){checkPage(8);pdf.setFont('helvetica','bold');pdf.setTextColor(80);pdf.text(label+':',margin,y);pdf.setFont('helvetica','normal');pdf.setTextColor(40);const valLines=pdf.splitTextToSize(String(value),contentW-55);pdf.text(valLines,margin+55,y);y+=Math.max(6,valLines.length*5);}y+=8;checkPage(20);pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Scan Engine Results',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.line(margin,y,margin+50,y);y+=6;pdf.setFontSize(8);for(const r of d.results){checkPage(12);const color=r.status==='clean'?[13,159,110]:r.status==='suspicious'?[217,119,6]:r.status==='malicious'?[220,38,38]:[100,100,100];pdf.setFillColor(...color);pdf.circle(margin+2,y-1.2,1.2,'F');pdf.setFont('helvetica','bold');pdf.setTextColor(40);pdf.text(r.engine,margin+6,y);pdf.setFont('helvetica','bold');pdf.setTextColor(...color);pdf.text(r.status.toUpperCase(),margin+65,y);pdf.setFont('helvetica','normal');pdf.setTextColor(80);const descLines=pdf.splitTextToSize(r.description,contentW-6);y+=4;pdf.text(descLines,margin+6,y);y+=descLines.length*4+3;}pdf.addPage();y=margin;addHeader();y=25;pdf.setFontSize(16);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Security Controls Assessment',pageW/2,y,{align:'center'});y+=10;const controls=d.controls;pdf.setFontSize(8);let ctrlNum=1;for(const ctrl of controls){checkPage(18);pdf.setFillColor(213,232,240);pdf.rect(margin,y-3,contentW,7,'F');pdf.setFont('helvetica','bold');pdf.setTextColor(11,29,58);pdf.text(`${ctrlNum}. ${ctrl.code} (${ctrl.title})`,margin+2,y+1.5);const answerColor=ctrl.answer==='Yes'?[220,38,38]:[13,159,110];pdf.setTextColor(...answerColor);pdf.setFont('helvetica','bold');pdf.text(ctrl.answer==='Yes'?'YES':'NO',pageW-margin-10,y+1.5,{align:'right'});y+=8;pdf.setFont('helvetica','normal');pdf.setTextColor(80);pdf.setFontSize(7.5);const detailLines=pdf.splitTextToSize(ctrl.detail,contentW-4);pdf.text(detailLines,margin+2,y);y+=detailLines.length*3.5+4;pdf.setFontSize(8);ctrlNum++;}checkPage(15);y+=5;pdf.setFontSize(7);pdf.setTextColor(150);pdf.setFont('helvetica','italic');const fnLines=pdf.splitTextToSize('If you selected "yes" to any of the above, please update the appropriate document in the security package (SSP, boundary diagram, control implementation, policies, procedures, plans).',contentW);pdf.text(fnLines,margin,y);addFooter();const safeName=appName.replace(/[^a-zA-Z0-9]/g,'_').substring(0,40);pdf.save(`SIA_${safeName}_${d.scanDate.toISOString().split('T')[0]}.pdf`);showToast('SIA PDF report downloaded!');}
 
 // ═══════════════ INIT ═══════════════
 document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') startScan(); });
@@ -2452,9 +2698,10 @@ document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key
 window.addEventListener('DOMContentLoaded', () => {
   loadTheme();
   checkBackend();
+  renderPreSIAControlInputs();
   const hash = window.location.hash.slice(1);
   if (hash) {
-    const targetUrl = decodeURIComponent(hash);
+    const targetUrl = safeDecodeURIComponent(hash);
     showModule('security');
     document.getElementById('urlInput').value = targetUrl;
     setTimeout(() => startScan(), 800);
