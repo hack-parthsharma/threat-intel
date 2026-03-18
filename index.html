@@ -2409,39 +2409,24 @@ ${additional || 'None'}`;
 }
 
 
-const CEREBRAS_API_KEY = 'csk-r88m9wwddye35vdmvtkmdfdcd4jjejjj9cpc39jkyk4fpd6n';
 const CEREBRAS_MODEL = 'llama-3.3-70b';
-
-async function requestCerebrasDirect(prompt, maxTokens = 700, temperature = 0.2) {
-  if (!CEREBRAS_API_KEY) return '';
-  const resp = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${CEREBRAS_API_KEY}` },
-    body: JSON.stringify({ model: CEREBRAS_MODEL, temperature, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
-  });
-  if (!resp.ok) throw new Error(`Cerebras direct HTTP ${resp.status}`);
-  const data = await resp.json();
-  return (data?.choices?.[0]?.message?.content || '').trim();
-}
 
 async function requestCerebras(prompt, maxTokens = 700, temperature = 0.2) {
   await ensureBackendChecked();
-  if (backendAvailable) {
-    try {
-      const resp = await fetchViaBackend('/api/cerebras-summary', {
-        method: 'POST',
-        body: JSON.stringify({ prompt, model: CEREBRAS_MODEL, max_tokens: maxTokens, temperature })
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        const content = (data?.summary || data?.content || data?.choices?.[0]?.message?.content || '').trim();
-        if (content) return content;
-      }
-    } catch (err) {
-      console.warn('Cerebras backend request failed, retrying direct:', err.message);
-    }
+  if (!backendAvailable) {
+    throw new Error('Backend unavailable for Cerebras request');
   }
-  return requestCerebrasDirect(prompt, maxTokens, temperature);
+
+  const resp = await fetchViaBackend('/api/cerebras-summary', {
+    method: 'POST',
+    body: JSON.stringify({ prompt, model: CEREBRAS_MODEL, max_tokens: maxTokens, temperature })
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data?.error || `Cerebras backend HTTP ${resp.status}`);
+
+  const content = (data?.summary || data?.content || data?.choices?.[0]?.message?.content || '').trim();
+  if (!content) throw new Error('Empty Cerebras response');
+  return content;
 }
 
 async function summarizeSIAInputsPreScan() {
