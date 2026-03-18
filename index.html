@@ -2324,7 +2324,7 @@ async function startSIAScan() {
   const preScanSummary = await summarizeSIAInputsPreScan();
   const userContext = collectSIAUserContext();
   const aiContext = preScanSummary || userContext;
-  const controls = await buildGroqControls(appIntel, verdict, fileHash, results, aiContext);
+  const controls = await buildGroqControls(appIntel, verdict, fileHash, results, aiContext, siaDraftInputs.controlInputs || {}, siaDraftInputs.additionalNotes || "");
 
   lastSIAScanData = {
     fileName,
@@ -2480,7 +2480,7 @@ async function fetchDuckDuckGo(query){try{const resp=await fetch(`https://api.du
 const GROQ_API_KEY = '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';
 const GROQ_MODEL   = 'llama-3.3-70b-versatile';
 
-async function buildGroqControls(intel, verdict, fileHash, results, preScanSummary = "") {
+async function buildGroqControls(intel, verdict, fileHash, results, preScanSummary = "", userInputs = {}, additionalNotes = "") {
   const appName    = intel.name || 'Unknown Application';
   const scanLines  = results.map(r => `- ${r.engine}: ${r.status.toUpperCase()} — ${r.description}`).join('\n');
   const preSummary = preScanSummary || "No pre-analysis summary provided.";
@@ -2540,9 +2540,10 @@ async function buildGroqControls(intel, verdict, fileHash, results, preScanSumma
     considerations:'' }
 ];
 
-  const controlsBlock = NIST_CONTROLS.map(c =>
-    `### ${c.code} — ${c.title}\nQuestion: ${c.question}${c.considerations ? '\nConsiderations: ' + c.considerations : ''}`
-  ).join('\n\n');
+  const controlsBlock = NIST_CONTROLS.map(c => {
+    const note = String(userInputs?.[c.code] || '').trim();
+    return `### ${c.code} — ${c.title}\nQuestion: ${c.question}${c.considerations ? '\nConsiderations: ' + c.considerations : ''}${note ? '\nUser Input Note: ' + note : ''}`;
+  }).join('\n\n');
 
   const prompt = `You are a senior cybersecurity analyst completing a NIST 800-53 Security Impact Analysis (SIA) form for a software deployment.
 
@@ -2568,9 +2569,7 @@ MALWARE SCAN RESULTS:
 ${scanLines}
 SHA-256: ${fileHash || 'N/A'}
 
-PRE-ANALYSIS USER CONTEXT (CEREBRAS SUMMARY OR RAW INPUTS):\n${preSummary}
-
-NIST 800-53 CONTROL FAMILIES TO ASSESS:
+PRE-ANALYSIS USER CONTEXT (CEREBRAS SUMMARY OR RAW INPUTS):\n${preSummary}\n\nADDITIONAL NOTES FROM USER:\n${additionalNotes || 'None'}\n\nNIST 800-53 CONTROL FAMILIES TO ASSESS:
 ${controlsBlock}
 
 INSTRUCTIONS:
@@ -2581,7 +2580,7 @@ INSTRUCTIONS:
 - Reference the actual file name, ports, protocols, auth methods, scan results, and encryption status where relevant.
 - For RA (Risk Assessment), always include the SHA-256 hash and mention virustotal/any.run scan sites.
 - For SC, address FIPS encryption, data at rest/in transit, and port authorization.
-- Do NOT write generic answers. Every answer must be tailored to this specific file.
+- Do NOT write generic answers. Every answer must be tailored to this specific file.\n- If a control has a "User Input Note", explicitly incorporate it and adjust Yes/No accordingly.\n- Ensure controls mentioned by user notes are materially updated in detail text.
 
 Respond ONLY with a valid JSON array, no markdown, no preamble:
 [{"code":"AC","title":"Access Control","answer":"Yes","detail":"..."},...]`;
