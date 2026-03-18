@@ -363,18 +363,6 @@ body.dark .agent-input:focus { background: #141B2D; }
       <textarea id="siaPreAdditionalNotes" class="sia-control-input" placeholder="Add environment-specific concerns, approvals, exceptions, or compensating controls..." oninput="updatePreSIAAdditionalNotes(this.value)"></textarea>
     </div>
   </div>
-  <div class="sia-controls-card" id="siaPreInputCard">
-    <div class="section-heading">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Pre-Analysis Control Inputs
-    </div>
-    <p style="font-size:12px;color:var(--text-secondary)">Fill in control-specific notes before running file analysis. If notes are provided, they are summarized via Cerebras and used to guide Cerebras-generated control updates.</p>
-    <div class="sia-controls-grid" id="siaPreControlsGrid"></div>
-    <div style="margin-top:14px">
-      <label class="input-label" style="margin-bottom:8px">Additional Notes</label>
-      <textarea id="siaPreAdditionalNotes" class="sia-control-input" placeholder="Add environment-specific concerns, approvals, exceptions, or compensating controls..." oninput="updatePreSIAAdditionalNotes(this.value)"></textarea>
-    </div>
-  </div>
   <div class="upload-zone" id="uploadZone">
     <input type="file" id="siaFileInput" onchange="handleFileSelect(event)">
     <div class="upload-icon">
@@ -826,33 +814,100 @@ const data = await resp.json();
 // 5. Google Safe Browsing — via Transparency Report (no key needed)
 async function checkGoogleSafeBrowsing(parsed) {
   try {
-    let isFlagged = false;
-    let source = 'Google Transparency Report';
-    if (backendAvailable) {
-      const resp = await fetchViaBackend('/api/gsb', { method: 'POST', body: JSON.stringify({ url: parsed.full }) });
-      const data = await resp.json();
-      isFlagged = data?.flagged === true;
-    } else {
-      // Use Google Transparency Report public API
-      const encodedUrl = encodeURIComponent(parsed.full);
-      const resp = await fetchWithCORSFallback(
-        `https://transparencyreport.google.com/transparencyreport/api/v3/safebrowsing/status?site=${encodedUrl}`,
-        { signal: AbortSignal.timeout(8000) }
-      );
-      const text = await resp.text();
-      const clean = text.replace(/^\)\]\}'\n/, '').replace(/^\)]}'\n/, '');
-      const data = safeParse(clean);
-      // Transparency Report returns nested arrays — any value of 1 means flagged
-      if (Array.isArray(data)) {
-        isFlagged = JSON.stringify(data).includes('"1"') || JSON.stringify(data).includes(',1,') || JSON.stringify(data).includes(',1]');
-      }
-    }
+    const encodedUrl = encodeURIComponent(parsed.full);
+    const resp = await fetchWithCORSFallback(
+      `https://transparencyreport.google.com/transparencyreport/api/v3/safebrowsing/status?site=${encodedUrl}`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    const text = await resp.text();
+    const clean = text.replace(/^\)\]\}'\n/, '').replace(/^\)]}'\n/, '');
+    const data = safeParse(clean);
+    const serialized = Array.isArray(data) ? JSON.stringify(data) : '';
+    const isFlagged = serialized.includes('"1"') || serialized.includes(',1,') || serialized.includes(',1]');
+
     if (isFlagged) {
-      return { engine: 'Google Safe Browsing', status: 'malicious', confidence: 88, details: { 'Status': 'FLAGGED', 'Source': source, 'Threat': 'Malware / Phishing / Deceptive' }, description: 'Flagged by Google Safe Browsing — active threat confirmed.' };
+      return { engine: 'Google Safe Browsing', status: 'malicious', confidence: 88, details: { 'Status': 'FLAGGED', 'Source': 'Google Transparency Report', 'Threat': 'Malware / Phishing / Deceptive' }, description: 'Flagged by Google Safe Browsing — active threat confirmed.' };
     }
-    return { engine: 'Google Safe Browsing', status: 'clean', confidence: 78, details: { 'Status': 'Not flagged', 'Source': source }, description: 'Not flagged by Google Safe Browsing transparency data.' };
+    return { engine: 'Google Safe Browsing', status: 'clean', confidence: 78, details: { 'Status': 'Not flagged', 'Source': 'Google Transparency Report' }, description: 'Not flagged by Google Safe Browsing transparency data.' };
   } catch(e) {
     return { engine: 'Google Safe Browsing', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'Google Safe Browsing check failed.' };
+  }
+}
+
+async function checkOpenRouterSecurity(parsed) {
+  await ensureBackendChecked();
+  if (!backendAvailable) {
+    return {
+      engine: 'OpenRouter Security Check',
+      status: 'unknown',
+      confidence: 0,
+      details: { 'Backend': 'Unavailable' },
+      description: 'OpenRouter security check skipped because the backend is unavailable.'
+    };
+  }
+
+  try {
+    const systemPrompt = [
+      'You are a security URL triage analyst.',
+      'Assess whether the submitted URL should be allowed, blocked, or manually reviewed.',
+      'Return valid JSON only with keys verdict, confidence, summary, reasons.',
+      'verdict must be one of: allow, review, block.',
+      'confidence must be an integer from 0 to 100.',
+      'reasons must be an array of short strings.'
+    ].join(' ');
+
+    const userPrompt = `Perform security check of ${parsed.full} and give a verdict on whether we should allow it or not. Base your answer on phishing, impersonation, malware delivery, suspicious hosting, typosquatting, social-engineering indicators, and any high-risk URL patterns visible in the URL itself.`;
+
+    const resp = await fetchViaBackend('/api/openrouter', {
+      method: 'POST',
+      body: JSON.stringify({
+        model: 'openai/gpt-4o-mini',
+        temperature: 0.1,
+        max_tokens: 700,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ]
+      })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data?.error || `OpenRouter backend HTTP ${resp.status}`);
+
+    const rawContent = (data?.content || data?.summary || data?.choices?.[0]?.message?.content || '').trim();
+    if (!rawContent) throw new Error('OpenRouter returned empty content');
+
+    const parsedContent = safeParse(rawContent);
+    if (!parsedContent || typeof parsedContent !== 'object') {
+      throw new Error('OpenRouter did not return valid JSON content');
+    }
+
+    const verdictMap = { allow: 'clean', review: 'suspicious', block: 'malicious' };
+    const verdict = String(parsedContent?.verdict || '').toLowerCase();
+    const status = verdictMap[verdict] || 'unknown';
+    const confidence = Math.max(0, Math.min(100, Number(parsedContent?.confidence || 0)));
+    const reasons = Array.isArray(parsedContent?.reasons) ? parsedContent.reasons.filter(Boolean).map(String) : [];
+
+    return {
+      engine: 'OpenRouter Security Check',
+      status,
+      confidence,
+      details: {
+        'Verdict': verdict || 'unknown',
+        'Confidence': `${confidence} / 100`,
+        'Summary': parsedContent?.summary || 'No summary returned',
+        'Reasons': reasons.length ? reasons.join('; ') : 'None provided',
+        'Model': data?.model || 'openai/gpt-4o-mini'
+      },
+      description: parsedContent?.summary || reasons[0] || 'OpenRouter completed the security review.'
+    };
+  } catch (e) {
+    return {
+      engine: 'OpenRouter Security Check',
+      status: 'error',
+      confidence: 0,
+      details: { 'Error': e.message },
+      description: 'OpenRouter security check failed.'
+    };
   }
 }
 
@@ -969,6 +1024,7 @@ async function startScan() {
     { name: 'Certificate Transparency', fn: () => checkCertTransparency(parsed) },
     { name: 'IP Geolocation & ASN', fn: () => checkIPInfo(parsed) },
     { name: 'Google Safe Browsing', fn: () => checkGoogleSafeBrowsing(parsed) },
+    { name: 'OpenRouter Security Check', fn: () => checkOpenRouterSecurity(parsed) },
     { name: 'Cloudflare Radar', fn: () => checkCloudflareRadar(parsed) },
     // API-dependent engines
     { name: 'DNS & Infrastructure', fn: () => checkDNS(parsed) },
@@ -2477,6 +2533,100 @@ Provide concise output with:
     siaDraftInputs.cerebrasSummary = summary;
     const box = document.getElementById('preCerebrasSummaryBox');
     if (box && summary) { box.textContent = summary; box.style.display = 'block'; }
+    return summary;
+  } catch (err) {
+    console.error('Cerebras summary error:', err);
+    return '';
+  }
+}
+
+function renderPreSIAControlInputs() {
+  const grid = document.getElementById('siaPreControlsGrid');
+  if (!grid) return;
+  grid.innerHTML = SIA_PRE_CONTROLS.map((ctrl, idx) => {
+    const saved = escapeHtml(siaDraftInputs.controlInputs?.[ctrl.code] || '');
+    return `<div class="sia-control-item"><div class="sia-control-head"><strong>${idx + 1}. ${ctrl.code} — ${escapeHtml(ctrl.title)}</strong></div><textarea class="sia-control-input" id="preControl_${ctrl.code}" placeholder="Add notes for ${ctrl.code} based on this file and environment..." oninput="updatePreSIAControlInput('${ctrl.code}', this.value)">${saved}</textarea></div>`;
+  }).join('');
+  const extra = document.getElementById('siaPreAdditionalNotes');
+  if (extra) extra.value = siaDraftInputs.additionalNotes || '';
+}
+
+function updatePreSIAControlInput(controlCode, value) {
+  if (!siaDraftInputs.controlInputs) siaDraftInputs.controlInputs = {};
+  siaDraftInputs.controlInputs[controlCode] = value;
+}
+
+function updatePreSIAAdditionalNotes(value) {
+  siaDraftInputs.additionalNotes = value;
+}
+
+function collectSIAUserContext() {
+  const controlLines = SIA_PRE_CONTROLS.map((ctrl) => {
+    const note = String(siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
+    return note ? `${ctrl.code}: ${note}` : '';
+  }).filter(Boolean);
+  const additional = String(siaDraftInputs.additionalNotes || '').trim();
+  if (!controlLines.length && !additional) return '';
+  return `Control Notes:
+${controlLines.join('\n')}
+
+Additional Notes:
+${additional || 'None'}`;
+}
+
+
+function getCerebrasModel() {
+  if (!window.__TRISHUL_CEREBRAS_MODEL__) window.__TRISHUL_CEREBRAS_MODEL__ = 'llama3.1-8b';
+  return window.__TRISHUL_CEREBRAS_MODEL__;
+}
+
+async function requestCerebras(prompt, maxTokens = 700, temperature = 0.2) {
+  await ensureBackendChecked();
+  if (!backendAvailable) {
+    throw new Error('Backend unavailable for Cerebras request');
+  }
+
+  const resp = await fetchViaBackend('/api/cerebras-summary', {
+    method: 'POST',
+    body: JSON.stringify({ prompt, model: getCerebrasModel(), max_tokens: maxTokens, temperature })
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data?.error || `Cerebras backend HTTP ${resp.status}`);
+
+  const content = (data?.summary || data?.content || data?.choices?.[0]?.message?.content || '').trim();
+  if (!content) throw new Error('Empty Cerebras response');
+  return content;
+}
+
+async function summarizeSIAInputsPreScan() {
+  const enteredNotes = Object.values(siaDraftInputs.controlInputs || {}).filter(v => String(v || '').trim().length > 0);
+  const additional = String(siaDraftInputs.additionalNotes || '').trim();
+  const hasInput = enteredNotes.length > 0 || additional.length > 0;
+  if (!hasInput) {
+    return '';
+  }
+  const controlText = SIA_PRE_CONTROLS.map((ctrl) => {
+    const note = (siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
+    return note ? `${ctrl.code} (${ctrl.title})
+User Note: ${note}` : '';
+  }).filter(Boolean).join('\n\n');
+
+  const prompt = `Summarize these pre-analysis security impact notes for file review and control tailoring.
+
+Control notes:
+${controlText}
+
+Additional Notes:
+${additional || 'None'}
+
+Provide concise output with:
+1) Executive summary
+2) Key risk flags
+3) Control considerations
+4) Recommended disposition.`;
+
+  try {
+    const summary = await requestCerebras(prompt, 700, 0.2);
     return summary;
   } catch (err) {
     console.error('Cerebras summary error:', err);
