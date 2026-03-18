@@ -402,6 +402,7 @@ body.dark .agent-input:focus { background: #141B2D; }
 const PROXY_BASE = 'https://threatintel.ps191240.workers.dev';
 const VT_API_KEY = '5bcaccb925cb630787f05b9ef5ec6f91ecf4acaa354c9c0459bcfaf5fd2a9055';
 let backendAvailable = false;
+let backendCheckPromise = null;
 let lastSIAScanData = null;
 
 const KNOWN_SAFE_DOMAINS = [
@@ -455,6 +456,14 @@ async function checkBackend() {
     const data = await resp.json();
     if (data.status === 'ok') backendAvailable = true; else throw new Error();
   } catch(e) { backendAvailable = false; }
+  return backendAvailable;
+}
+
+async function ensureBackendChecked() {
+  if (!backendCheckPromise) {
+    backendCheckPromise = checkBackend().finally(() => { backendCheckPromise = null; });
+  }
+  return backendCheckPromise;
 }
 
 function toggleTheme() {
@@ -2416,6 +2425,7 @@ async function requestCerebrasDirect(prompt, maxTokens = 700, temperature = 0.2)
 }
 
 async function requestCerebras(prompt, maxTokens = 700, temperature = 0.2) {
+  await ensureBackendChecked();
   if (backendAvailable) {
     try {
       const resp = await fetchViaBackend('/api/cerebras-summary', {
@@ -2595,7 +2605,7 @@ Respond ONLY with a valid JSON array, no markdown, no preamble:
     if (!Array.isArray(parsed) || parsed.length < 10) throw new Error('Invalid response shape');
     return parsed.map((c, i) => ({ num: String(i + 1), code: c.code, title: c.title, answer: c.answer, detail: c.detail }));
   } catch (e) {
-    console.warn('Cerebras fallback to static controls:', e.message);
+    console.warn('Cerebras fallback to static controls:', e.message, 'backendAvailable=', backendAvailable);
     return staticFallback();
   }
 }
