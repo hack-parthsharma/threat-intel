@@ -957,23 +957,14 @@ const resp = await fetchWithCORSFallback(
 
 // ═══════════════ AI SECURITY VERDICT ═══════════════
 
-async function checkAISecurityVerdict(parsedUrl, scanResults) {
+async function checkAISecurityVerdict(parsedUrl) {
   if (!backendAvailable) return null;
-
-  // Build a compact summary of all engine results for the AI prompt
-  const summaryLines = scanResults.map(r => {
-    if (r.skipped) return null;
-    return `${r.engine}: ${r.status.toUpperCase()} — ${r.description}`;
-  }).filter(Boolean);
-
-  const scanSummary = summaryLines.join('\n');
 
   try {
     const resp = await fetchViaBackend('/api/openrouter-security-check', {
       method: 'POST',
       body: JSON.stringify({
         url: parsedUrl.full,
-        scan_summary: scanSummary,
         model: 'openai/gpt-4o-mini'
       })
     });
@@ -1084,7 +1075,7 @@ async function startScan() {
   renderResults(parsed, results, verdict, null);
 
   // Run AI security check in background
-  const aiVerdict = await checkAISecurityVerdict(parsed, results);
+  const aiVerdict = await checkAISecurityVerdict(parsed);
   renderResults(parsed, results, verdict, aiVerdict);
 
   pText.textContent = 'Analysis complete';
