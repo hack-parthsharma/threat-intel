@@ -126,6 +126,25 @@ body.dark .hero h1 span { color: var(--accent); }
 .export-btn.sia-report-btn { background: var(--accent); color: white; border-color: var(--accent); font-weight: 700; }
 .export-btn.sia-report-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .analysis-card { background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+
+/* AI Verdict Card */
+.ai-verdict-card { background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 24px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
+.ai-verdict-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa); }
+.ai-verdict-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.ai-verdict-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 24px; font-size: 14px; font-weight: 800; letter-spacing: 1px; }
+.ai-verdict-badge.allow { background: var(--safe-bg); color: var(--safe); border: 1.5px solid var(--safe-border); }
+.ai-verdict-badge.block { background: var(--danger-bg); color: var(--danger); border: 1.5px solid var(--danger-border); }
+.ai-verdict-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.ai-meta-tag { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: var(--bg-subtle); color: var(--text-secondary); }
+.ai-verdict-summary { font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; }
+.ai-findings { list-style: none; padding: 0; margin: 0 0 14px 0; }
+.ai-findings li { font-size: 12px; color: var(--text-secondary); padding: 6px 0; padding-left: 18px; position: relative; line-height: 1.5; border-bottom: 1px solid var(--border-light); }
+.ai-findings li:last-child { border-bottom: none; }
+.ai-findings li::before { content: '›'; position: absolute; left: 4px; font-weight: 700; color: var(--accent); }
+.ai-recommendation { font-size: 12px; font-style: italic; color: var(--text-muted); padding: 10px 14px; background: var(--bg-subtle); border-radius: var(--radius-sm); border-left: 3px solid #8b5cf6; }
+.ai-verdict-loading { display: flex; align-items: center; gap: 12px; padding: 18px; color: var(--text-muted); font-size: 13px; }
+.ai-verdict-loading .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .section-heading { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
 .section-heading svg { width: 18px; height: 18px; color: var(--accent); }
 .analysis-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border-light); }
@@ -936,6 +955,70 @@ const resp = await fetchWithCORSFallback(
   }
 }
 
+// ═══════════════ AI SECURITY VERDICT ═══════════════
+
+async function checkAISecurityVerdict(parsedUrl, scanResults) {
+  if (!backendAvailable) return null;
+
+  // Build a compact summary of all engine results for the AI prompt
+  const summaryLines = scanResults.map(r => {
+    if (r.skipped) return null;
+    return `${r.engine}: ${r.status.toUpperCase()} — ${r.description}`;
+  }).filter(Boolean);
+
+  const scanSummary = summaryLines.join('\n');
+
+  try {
+    const resp = await fetchViaBackend('/api/openrouter-security-check', {
+      method: 'POST',
+      body: JSON.stringify({
+        url: parsedUrl.full,
+        scan_summary: scanSummary,
+        model: 'openai/gpt-4o-mini'
+      })
+    });
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    return data.ai_verdict || null;
+  } catch (e) {
+    console.error('AI Security Check failed:', e);
+    return null;
+  }
+}
+
+function renderAIVerdictCard(aiVerdict) {
+  if (!aiVerdict) {
+    return `<div class="ai-verdict-card" style="animation:fadeUp 0.5s ease 0.1s both">
+      <div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4z"/></svg> AI Security Verdict</div>
+      <div style="font-size:13px;color:var(--text-muted)">AI analysis unavailable — OpenRouter not configured or backend offline.</div>
+    </div>`;
+  }
+
+  const isAllow = aiVerdict.verdict === 'ALLOW';
+  const badgeClass = isAllow ? 'allow' : 'block';
+  const badgeIcon = isAllow ? '✅' : '🚫';
+  const badgeText = isAllow ? 'ALLOW' : 'BLOCK';
+
+  const findingsHTML = (aiVerdict.key_findings || []).length > 0
+    ? `<ul class="ai-findings">${aiVerdict.key_findings.map(f => `<li>${f}</li>`).join('')}</ul>`
+    : '';
+
+  return `<div class="ai-verdict-card" style="animation:fadeUp 0.5s ease 0.1s both">
+    <div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> AI Security Verdict</div>
+    <div class="ai-verdict-header">
+      <div class="ai-verdict-badge ${badgeClass}">${badgeIcon} ${badgeText}</div>
+    </div>
+    <div class="ai-verdict-meta">
+      <span class="ai-meta-tag">Confidence: ${aiVerdict.confidence || 'N/A'}</span>
+      <span class="ai-meta-tag">Risk: ${aiVerdict.risk_level || 'N/A'}</span>
+    </div>
+    <div class="ai-verdict-summary">${aiVerdict.summary || ''}</div>
+    ${findingsHTML}
+    ${aiVerdict.recommendation ? `<div class="ai-recommendation">💡 ${aiVerdict.recommendation}</div>` : ''}
+  </div>`;
+}
+
 // ═══════════════ MAIN SCAN ═══════════════
 
 async function startScan() {
@@ -992,12 +1075,22 @@ async function startScan() {
   }
 
   pFill.style.width = '100%';
+  pText.textContent = 'Running AI analysis...';
+  pEngine.textContent = 'OpenRouter AI Verdict';
+
+  const verdict = calculateVerdict(results, parsed);
+
+  // Fire AI verdict request — render results immediately with loading state, then update
+  renderResults(parsed, results, verdict, null);
+
+  // Run AI security check in background
+  const aiVerdict = await checkAISecurityVerdict(parsed, results);
+  renderResults(parsed, results, verdict, aiVerdict);
+
   pText.textContent = 'Analysis complete';
   pEngine.textContent = '';
 
-  const verdict = calculateVerdict(results, parsed);
-  renderResults(parsed, results, verdict);
-  scanHistory.unshift({ url: parsed.full, verdict, time: new Date(), results, parsed });
+  scanHistory.unshift({ url: parsed.full, verdict, time: new Date(), results, parsed, aiVerdict });
   renderHistory();
   window.history.replaceState(null, '', '#' + encodeURIComponent(parsed.full));
 
@@ -1030,7 +1123,7 @@ function calculateVerdict(results, parsed) {
   return { title, subtitle, level, threatScore: Math.min(100, Math.round(threatScore)), reasons };
 }
 
-function renderResults(parsed, results, verdict) {
+function renderResults(parsed, results, verdict, aiVerdict) {
   const container = document.getElementById('resultsContainer');
   const safety = 100 - verdict.threatScore;
   const vc = verdict.level === 'safe' ? 'var(--safe)' : verdict.level === 'caution' ? 'var(--warn)' : 'var(--danger)';
@@ -1058,6 +1151,14 @@ function renderResults(parsed, results, verdict) {
   const newClean = newEngineResults.filter(r => r.status === 'clean').length;
   const newFlag = newEngineResults.filter(r => r.status === 'malicious' || r.status === 'suspicious').length;
 
+  // AI Verdict HTML — loading spinner if null (still fetching), or full card
+  const aiVerdictHTML = aiVerdict === null
+    ? `<div class="ai-verdict-card" style="animation:fadeUp 0.5s ease 0.1s both">
+        <div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> AI Security Verdict</div>
+        <div class="ai-verdict-loading"><div class="spinner"></div>Analyzing with AI — please wait...</div>
+      </div>`
+    : renderAIVerdictCard(aiVerdict);
+
   container.innerHTML = `
     <div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease">
       <div class="verdict-icon">${emoji}</div>
@@ -1072,6 +1173,7 @@ function renderResults(parsed, results, verdict) {
       <div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${threatOff}"/></svg><div class="score-num" style="color:${vc}">${verdict.threatScore}</div></div><div class="score-label">Threat Level</div></div>
       <div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Scan Summary</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🔍 <strong>${results.length}</strong> engines<br>🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious<br>✦ <strong>${newClean}</strong>/<strong>${newEngineResults.length}</strong> new engines clean</div></div></div>
     </div>
+    ${aiVerdictHTML}
     <div class="export-row">
       <button class="export-btn" onclick="shareLink()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share</button>
       <button class="export-btn" onclick="copyReport()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy</button>
@@ -1099,7 +1201,7 @@ function reloadScan(i) {
   if (!scanHistory[i]) return;
   const h = scanHistory[i];
   if (h.parsed && h.results && h.verdict) {
-    renderResults(h.parsed, h.results, h.verdict);
+    renderResults(h.parsed, h.results, h.verdict, h.aiVerdict || undefined);
     document.getElementById('urlInput').value = h.url;
     window.history.replaceState(null, '', '#' + encodeURIComponent(h.url));
     document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
