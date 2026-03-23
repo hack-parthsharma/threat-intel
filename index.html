@@ -599,7 +599,20 @@ function parseURL(urlStr) {
   } catch(e) { return null; }
 }
 
-function isKnownSafe(parsed) { return KNOWN_SAFE_DOMAINS.some(d => parsed.domain === d || parsed.fullDomain === d || parsed.fullDomain.endsWith('.' + d)); }
+function isKnownSafe(parsed) {
+  // Check known safe domains list
+  if (KNOWN_SAFE_DOMAINS.some(d => parsed.domain === d || parsed.fullDomain === d || parsed.fullDomain.endsWith('.' + d))) return true;
+  // Government, military, and education TLDs are inherently trusted
+  const host = parsed.fullDomain.toLowerCase();
+  if (host.endsWith('.gov') || host.endsWith('.mil') || host.endsWith('.edu')) return true;
+  // Country-specific government domains (e.g. .gov.in, .gov.uk, .gov.au, .gc.ca, .gob.mx)
+  if (/\.(gov|gob|govt|government)\.\w{2,3}$/.test(host)) return true;
+  if (/\.gc\.ca$/.test(host)) return true;
+  if (/\.edu\.\w{2,3}$/.test(host)) return true;
+  if (/\.mil\.\w{2,3}$/.test(host)) return true;
+  if (/\.ac\.\w{2,3}$/.test(host)) return true;
+  return false;
+}
 
 // ═══════════════ EXISTING ENGINES ═══════════════
 
@@ -3344,7 +3357,10 @@ async function startBulkScan() {
       }
 
       const verdict = calculateVerdict(results, urls[i].parsed);
-      bulkResults[i] = { url: urls[i].raw, parsed: urls[i].parsed, verdict, status: 'done', results };
+      // Fire AI verdict in parallel (don't block the loop too long)
+      let aiVerdict = null;
+      try { aiVerdict = await checkAISecurityVerdict(urls[i].parsed); } catch(e) {}
+      bulkResults[i] = { url: urls[i].raw, parsed: urls[i].parsed, verdict, status: 'done', results, aiVerdict };
     } catch (e) {
       bulkResults[i] = { url: urls[i].raw, parsed: urls[i].parsed, verdict: { level: 'caution', title: 'ERROR', threatScore: 0 }, status: 'error', results: [] };
     }
@@ -3368,7 +3384,7 @@ function renderBulkResults(results, completed, total) {
   let rowsHTML = '';
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
-    let badge = '', score = '-', ai = '-';
+    let badge = '', score = '-', aiCol = '<span style="color:var(--text-muted);font-size:11px">—</span>';
     if (r.status === 'pending') {
       badge = '<span class="bulk-verdict-badge bulk-verdict-pending">PENDING</span>';
     } else if (r.status === 'error') {
@@ -3378,11 +3394,19 @@ function renderBulkResults(results, completed, total) {
       const label = r.verdict.level === 'safe' ? 'SAFE' : r.verdict.level === 'caution' ? 'CAUTION' : 'DANGER';
       badge = `<span class="bulk-verdict-badge ${bc}">${label}</span>`;
       score = (100 - r.verdict.threatScore) + '/100';
+      // AI verdict column
+      if (r.aiVerdict) {
+        const isAllow = r.aiVerdict.verdict === 'ALLOW';
+        const aiClass = isAllow ? 'bulk-verdict-safe' : 'bulk-verdict-danger';
+        const aiLabel = isAllow ? '✅ ALLOW' : '🚫 BLOCK';
+        aiCol = `<span class="bulk-verdict-badge ${aiClass}">${aiLabel}</span>`;
+      }
     }
     rowsHTML += `<tr>
       <td style="font-weight:600;color:var(--text-muted);width:36px">${i + 1}</td>
       <td class="url-cell">${r.url}</td>
       <td>${badge}</td>
+      <td>${aiCol}</td>
       <td style="font-family:var(--font-mono);font-size:12px">${score}</td>
       <td>${r.status === 'done' ? `<button class="export-btn" style="padding:4px 10px;font-size:11px" onclick="viewBulkDetail(${i})">View</button>` : ''}</td>
     </tr>`;
@@ -3398,7 +3422,7 @@ function renderBulkResults(results, completed, total) {
     </div>
     <div style="overflow-x:auto">
       <table class="bulk-table">
-        <thead><tr><th>#</th><th>URL</th><th>Verdict</th><th>Safety</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>URL</th><th>Verdict</th><th>AI</th><th>Safety</th><th></th></tr></thead>
         <tbody>${rowsHTML}</tbody>
       </table>
     </div>
