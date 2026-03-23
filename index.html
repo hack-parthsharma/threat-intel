@@ -126,32 +126,6 @@ body.dark .hero h1 span { color: var(--accent); }
 .export-btn.sia-report-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .analysis-card { background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
 
-/* Bulk Scan Module */
-.bulk-textarea { width: 100%; min-height: 160px; resize: vertical; border: 2px solid var(--border); border-radius: var(--radius); background: var(--bg-white); color: var(--text); padding: 14px; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; }
-.bulk-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,93,38,0.1); }
-.bulk-textarea::placeholder { color: var(--text-muted); }
-.bulk-actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
-.bulk-actions .scan-btn { flex: unset; padding: 12px 28px; }
-.bulk-or { font-size: 12px; color: var(--text-muted); font-weight: 600; }
-.bulk-upload-btn { background: var(--bg-subtle); border: 2px dashed var(--border); border-radius: var(--radius); padding: 12px 20px; font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
-.bulk-upload-btn:hover { border-color: var(--accent); color: var(--accent); }
-.bulk-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 20px 0; }
-.bulk-stat { background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
-.bulk-stat-num { font-size: 28px; font-weight: 800; margin-bottom: 2px; }
-.bulk-stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.bulk-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-.bulk-table th { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--border); background: var(--bg-subtle); }
-.bulk-table td { font-size: 13px; padding: 12px 14px; border-bottom: 1px solid var(--border-light); color: var(--text); }
-.bulk-table tr:hover { background: var(--bg-subtle); }
-.bulk-table .url-cell { font-family: var(--font-mono); font-size: 12px; word-break: break-all; max-width: 320px; }
-.bulk-verdict-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 12px; letter-spacing: 0.5px; }
-.bulk-verdict-safe { background: var(--safe-bg); color: var(--safe); border: 1px solid var(--safe-border); }
-.bulk-verdict-caution { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
-.bulk-verdict-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
-.bulk-verdict-pending { background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border); }
-.bulk-progress-mini { width: 100%; height: 4px; background: var(--bg-subtle); border-radius: 2px; margin-top: 20px; overflow: hidden; }
-.bulk-progress-mini-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s ease; width: 0%; }
-
 /* Teams Webhook */
 .teams-send-btn { background: #6264A7; border: none; border-radius: var(--radius); padding: 10px 20px; font-family: var(--font); font-size: 13px; font-weight: 700; color: white; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; }
 .teams-send-btn:hover { background: #4F5195; }
@@ -211,7 +185,7 @@ body.dark .hero h1 span { color: var(--accent); }
 .landing-title { font-size: 32px; font-weight: 800; color: var(--text); text-align: center; margin-bottom: 8px; }
 .landing-title span { color: var(--accent); }
 .landing-subtitle { color: var(--text-secondary); font-size: 15px; text-align: center; margin-bottom: 48px; max-width: 500px; }
-.module-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; max-width: 960px; width: 100%; }
+.module-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 720px; width: 100%; }
 .module-card { background: var(--bg-white); border: 2px solid var(--border); border-radius: var(--radius-xl); padding: 36px 28px; cursor: pointer; transition: all 0.3s ease; text-align: center; position: relative; overflow: hidden; }
 .module-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); transform: scaleX(0); transition: transform 0.3s ease; }
 .module-card:hover { border-color: var(--accent); box-shadow: var(--shadow-lg); transform: translateY(-4px); }
@@ -268,7 +242,7 @@ body.dark .agent-input:focus { background: #141B2D; }
 .sia-control-input { width: 100%; min-height: 74px; resize: vertical; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-white); color: var(--text); padding: 10px; font-family: var(--font); font-size: 13px; }
 .sia-control-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,93,38,0.1); }
 @media (max-width: 768px) {
-  .module-cards { grid-template-columns: 1fr; max-width: 400px; }
+  .module-cards { grid-template-columns: 1fr; }
   .landing-title { font-size: 24px; }
   .hero h1 { font-size: 28px; }
   .url-row { flex-direction: column; }
@@ -308,12 +282,6 @@ body.dark .agent-input:focus { background: #141B2D; }
       <div class="module-icon">🔬</div>
       <h3>Security Impact Analysis</h3>
       <p>Upload executables, installers, or any file to scan for threats and generate a verdict report before installation.</p>
-      <span class="module-badge badge-new">New</span>
-    </div>
-    <div class="module-card" onclick="showModule('bulk')">
-      <div class="module-icon">📋</div>
-      <h3>Bulk Scan</h3>
-      <p>Scan multiple URLs at once — paste a list or upload a CSV. Get a summary table with verdicts and send results to Teams.</p>
       <span class="module-badge badge-new">New</span>
     </div>
   </div>
@@ -452,42 +420,6 @@ body.dark .agent-input:focus { background: #141B2D; }
     </div>
   </div>
   <div id="siaResultsContainer"></div>
-</div>
-</div>
-
-<!-- Bulk Scan Module -->
-<div class="page" id="bulkPage">
-<div class="container">
-  <button class="back-btn" onclick="showModule('landing')">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-    Back to modules
-  </button>
-  <div class="section-heading" style="margin-top:8px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-    Bulk URL Scan
-  </div>
-  <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6">Paste one URL per line, or upload a CSV/TXT file. Each URL will be scanned through all engines and results displayed in a summary table.</p>
-  <textarea class="bulk-textarea" id="bulkUrlInput" placeholder="https://example.com&#10;https://suspicious-site.xyz&#10;https://another-domain.com&#10;&#10;Paste URLs here — one per line..."></textarea>
-  <div class="bulk-actions">
-    <button class="scan-btn" id="bulkScanBtn" onclick="startBulkScan()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      SCAN ALL
-    </button>
-    <span class="bulk-or">or</span>
-    <label class="bulk-upload-btn">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Upload CSV / TXT
-      <input type="file" id="bulkFileInput" accept=".csv,.txt,.tsv" onchange="handleBulkFileUpload(event)" style="display:none">
-    </label>
-    <button class="teams-send-btn" id="bulkTeamsBtn" onclick="sendBulkToTeams()" disabled style="margin-left:auto">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9z"/></svg>
-      Send to Teams
-    </button>
-  </div>
-  <div class="bulk-progress-mini" id="bulkProgress" style="display:none">
-    <div class="bulk-progress-mini-fill" id="bulkProgressFill"></div>
-  </div>
-  <div id="bulkResultsContainer"></div>
 </div>
 </div>
 
@@ -1336,11 +1268,9 @@ function showModule(module) {
   document.getElementById('landingPage').classList.remove('active');
   document.getElementById('securityPage').classList.remove('active');
   document.getElementById('siaPage').classList.remove('active');
-  document.getElementById('bulkPage').classList.remove('active');
   if (module === 'landing') { document.getElementById('landingPage').classList.add('active'); window.history.replaceState(null, '', window.location.pathname); }
   else if (module === 'security') { document.getElementById('securityPage').classList.add('active'); }
   else if (module === 'sia') { document.getElementById('siaPage').classList.add('active'); }
-  else if (module === 'bulk') { document.getElementById('bulkPage').classList.add('active'); }
   window.scrollTo({ top: 0 });
 }
 
@@ -3271,174 +3201,6 @@ function buildIntelligentControls(intel, verdict, fileHash, results, userInputs 
 }
 
 
-// ═══════════════ BULK SCAN MODULE ═══════════════
-
-let bulkResults = [];
-
-function handleBulkFileUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const text = e.target.result;
-    // Parse CSV or plain text — extract URLs
-    const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(Boolean);
-    const urls = [];
-    for (const line of lines) {
-      // Try to extract URL from CSV columns or plain lines
-      const parts = line.split(/[,\t;|]/);
-      for (const part of parts) {
-        const trimmed = part.trim().replace(/^["']|["']$/g, '');
-        if (/^https?:\/\//i.test(trimmed)) { urls.push(trimmed); break; }
-        if (/^[\w.-]+\.\w{2,}/.test(trimmed) && !trimmed.includes(' ')) { urls.push('https://' + trimmed); break; }
-      }
-    }
-    if (urls.length === 0) { showToast('No valid URLs found in file'); return; }
-    document.getElementById('bulkUrlInput').value = urls.join('\n');
-    showToast(`Loaded ${urls.length} URLs from file`);
-  };
-  reader.readAsText(file);
-  event.target.value = '';
-}
-
-async function startBulkScan() {
-  const input = document.getElementById('bulkUrlInput').value.trim();
-  if (!input) { showToast('Please enter URLs'); return; }
-
-  const lines = input.split(/[\r\n]+/).map(l => l.trim()).filter(Boolean);
-  const urls = [];
-  for (const line of lines) {
-    let u = line.replace(/^["']|["']$/g, '');
-    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
-    const parsed = parseURL(u);
-    if (parsed) urls.push({ raw: u, parsed });
-  }
-
-  if (urls.length === 0) { showToast('No valid URLs found'); return; }
-  if (urls.length > 50) { showToast('Maximum 50 URLs per batch'); return; }
-
-  await checkBackend();
-
-  const btn = document.getElementById('bulkScanBtn');
-  const progress = document.getElementById('bulkProgress');
-  const pFill = document.getElementById('bulkProgressFill');
-  const container = document.getElementById('bulkResultsContainer');
-
-  btn.disabled = true;
-  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> SCANNING...';
-  progress.style.display = 'block';
-  pFill.style.width = '0%';
-
-  bulkResults = urls.map(u => ({ url: u.raw, parsed: u.parsed, verdict: null, status: 'pending', results: [] }));
-  renderBulkResults(bulkResults, 0, urls.length);
-
-  for (let i = 0; i < urls.length; i++) {
-    pFill.style.width = ((i + 1) / urls.length * 100) + '%';
-
-    try {
-      const results = [];
-      const engines = [
-        { name: 'Domain Heuristics', fn: () => checkDomainReputation(urls[i].parsed) },
-        { name: 'Phishing Detection', fn: () => checkPhishing(urls[i].parsed) },
-        { name: 'SSL/TLS Analysis', fn: () => checkSSL(urls[i].parsed) },
-        { name: 'Safe Browsing Heuristics', fn: () => checkSafeBrowsingHeuristic(urls[i].parsed) },
-        { name: 'Entropy Analysis', fn: () => checkEntropy(urls[i].parsed) },
-        { name: 'Exploit Detection', fn: () => checkOpenRedirect(urls[i].parsed) },
-        { name: 'Download Risk', fn: () => checkContentRisk(urls[i].parsed) },
-        { name: 'DNS & Infrastructure', fn: () => checkDNS(urls[i].parsed) },
-        { name: 'WHOIS / RDAP', fn: () => checkDomainAge(urls[i].parsed) },
-        { name: 'URLhaus', fn: () => checkURLhaus(urls[i].raw) },
-        { name: 'ThreatFox', fn: () => checkThreatFox(urls[i].raw, urls[i].parsed) },
-        { name: 'Google Safe Browsing', fn: () => checkGoogleSafeBrowsing(urls[i].parsed) },
-      ];
-
-      for (const eng of engines) {
-        results.push(await eng.fn());
-      }
-
-      const verdict = calculateVerdict(results, urls[i].parsed);
-      // Fire AI verdict in parallel (don't block the loop too long)
-      let aiVerdict = null;
-      try { aiVerdict = await checkAISecurityVerdict(urls[i].parsed); } catch(e) {}
-      bulkResults[i] = { url: urls[i].raw, parsed: urls[i].parsed, verdict, status: 'done', results, aiVerdict };
-    } catch (e) {
-      bulkResults[i] = { url: urls[i].raw, parsed: urls[i].parsed, verdict: { level: 'caution', title: 'ERROR', threatScore: 0 }, status: 'error', results: [] };
-    }
-
-    renderBulkResults(bulkResults, i + 1, urls.length);
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> SCAN ALL';
-  document.getElementById('bulkTeamsBtn').disabled = false;
-  setTimeout(() => { progress.style.display = 'none'; }, 1500);
-}
-
-function renderBulkResults(results, completed, total) {
-  const container = document.getElementById('bulkResultsContainer');
-  const safeCount = results.filter(r => r.verdict?.level === 'safe').length;
-  const cautionCount = results.filter(r => r.verdict?.level === 'caution').length;
-  const dangerCount = results.filter(r => r.verdict?.level === 'danger').length;
-  const pendingCount = results.filter(r => r.status === 'pending').length;
-
-  let rowsHTML = '';
-  for (let i = 0; i < results.length; i++) {
-    const r = results[i];
-    let badge = '', score = '-', aiCol = '<span style="color:var(--text-muted);font-size:11px">—</span>';
-    if (r.status === 'pending') {
-      badge = '<span class="bulk-verdict-badge bulk-verdict-pending">PENDING</span>';
-    } else if (r.status === 'error') {
-      badge = '<span class="bulk-verdict-badge bulk-verdict-caution">ERROR</span>';
-    } else {
-      const bc = r.verdict.level === 'safe' ? 'bulk-verdict-safe' : r.verdict.level === 'caution' ? 'bulk-verdict-caution' : 'bulk-verdict-danger';
-      const label = r.verdict.level === 'safe' ? 'SAFE' : r.verdict.level === 'caution' ? 'CAUTION' : 'DANGER';
-      badge = `<span class="bulk-verdict-badge ${bc}">${label}</span>`;
-      score = (100 - r.verdict.threatScore) + '/100';
-      // AI verdict column
-      if (r.aiVerdict) {
-        const isAllow = r.aiVerdict.verdict === 'ALLOW';
-        const aiClass = isAllow ? 'bulk-verdict-safe' : 'bulk-verdict-danger';
-        const aiLabel = isAllow ? '✅ ALLOW' : '🚫 BLOCK';
-        aiCol = `<span class="bulk-verdict-badge ${aiClass}">${aiLabel}</span>`;
-      }
-    }
-    rowsHTML += `<tr>
-      <td style="font-weight:600;color:var(--text-muted);width:36px">${i + 1}</td>
-      <td class="url-cell">${r.url}</td>
-      <td>${badge}</td>
-      <td>${aiCol}</td>
-      <td style="font-family:var(--font-mono);font-size:12px">${score}</td>
-      <td>${r.status === 'done' ? `<button class="export-btn" style="padding:4px 10px;font-size:11px" onclick="viewBulkDetail(${i})">View</button>` : ''}</td>
-    </tr>`;
-  }
-
-  container.innerHTML = `
-    <div class="bulk-summary" style="animation:fadeUp 0.3s ease">
-      <div class="bulk-stat"><div class="bulk-stat-num" style="color:var(--text)">${completed}/${total}</div><div class="bulk-stat-label">Scanned</div></div>
-      <div class="bulk-stat"><div class="bulk-stat-num" style="color:var(--safe)">${safeCount}</div><div class="bulk-stat-label">Safe</div></div>
-      <div class="bulk-stat"><div class="bulk-stat-num" style="color:var(--warn)">${cautionCount}</div><div class="bulk-stat-label">Caution</div></div>
-      <div class="bulk-stat"><div class="bulk-stat-num" style="color:var(--danger)">${dangerCount}</div><div class="bulk-stat-label">Danger</div></div>
-      <div class="bulk-stat"><div class="bulk-stat-num" style="color:var(--text-muted)">${pendingCount}</div><div class="bulk-stat-label">Pending</div></div>
-    </div>
-    <div style="overflow-x:auto">
-      <table class="bulk-table">
-        <thead><tr><th>#</th><th>URL</th><th>Verdict</th><th>AI</th><th>Safety</th><th></th></tr></thead>
-        <tbody>${rowsHTML}</tbody>
-      </table>
-    </div>
-  `;
-}
-
-function viewBulkDetail(index) {
-  const r = bulkResults[index];
-  if (!r || !r.parsed || !r.results || !r.verdict) return;
-  // Switch to security module and render these results
-  showModule('security');
-  document.getElementById('urlInput').value = r.url;
-  renderResults(r.parsed, r.results, r.verdict, undefined);
-  document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
 // ═══════════════ TEAMS WEBHOOK ═══════════════
 
 async function sendToTeamsViaBackend(card) {
@@ -3454,50 +3216,6 @@ async function sendToTeamsViaBackend(card) {
   } catch (e) {
     showToast('Failed to send to Teams'); return false;
   }
-}
-
-async function sendBulkToTeams() {
-  if (!bulkResults.length || bulkResults.every(r => r.status === 'pending')) { showToast('No scan results to send'); return; }
-
-  const btn = document.getElementById('bulkTeamsBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9z"/></svg> Sending...';
-
-  const done = bulkResults.filter(r => r.status === 'done');
-  const safeCount = done.filter(r => r.verdict?.level === 'safe').length;
-  const cautionCount = done.filter(r => r.verdict?.level === 'caution').length;
-  const dangerCount = done.filter(r => r.verdict?.level === 'danger').length;
-
-  const rows = done.map(r => {
-    const emoji = r.verdict.level === 'safe' ? '🟢' : r.verdict.level === 'caution' ? '🟡' : '🔴';
-    const label = r.verdict.level === 'safe' ? 'SAFE' : r.verdict.level === 'caution' ? 'CAUTION' : 'DANGER';
-    const safety = 100 - r.verdict.threatScore;
-    return `${emoji} **${label}** (${safety}/100) — ${r.url}`;
-  });
-
-  const card = {
-    "@type": "MessageCard",
-    "@context": "http://schema.org/extensions",
-    "themeColor": dangerCount > 0 ? "DC2626" : cautionCount > 0 ? "D97706" : "0D9F6E",
-    "summary": `Trishul Bulk Scan — ${done.length} URLs scanned`,
-    "sections": [{
-      "activityTitle": "🔱 Trishul Bulk Scan Results",
-      "activitySubtitle": `${new Date().toLocaleString()} — ${done.length} URLs scanned`,
-      "facts": [
-        { "name": "🟢 Safe", "value": String(safeCount) },
-        { "name": "🟡 Caution", "value": String(cautionCount) },
-        { "name": "🔴 Danger", "value": String(dangerCount) },
-        { "name": "Total", "value": String(done.length) }
-      ],
-      "markdown": true,
-      "text": rows.join('\n\n')
-    }]
-  };
-
-  await sendToTeamsViaBackend(card);
-
-  btn.disabled = false;
-  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9z"/></svg> Send to Teams';
 }
 
 async function sendSingleToTeams() {
