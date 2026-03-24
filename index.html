@@ -296,7 +296,7 @@ body.dark .agent-input:focus { background: #141B2D; }
   </button>
   <div class="hero">
     <h1>Multi-Engine <span>URL Threat</span> Analysis</h1>
-    <p>Scan any URL across 21 intelligence engines — VirusTotal, PhishTank, URLhaus, ThreatFox, AbuseIPDB, Cloudflare Radar, Certificate Transparency, Google Safe Browsing, IP Geolocation, and 12 advanced heuristic analyzers.</p>
+    <p>Scan any URL across 20 intelligence engines — VirusTotal, PhishTank, URLhaus, ThreatFox, AbuseIPDB, Cloudflare Radar, Certificate Transparency, IP Geolocation, and 12 advanced heuristic analyzers.</p>
   </div>
   <div class="input-card">
     <div class="input-label">
@@ -322,7 +322,6 @@ body.dark .agent-input:focus { background: #141B2D; }
       <div class="engine-tag"><span class="tag-dot new"></span>Cloudflare Radar ✦</div>
       <div class="engine-tag"><span class="tag-dot new"></span>Cert Transparency ✦</div>
       <div class="engine-tag"><span class="tag-dot new"></span>IP Geolocation ✦</div>
-      <div class="engine-tag"><span class="tag-dot new"></span>Google Safe Browsing ✦</div>
       <div class="engine-tag"><span class="tag-dot new"></span>VT Community Votes ✦</div>
       <div class="engine-tag"><span class="tag-dot"></span>Redirect & Headers</div>
       <div class="engine-tag"><span class="tag-dot"></span>SSL/TLS</div>
@@ -335,7 +334,7 @@ body.dark .agent-input:focus { background: #141B2D; }
     </div>
     <div style="margin-top:10px;font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
       <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8B5CF6;flex-shrink:0;"></span>
-      <span>✦ New engines added — 7 additional free-API checks for better detection</span>
+      <span>✦ New engines added — 6 additional free-API checks for better detection</span>
     </div>
     <div class="scan-progress" id="scanProgress">
       <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
@@ -429,7 +428,7 @@ body.dark .agent-input:focus { background: #141B2D; }
 // ================================================================
 // TRISHUL v5.0 — 21-Engine URL Threat Intelligence + SIA (12 File Engines + Cerebras AI Controls)
 // NEW: PhishTank, AbuseIPDB, Cloudflare Radar, Cert Transparency,
-//      IP Geolocation/ASN, Google Safe Browsing, VT Community Votes
+//      IP Geolocation/ASN, VT Community Votes
 // ================================================================
 
 const PROXY_BASE = 'https://threatintel.ps191240.workers.dev';
@@ -859,39 +858,6 @@ const data = await resp.json();
   }
 }
 
-// 5. Google Safe Browsing — via Transparency Report (no key needed)
-async function checkGoogleSafeBrowsing(parsed) {
-  try {
-    let isFlagged = false;
-    let source = 'Google Transparency Report';
-    if (backendAvailable) {
-      const resp = await fetchViaBackend('/api/gsb', { method: 'POST', body: JSON.stringify({ url: parsed.full }) });
-      const data = await resp.json();
-      isFlagged = data?.flagged === true;
-    } else {
-      // Use Google Transparency Report public API
-      const encodedUrl = encodeURIComponent(parsed.full);
-      const resp = await fetchWithCORSFallback(
-        `https://transparencyreport.google.com/transparencyreport/api/v3/safebrowsing/status?site=${encodedUrl}`,
-        { signal: AbortSignal.timeout(8000) }
-      );
-      const text = await resp.text();
-      const clean = text.replace(/^\)\]\}'\n/, '').replace(/^\)]}'\n/, '');
-      const data = safeParse(clean);
-      // Transparency Report returns nested arrays — any value of 1 means flagged
-      if (Array.isArray(data)) {
-        isFlagged = JSON.stringify(data).includes('"1"') || JSON.stringify(data).includes(',1,') || JSON.stringify(data).includes(',1]');
-      }
-    }
-    if (isFlagged) {
-      return { engine: 'Google Safe Browsing', status: 'malicious', confidence: 88, details: { 'Status': 'FLAGGED', 'Source': source, 'Threat': 'Malware / Phishing / Deceptive' }, description: 'Flagged by Google Safe Browsing — active threat confirmed.' };
-    }
-    return { engine: 'Google Safe Browsing', status: 'clean', confidence: 78, details: { 'Status': 'Not flagged', 'Source': source }, description: 'Not flagged by Google Safe Browsing transparency data.' };
-  } catch(e) {
-    return { engine: 'Google Safe Browsing', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'Google Safe Browsing check failed.' };
-  }
-}
-
 // 6. VirusTotal Community Votes
 async function checkVTCommunity(parsed) {
   try {
@@ -1059,7 +1025,6 @@ async function startScan() {
     // New engines (parallel-friendly ones first)
     { name: 'Certificate Transparency', fn: () => checkCertTransparency(parsed) },
     { name: 'IP Geolocation & ASN', fn: () => checkIPInfo(parsed) },
-    { name: 'Google Safe Browsing', fn: () => checkGoogleSafeBrowsing(parsed) },
     { name: 'Cloudflare Radar', fn: () => checkCloudflareRadar(parsed) },
     // API-dependent engines
     { name: 'DNS & Infrastructure', fn: () => checkDNS(parsed) },
@@ -1155,7 +1120,7 @@ function renderResults(parsed, results, verdict, aiVerdict) {
   for(const r of verdict.reasons.danger) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
 
   // Score breakdown for new engines
-  const newEngineResults = results.filter(r => ['PhishTank','AbuseIPDB','Cloudflare Radar','Certificate Transparency (crt.sh)','IP Geolocation & ASN','Google Safe Browsing','VT Community Votes'].includes(r.engine));
+  const newEngineResults = results.filter(r => ['PhishTank','AbuseIPDB','Cloudflare Radar','Certificate Transparency (crt.sh)','IP Geolocation & ASN','VT Community Votes'].includes(r.engine));
   const newClean = newEngineResults.filter(r => r.status === 'clean').length;
   const newFlag = newEngineResults.filter(r => r.status === 'malicious' || r.status === 'suspicious').length;
 
