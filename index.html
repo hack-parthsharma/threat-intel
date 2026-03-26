@@ -240,23 +240,46 @@ body.dark .bulk-textarea:focus { background: #141B2D; }
 .history-time { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
 .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-dark); border-radius: var(--radius); padding: 14px 22px; font-size: 13px; font-weight: 600; color: var(--text-white); z-index: 10000; transform: translateY(100px); opacity: 0; transition: all 0.4s ease; box-shadow: var(--shadow-lg); }
 .toast.show { transform: translateY(0); opacity: 1; }
-.landing { min-height: calc(100vh - 56px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; }
-.landing-title { font-size: 32px; font-weight: 800; color: var(--text); text-align: center; margin-bottom: 8px; }
-.landing-title span { color: var(--accent); }
-.landing-subtitle { color: var(--text-secondary); font-size: 15px; text-align: center; margin-bottom: 48px; max-width: 500px; }
+.landing { min-height: calc(100vh - 56px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; position: relative; overflow: hidden; }
+.landing::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 20% 40%, rgba(232,93,38,0.08) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 30%, rgba(99,102,241,0.06) 0%, transparent 55%), radial-gradient(ellipse 70% 50% at 50% 80%, rgba(13,159,110,0.05) 0%, transparent 50%); animation: gradientShift 12s ease-in-out infinite alternate; z-index: 0; }
+@keyframes gradientShift { 0% { opacity: 1; transform: scale(1) rotate(0deg); } 50% { opacity: 0.8; transform: scale(1.05) rotate(1deg); } 100% { opacity: 1; transform: scale(1) rotate(-1deg); } }
+body.dark .landing::before { background: radial-gradient(ellipse 80% 60% at 20% 40%, rgba(232,93,38,0.12) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 30%, rgba(99,102,241,0.1) 0%, transparent 55%), radial-gradient(ellipse 70% 50% at 50% 80%, rgba(13,159,110,0.08) 0%, transparent 50%); }
+#particleCanvas { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.landing > * { position: relative; z-index: 1; }
+.landing-version { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: rgba(232,93,38,0.08); border: 1px solid rgba(232,93,38,0.15); color: var(--accent); margin-bottom: 20px; animation: fadeUp 0.6s ease 0.1s both; }
+.landing-version .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--safe); animation: pulseDot 2s ease-in-out infinite; }
+@keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.4); } }
+body.dark .landing-version { background: rgba(232,93,38,0.12); border-color: rgba(232,93,38,0.2); }
+.landing-title { font-size: 38px; font-weight: 800; color: var(--text); text-align: center; margin-bottom: 8px; animation: fadeUp 0.6s ease 0.15s both; }
+.landing-title span { color: var(--accent); background: linear-gradient(135deg, var(--accent), #F59E0B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.landing-subtitle { color: var(--text-secondary); font-size: 15px; text-align: center; margin-bottom: 48px; max-width: 520px; animation: fadeUp 0.6s ease 0.25s both; line-height: 1.7; }
 .module-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; max-width: 1020px; width: 100%; }
-.module-card { background: var(--bg-white); border: 2px solid var(--border); border-radius: var(--radius-xl); padding: 36px 28px; cursor: pointer; transition: all 0.3s ease; text-align: center; position: relative; overflow: hidden; }
-.module-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); transform: scaleX(0); transition: transform 0.3s ease; }
-.module-card:hover { border-color: var(--accent); box-shadow: var(--shadow-lg); transform: translateY(-4px); }
+.module-card { background: rgba(255,255,255,0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.25); border-radius: var(--radius-xl); padding: 36px 28px; cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); text-align: center; position: relative; overflow: hidden; box-shadow: 0 4px 24px rgba(11,29,58,0.04), 0 1px 3px rgba(11,29,58,0.06), inset 0 1px 0 rgba(255,255,255,0.6); }
+body.dark .module-card { background: rgba(20,27,45,0.6); border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 4px 24px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.04); }
+.module-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), #F59E0B, #8B5CF6); transform: scaleX(0); transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform-origin: left; }
+.module-card::after { content: ''; position: absolute; inset: 0; border-radius: var(--radius-xl); opacity: 0; transition: opacity 0.4s ease; background: radial-gradient(circle 200px at var(--mx, 50%) var(--my, 50%), rgba(232,93,38,0.06), transparent 70%); pointer-events: none; }
+.module-card:hover { transform: translateY(-6px); box-shadow: 0 12px 40px rgba(232,93,38,0.1), 0 4px 12px rgba(11,29,58,0.06), inset 0 1px 0 rgba(255,255,255,0.6); border-color: rgba(232,93,38,0.25); }
+body.dark .module-card:hover { box-shadow: 0 12px 40px rgba(232,93,38,0.12), 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06); border-color: rgba(232,93,38,0.2); }
 .module-card:hover::before { transform: scaleX(1); }
-.module-card:active { transform: translateY(-2px); }
-.module-icon { width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 20px; background: var(--accent-light); }
-body.dark .module-icon { background: rgba(232,93,38,0.15); }
+.module-card:hover::after { opacity: 1; }
+.module-card:active { transform: translateY(-3px); }
+.module-card:nth-child(1) { animation: fadeUp 0.6s ease 0.3s both; }
+.module-card:nth-child(2) { animation: fadeUp 0.6s ease 0.4s both; }
+.module-card:nth-child(3) { animation: fadeUp 0.6s ease 0.5s both; }
+.module-icon { width: 68px; height: 68px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 20px; background: linear-gradient(135deg, rgba(232,93,38,0.1), rgba(245,158,11,0.08)); border: 1px solid rgba(232,93,38,0.1); position: relative; }
+.module-icon::after { content: ''; position: absolute; inset: -2px; border-radius: 20px; background: linear-gradient(135deg, rgba(232,93,38,0.15), transparent, rgba(139,92,246,0.1)); opacity: 0; transition: opacity 0.3s; z-index: -1; }
+.module-card:hover .module-icon::after { opacity: 1; }
+body.dark .module-icon { background: linear-gradient(135deg, rgba(232,93,38,0.15), rgba(245,158,11,0.1)); border-color: rgba(232,93,38,0.15); }
 .module-card h3 { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
 .module-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
 .module-badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; margin-top: 16px; }
 .badge-live { background: var(--safe-bg); color: var(--safe); border: 1px solid var(--safe-border); }
 .badge-new { background: var(--accent-light); color: var(--accent); border: 1px solid rgba(232,93,38,0.2); }
+.landing-stats { display: flex; gap: 32px; margin-top: 40px; animation: fadeUp 0.6s ease 0.6s both; }
+.landing-stat { text-align: center; }
+.landing-stat-num { font-size: 20px; font-weight: 800; color: var(--text); font-family: var(--font-mono); }
+.landing-stat-label { font-size: 10px; font-weight: 600; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+.landing-footer-note { font-size: 11px; color: var(--text-muted); margin-top: 20px; animation: fadeUp 0.6s ease 0.7s both; display: flex; align-items: center; gap: 6px; }
 .back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; background: none; border: none; padding: 8px 0; margin-bottom: 16px; transition: color 0.2s; font-family: var(--font); }
 .back-btn:hover { color: var(--accent); }
 .sia-hero { text-align: center; padding: 36px 0 32px; }
@@ -328,27 +351,38 @@ body.dark .agent-input:focus { background: #141B2D; }
 
 <!-- Landing -->
 <div class="landing landing-page active" id="landingPage">
+  <canvas id="particleCanvas"></canvas>
   <h1 class="landing-title">🔱 Welcome to <span>Trishul</span></h1>
-  <p class="landing-subtitle">Choose a module to get started with your security analysis.</p>
+  <p class="landing-subtitle">Your all-in-one threat intelligence toolkit — scan, analyze, and secure in seconds.</p>
   <div class="module-cards">
     <div class="module-card" onclick="showModule('security')">
       <div class="module-icon">🛡️</div>
       <h3>Security Check</h3>
-      <p>Multi-engine URL threat analysis across 21 intelligence engines including VirusTotal, PhishTank, AbuseIPDB, Cloudflare Radar and more.</p>
-      <span class="module-badge badge-live">Live · 21 Engines</span>
+      <p>Multi-engine URL threat analysis across 20+ intelligence engines including VirusTotal, PhishTank, AbuseIPDB, Cloudflare Radar and more.</p>
+      <span class="module-badge badge-live">Live · 20 Engines + AI</span>
     </div>
     <div class="module-card" onclick="showModule('sia')">
       <div class="module-icon">🔬</div>
       <h3>Security Impact Analysis</h3>
-      <p>Upload executables, installers, or any file to scan for threats and generate a verdict report before installation.</p>
-      <span class="module-badge badge-new">New</span>
+      <p>Upload executables, installers, or any file to scan for threats and generate a NIST 800-53 verdict report with AI controls.</p>
+      <span class="module-badge badge-live">Live · 12 Engines + AI</span>
     </div>
     <div class="module-card" onclick="showModule('bulk')">
       <div class="module-icon">🎯</div>
       <h3>Bulk URL Scanner</h3>
-      <p>Paste multiple URLs to scan them all in batch. Get a summary table with verdicts, threat scores, and export the full report.</p>
-      <span class="module-badge badge-new">New</span>
+      <p>Paste up to 25 URLs to scan in batch across all 20 engines. Get verdicts, AI analysis, and export a full CSV report.</p>
+      <span class="module-badge badge-new">New · Full Scan</span>
     </div>
+  </div>
+  <div class="landing-stats">
+    <div class="landing-stat"><div class="landing-stat-num" id="statEngines">20+</div><div class="landing-stat-label">Engines</div></div>
+    <div class="landing-stat"><div class="landing-stat-num" id="statAPIs">8</div><div class="landing-stat-label">Live APIs</div></div>
+    <div class="landing-stat"><div class="landing-stat-num" id="statAI">2</div><div class="landing-stat-label">AI Models</div></div>
+    <div class="landing-stat"><div class="landing-stat-num" id="statExports">5</div><div class="landing-stat-label">Export Formats</div></div>
+  </div>
+  <div class="landing-footer-note">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Powered by VirusTotal · URLhaus · ThreatFox · PhishTank · AbuseIPDB · Cloudflare Radar · MetaDefender · Cerebras AI · OpenRouter
   </div>
 </div>
 
@@ -3702,6 +3736,127 @@ window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => startScan(), 800);
   }
 });
+// ═══════════════ PARTICLE SYSTEM + CARD GLOW ═══════════════
+(function initLandingEffects() {
+  // Particle canvas
+  const canvas = document.getElementById('particleCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let animId = null;
+  let isVisible = true;
+
+  function resize() {
+    const parent = canvas.parentElement;
+    if (!parent) return;
+    canvas.width = parent.offsetWidth;
+    canvas.height = parent.offsetHeight;
+  }
+
+  function createParticle() {
+    const isDark = document.body.classList.contains('dark');
+    const colors = isDark
+      ? ['rgba(232,93,38,0.15)', 'rgba(139,92,246,0.12)', 'rgba(13,159,110,0.1)', 'rgba(245,158,11,0.1)']
+      : ['rgba(232,93,38,0.08)', 'rgba(139,92,246,0.06)', 'rgba(13,159,110,0.05)', 'rgba(245,158,11,0.06)'];
+    return {
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 2.5 + 0.5,
+      dx: (Math.random() - 0.5) * 0.4,
+      dy: (Math.random() - 0.5) * 0.3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      life: Math.random() * 200 + 100,
+      maxLife: 0
+    };
+  }
+
+  function initParticles() {
+    particles = [];
+    const count = Math.min(60, Math.floor(canvas.width * canvas.height / 15000));
+    for (let i = 0; i < count; i++) {
+      const p = createParticle();
+      p.maxLife = p.life;
+      particles.push(p);
+    }
+  }
+
+  function drawParticles() {
+    if (!isVisible) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.dx;
+      p.y += p.dy;
+      p.life--;
+      const alpha = Math.min(1, p.life / (p.maxLife * 0.3));
+      if (p.life <= 0 || p.x < -10 || p.x > canvas.width + 10 || p.y < -10 || p.y > canvas.height + 10) {
+        particles[i] = createParticle();
+        particles[i].maxLife = particles[i].life;
+        continue;
+      }
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color.replace(/[\d.]+\)$/, (alpha * parseFloat(p.color.match(/[\d.]+\)$/)[0].replace(')', ''))) + ')');
+      ctx.fill();
+    }
+    // Draw subtle connection lines between close particles
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          const lineAlpha = (1 - dist / 120) * 0.06;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = document.body.classList.contains('dark')
+            ? `rgba(232,93,38,${lineAlpha})`
+            : `rgba(11,29,58,${lineAlpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    animId = requestAnimationFrame(drawParticles);
+  }
+
+  // Start / stop based on landing visibility
+  const observer = new MutationObserver(() => {
+    const landing = document.getElementById('landingPage');
+    if (!landing) return;
+    const visible = landing.classList.contains('active');
+    if (visible && !isVisible) {
+      isVisible = true;
+      resize();
+      initParticles();
+      drawParticles();
+    } else if (!visible && isVisible) {
+      isVisible = false;
+      if (animId) cancelAnimationFrame(animId);
+    }
+  });
+
+  const landing = document.getElementById('landingPage');
+  if (landing) observer.observe(landing, { attributes: true, attributeFilter: ['class'] });
+
+  window.addEventListener('resize', () => { if (isVisible) { resize(); initParticles(); } });
+
+  // Init on load
+  setTimeout(() => { resize(); initParticles(); drawParticles(); }, 100);
+
+  // Interactive card glow tracking
+  document.querySelectorAll('.module-card').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty('--mx', x + '%');
+      card.style.setProperty('--my', y + '%');
+    });
+  });
+})();
+
 </script>
 </body>
 </html>
