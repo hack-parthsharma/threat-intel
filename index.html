@@ -149,6 +149,65 @@ body.dark .hero h1 span { color: var(--accent); }
 .ai-verdict-loading { display: flex; align-items: center; gap: 12px; padding: 18px; color: var(--text-muted); font-size: 13px; }
 .ai-verdict-loading .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════════ RADAR SCANNER ANIMATION ═══════════════ */
+.radar-container { display: none; flex-direction: column; align-items: center; gap: 16px; margin-top: 24px; padding: 28px; }
+.radar-container.active { display: flex; }
+.radar-wrap { position: relative; width: 200px; height: 200px; }
+.radar-svg { width: 100%; height: 100%; filter: drop-shadow(0 0 20px rgba(232,93,38,0.15)); }
+.radar-grid { stroke: var(--border); stroke-width: 0.5; fill: none; opacity: 0.5; }
+.radar-sweep { fill: url(#radarGrad); transform-origin: 100px 100px; animation: radarSweep 2.4s linear infinite; }
+@keyframes radarSweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.radar-dot { fill: var(--accent); opacity: 0; }
+.radar-dot.ping { animation: radarPing 1.8s ease-out forwards; }
+@keyframes radarPing { 0% { opacity: 0; r: 2; } 20% { opacity: 1; r: 4; } 100% { opacity: 0; r: 2; } }
+.radar-center-dot { fill: var(--accent); filter: drop-shadow(0 0 6px rgba(232,93,38,0.6)); }
+.radar-ring-pulse { fill: none; stroke: var(--accent); stroke-width: 1; opacity: 0; animation: radarRingPulse 2.4s ease-out infinite; }
+@keyframes radarRingPulse { 0% { r: 10; opacity: 0.6; stroke-width: 2; } 100% { r: 90; opacity: 0; stroke-width: 0.5; } }
+.radar-info { text-align: center; }
+.radar-engine-name { font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--accent); letter-spacing: 0.5px; margin-bottom: 4px; }
+.radar-status { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+.radar-counter { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.radar-threats { display: flex; gap: 16px; margin-top: 4px; }
+.radar-threat-count { font-family: var(--font-mono); font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+.radar-threat-count .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+/* ═══════════════ BULK SCANNER MODULE ═══════════════ */
+.bulk-hero { text-align: center; padding: 36px 0 32px; }
+.bulk-hero h1 { font-size: 32px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+.bulk-hero h1 span { color: var(--accent); }
+.bulk-hero p { color: var(--text-secondary); font-size: 14px; max-width: 550px; margin: 0 auto; line-height: 1.6; }
+.bulk-textarea { width: 100%; min-height: 160px; background: var(--bg); border: 2px solid var(--border); border-radius: var(--radius); padding: 14px 18px; font-family: var(--font-mono); font-size: 13px; color: var(--text); outline: none; resize: vertical; transition: all 0.25s; line-height: 1.7; }
+.bulk-textarea::placeholder { color: var(--text-muted); }
+.bulk-textarea:focus { border-color: var(--accent); background: var(--bg-white); box-shadow: 0 0 0 3px rgba(232,93,38,0.1); }
+body.dark .bulk-textarea { background: #0B1120; border-color: #243050; color: #E8ECF4; }
+body.dark .bulk-textarea:focus { background: #141B2D; }
+.bulk-controls { display: flex; gap: 12px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+.bulk-count { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+.bulk-results-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 24px; background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
+.bulk-results-table th { background: var(--bg-subtle); padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.bulk-results-table td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border-light); }
+.bulk-results-table tr:last-child td { border-bottom: none; }
+.bulk-results-table tr:hover td { background: var(--bg-subtle); }
+.bulk-url-cell { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bulk-verdict-cell { font-weight: 700; font-size: 12px; }
+.bulk-score-bar { height: 6px; border-radius: 3px; background: var(--bg-subtle); overflow: hidden; width: 80px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+.bulk-score-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.bulk-action-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; color: var(--text-secondary); cursor: pointer; font-family: var(--font); transition: all 0.2s; }
+.bulk-action-btn:hover { border-color: var(--accent); color: var(--accent); }
+.bulk-scanning-row td { opacity: 0.6; }
+.bulk-scanning-indicator { display: inline-flex; align-items: center; gap: 6px; }
+.bulk-scanning-indicator .mini-spin { width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.bulk-summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 24px; }
+.bulk-summary-card { background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; text-align: center; box-shadow: var(--shadow-sm); }
+.bulk-summary-num { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+.bulk-summary-label { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
+.bulk-export-row { display: flex; gap: 10px; margin-top: 16px; }
+@media (max-width: 768px) {
+  .bulk-summary-cards { grid-template-columns: 1fr 1fr; }
+  .radar-wrap { width: 160px; height: 160px; }
+}
+
 .section-heading { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
 .section-heading svg { width: 18px; height: 18px; color: var(--accent); }
 .analysis-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border-light); }
@@ -185,7 +244,7 @@ body.dark .hero h1 span { color: var(--accent); }
 .landing-title { font-size: 32px; font-weight: 800; color: var(--text); text-align: center; margin-bottom: 8px; }
 .landing-title span { color: var(--accent); }
 .landing-subtitle { color: var(--text-secondary); font-size: 15px; text-align: center; margin-bottom: 48px; max-width: 500px; }
-.module-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 720px; width: 100%; }
+.module-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; max-width: 1020px; width: 100%; }
 .module-card { background: var(--bg-white); border: 2px solid var(--border); border-radius: var(--radius-xl); padding: 36px 28px; cursor: pointer; transition: all 0.3s ease; text-align: center; position: relative; overflow: hidden; }
 .module-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); transform: scaleX(0); transition: transform 0.3s ease; }
 .module-card:hover { border-color: var(--accent); box-shadow: var(--shadow-lg); transform: translateY(-4px); }
@@ -284,6 +343,12 @@ body.dark .agent-input:focus { background: #141B2D; }
       <p>Upload executables, installers, or any file to scan for threats and generate a verdict report before installation.</p>
       <span class="module-badge badge-new">New</span>
     </div>
+    <div class="module-card" onclick="showModule('bulk')">
+      <div class="module-icon">🎯</div>
+      <h3>Bulk URL Scanner</h3>
+      <p>Paste multiple URLs to scan them all in batch. Get a summary table with verdicts, threat scores, and export the full report.</p>
+      <span class="module-badge badge-new">New</span>
+    </div>
   </div>
 </div>
 
@@ -341,6 +406,38 @@ body.dark .agent-input:focus { background: #141B2D; }
       <div class="progress-info">
         <span class="progress-text" id="progressText">Initializing scan...</span>
         <span class="progress-engine" id="progressEngine"></span>
+      </div>
+    </div>
+    <!-- Radar Animation -->
+    <div class="radar-container" id="radarContainer">
+      <div class="radar-wrap">
+        <svg class="radar-svg" viewBox="0 0 200 200">
+          <defs>
+            <linearGradient id="radarGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="transparent"/>
+              <stop offset="100%" stop-color="rgba(232,93,38,0.35)"/>
+            </linearGradient>
+          </defs>
+          <circle class="radar-grid" cx="100" cy="100" r="30"/>
+          <circle class="radar-grid" cx="100" cy="100" r="55"/>
+          <circle class="radar-grid" cx="100" cy="100" r="80"/>
+          <line class="radar-grid" x1="100" y1="10" x2="100" y2="190"/>
+          <line class="radar-grid" x1="10" y1="100" x2="190" y2="100"/>
+          <path class="radar-sweep" d="M100,100 L100,10 A90,90 0 0,1 163.6,36.4 Z" style="fill:url(#radarGrad)"/>
+          <circle class="radar-ring-pulse" cx="100" cy="100" r="10"/>
+          <circle class="radar-center-dot" cx="100" cy="100" r="4"/>
+          <g id="radarDots"></g>
+        </svg>
+      </div>
+      <div class="radar-info">
+        <div class="radar-engine-name" id="radarEngine">Initializing...</div>
+        <div class="radar-status" id="radarStatus">Preparing scan</div>
+        <div class="radar-counter" id="radarCounter"></div>
+        <div class="radar-threats">
+          <span class="radar-threat-count"><span class="dot" style="background:var(--safe)"></span> <span id="liveClean">0</span></span>
+          <span class="radar-threat-count"><span class="dot" style="background:var(--warn)"></span> <span id="liveCaution">0</span></span>
+          <span class="radar-threat-count"><span class="dot" style="background:var(--danger)"></span> <span id="liveDanger">0</span></span>
+        </div>
       </div>
     </div>
   </div>
@@ -418,7 +515,97 @@ body.dark .agent-input:focus { background: #141B2D; }
       <span class="progress-engine" id="siaProgressEngine"></span>
     </div>
   </div>
+  <div class="radar-container" id="siaRadarContainer">
+    <div class="radar-wrap">
+      <svg class="radar-svg" viewBox="0 0 200 200">
+        <defs>
+          <linearGradient id="radarGradSIA" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="transparent"/>
+            <stop offset="100%" stop-color="rgba(232,93,38,0.35)"/>
+          </linearGradient>
+        </defs>
+        <circle class="radar-grid" cx="100" cy="100" r="30"/>
+        <circle class="radar-grid" cx="100" cy="100" r="55"/>
+        <circle class="radar-grid" cx="100" cy="100" r="80"/>
+        <line class="radar-grid" x1="100" y1="10" x2="100" y2="190"/>
+        <line class="radar-grid" x1="10" y1="100" x2="190" y2="100"/>
+        <path class="radar-sweep" d="M100,100 L100,10 A90,90 0 0,1 163.6,36.4 Z" style="fill:url(#radarGradSIA)"/>
+        <circle class="radar-ring-pulse" cx="100" cy="100" r="10"/>
+        <circle class="radar-center-dot" cx="100" cy="100" r="4"/>
+        <g id="siaRadarDots"></g>
+      </svg>
+    </div>
+    <div class="radar-info">
+      <div class="radar-engine-name" id="siaRadarEngine">Initializing...</div>
+      <div class="radar-status" id="siaRadarStatus">Preparing file analysis</div>
+      <div class="radar-counter" id="siaRadarCounter"></div>
+    </div>
+  </div>
   <div id="siaResultsContainer"></div>
+</div>
+</div>
+
+<!-- Bulk Scanner Module -->
+<div class="page" id="bulkPage">
+<div class="container">
+  <button class="back-btn" onclick="showModule('landing')">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to modules
+  </button>
+  <div class="bulk-hero">
+    <h1>Bulk <span>URL Scanner</span></h1>
+    <p>Paste one URL per line. All URLs will be scanned across 20+ intelligence engines with results in a summary table.</p>
+  </div>
+  <div class="input-card">
+    <div class="input-label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      URLs to Scan (one per line)
+    </div>
+    <textarea class="bulk-textarea" id="bulkUrls" placeholder="https://example.com&#10;https://suspicious-site.xyz&#10;https://another-url.com&#10;...paste up to 25 URLs" oninput="updateBulkCount()"></textarea>
+    <div class="bulk-controls">
+      <button class="scan-btn" id="bulkScanBtn" onclick="startBulkScan()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        SCAN ALL
+      </button>
+      <span class="bulk-count" id="bulkCount">0 URLs</span>
+    </div>
+  </div>
+  <div id="bulkRadarContainer" class="radar-container">
+    <div class="radar-wrap">
+      <svg class="radar-svg" viewBox="0 0 200 200">
+        <defs>
+          <radialGradient id="radarGradBulk" cx="100" cy="100" r="90" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="transparent"/>
+            <stop offset="100%" stop-color="rgba(232,93,38,0.12)"/>
+          </radialGradient>
+          <linearGradient id="radarSweepGradBulk" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="transparent"/>
+            <stop offset="100%" stop-color="rgba(232,93,38,0.35)"/>
+          </linearGradient>
+        </defs>
+        <circle class="radar-grid" cx="100" cy="100" r="30"/>
+        <circle class="radar-grid" cx="100" cy="100" r="55"/>
+        <circle class="radar-grid" cx="100" cy="100" r="80"/>
+        <line class="radar-grid" x1="100" y1="10" x2="100" y2="190"/>
+        <line class="radar-grid" x1="10" y1="100" x2="190" y2="100"/>
+        <path class="radar-sweep" d="M100,100 L100,10 A90,90 0 0,1 163.6,36.4 Z" style="fill:url(#radarSweepGradBulk)"/>
+        <circle class="radar-ring-pulse" cx="100" cy="100" r="10"/>
+        <circle class="radar-center-dot" cx="100" cy="100" r="4"/>
+        <g id="bulkRadarDots"></g>
+      </svg>
+    </div>
+    <div class="radar-info">
+      <div class="radar-engine-name" id="bulkRadarEngine">Initializing...</div>
+      <div class="radar-status" id="bulkRadarStatus">Preparing bulk scan</div>
+      <div class="radar-counter" id="bulkRadarCounter"></div>
+      <div class="radar-threats" id="bulkRadarThreats">
+        <span class="radar-threat-count"><span class="dot" style="background:var(--safe)"></span> <span id="bulkLiveClean">0</span></span>
+        <span class="radar-threat-count"><span class="dot" style="background:var(--warn)"></span> <span id="bulkLiveCaution">0</span></span>
+        <span class="radar-threat-count"><span class="dot" style="background:var(--danger)"></span> <span id="bulkLiveDanger">0</span></span>
+      </div>
+    </div>
+  </div>
+  <div id="bulkResultsContainer"></div>
 </div>
 </div>
 
@@ -1007,11 +1194,22 @@ async function startScan() {
   const pFill = document.getElementById('progressFill');
   const pText = document.getElementById('progressText');
   const pEngine = document.getElementById('progressEngine');
+  const radarCont = document.getElementById('radarContainer');
+  const radarEngEl = document.getElementById('radarEngine');
+  const radarStatEl = document.getElementById('radarStatus');
+  const radarCountEl = document.getElementById('radarCounter');
+  const dotsGroup = document.getElementById('radarDots');
 
   btn.disabled = true;
   btn.classList.add('scanning');
   btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> SCANNING...';
   progress.classList.add('active');
+  radarCont.classList.add('active');
+  dotsGroup.innerHTML = '';
+  let liveClean = 0, liveCaution = 0, liveDanger = 0;
+  document.getElementById('liveClean').textContent = '0';
+  document.getElementById('liveCaution').textContent = '0';
+  document.getElementById('liveDanger').textContent = '0';
 
   const results = [];
   const engines = [
@@ -1022,11 +1220,9 @@ async function startScan() {
     { name: 'Entropy Analysis', fn: () => checkEntropy(parsed) },
     { name: 'Exploit Detection', fn: () => checkOpenRedirect(parsed) },
     { name: 'Download Risk', fn: () => checkContentRisk(parsed) },
-    // New engines (parallel-friendly ones first)
     { name: 'Certificate Transparency', fn: () => checkCertTransparency(parsed) },
     { name: 'IP Geolocation & ASN', fn: () => checkIPInfo(parsed) },
     { name: 'Cloudflare Radar', fn: () => checkCloudflareRadar(parsed) },
-    // API-dependent engines
     { name: 'DNS & Infrastructure', fn: () => checkDNS(parsed) },
     { name: 'WHOIS / RDAP', fn: () => checkDomainAge(parsed) },
     { name: 'Wayback Machine', fn: () => checkWaybackExistence(parsed) },
@@ -1043,30 +1239,49 @@ async function startScan() {
     pFill.style.width = ((i + 1) / engines.length * 100) + '%';
     pText.textContent = `Scanning engine ${i + 1} of ${engines.length}`;
     pEngine.textContent = engines[i].name;
-    results.push(await engines[i].fn());
+    radarEngEl.textContent = engines[i].name;
+    radarStatEl.textContent = `Engine ${i + 1} of ${engines.length}`;
+    radarCountEl.textContent = `${Math.round((i + 1) / engines.length * 100)}%`;
+    const result = await engines[i].fn();
+    results.push(result);
+    // Update live counters
+    if (result.status === 'clean') { liveClean++; document.getElementById('liveClean').textContent = liveClean; }
+    else if (result.status === 'suspicious') { liveCaution++; document.getElementById('liveCaution').textContent = liveCaution; }
+    else if (result.status === 'malicious') { liveDanger++; document.getElementById('liveDanger').textContent = liveDanger; }
+    // Add radar dot
+    const angle = (i / engines.length) * Math.PI * 2 - Math.PI / 2;
+    const dist = 25 + Math.random() * 55;
+    const cx = 100 + Math.cos(angle) * dist;
+    const cy = 100 + Math.sin(angle) * dist;
+    const dotColor = result.status === 'clean' ? 'var(--safe)' : result.status === 'suspicious' ? 'var(--warn)' : result.status === 'malicious' ? 'var(--danger)' : 'var(--text-muted)';
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', '3');
+    dot.setAttribute('fill', dotColor); dot.classList.add('radar-dot'); dot.classList.add('ping');
+    dotsGroup.appendChild(dot);
     await new Promise(r => setTimeout(r, 200));
   }
 
   pFill.style.width = '100%';
   pText.textContent = 'Running AI analysis...';
   pEngine.textContent = 'OpenRouter AI Verdict';
+  radarEngEl.textContent = 'AI Security Verdict';
+  radarStatEl.textContent = 'Analyzing with AI...';
 
   const verdict = calculateVerdict(results, parsed);
 
-  // Fire AI verdict request — render results immediately with loading state, then update
   renderResults(parsed, results, verdict, null);
 
-  // Run AI security check in background
   const aiVerdict = await checkAISecurityVerdict(parsed);
   renderResults(parsed, results, verdict, aiVerdict);
 
-  // Auto-send AI Verdict to Teams channel
   if (aiVerdict) {
     await sendAIVerdictToTeams(parsed.full, aiVerdict);
   }
 
   pText.textContent = 'Analysis complete';
   pEngine.textContent = '';
+  radarEngEl.textContent = 'Scan Complete';
+  radarStatEl.textContent = verdict.title;
 
   scanHistory.unshift({ url: parsed.full, verdict, time: new Date(), results, parsed, aiVerdict });
   renderHistory();
@@ -1075,7 +1290,7 @@ async function startScan() {
   btn.disabled = false;
   btn.classList.remove('scanning');
   btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> ANALYZE';
-  setTimeout(() => progress.classList.remove('active'), 2000);
+  setTimeout(() => { progress.classList.remove('active'); radarCont.classList.remove('active'); }, 3000);
 }
 
 function calculateVerdict(results, parsed) {
@@ -1213,9 +1428,11 @@ function showModule(module) {
   document.getElementById('landingPage').classList.remove('active');
   document.getElementById('securityPage').classList.remove('active');
   document.getElementById('siaPage').classList.remove('active');
+  document.getElementById('bulkPage').classList.remove('active');
   if (module === 'landing') { document.getElementById('landingPage').classList.add('active'); window.history.replaceState(null, '', window.location.pathname); }
   else if (module === 'security') { document.getElementById('securityPage').classList.add('active'); }
   else if (module === 'sia') { document.getElementById('siaPage').classList.add('active'); }
+  else if (module === 'bulk') { document.getElementById('bulkPage').classList.add('active'); }
   window.scrollTo({ top: 0 });
 }
 
@@ -2136,16 +2353,43 @@ async function startSIAScan() {
   const pFill = document.getElementById('siaProgressFill');
   const pText = document.getElementById('siaProgressText');
   const pEngine = document.getElementById('siaProgressEngine');
+  const siaRadar = document.getElementById('siaRadarContainer');
+  const siaRadarEng = document.getElementById('siaRadarEngine');
+  const siaRadarStat = document.getElementById('siaRadarStatus');
+  const siaRadarCount = document.getElementById('siaRadarCounter');
+  const siaRadarDots = document.getElementById('siaRadarDots');
 
   btn.disabled = true;
   btn.textContent = 'SCANNING...';
   progress.classList.add('active');
+  siaRadar.classList.add('active');
+  siaRadarDots.innerHTML = '';
 
   await checkBackend();
 
   pFill.style.width = '10%';
   pText.textContent = 'Computing file hash...';
   pEngine.textContent = 'SHA-256';
+  siaRadarEng.textContent = 'SHA-256 Hash';
+  siaRadarStat.textContent = 'Computing file hash...';
+  let siaRadarIdx = 0;
+  function siaRadarUpdate(name, pct, result) {
+    siaRadarEng.textContent = name;
+    siaRadarStat.textContent = `${pct}% complete`;
+    siaRadarCount.textContent = pct + '%';
+    if (result) {
+      const angle = (siaRadarIdx / 14) * Math.PI * 2 - Math.PI / 2;
+      const dist = 25 + Math.random() * 55;
+      const cx = 100 + Math.cos(angle) * dist;
+      const cy = 100 + Math.sin(angle) * dist;
+      const dc = result.status === 'clean' ? 'var(--safe)' : result.status === 'suspicious' ? 'var(--warn)' : result.status === 'malicious' ? 'var(--danger)' : 'var(--text-muted)';
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', '3');
+      dot.setAttribute('fill', dc); dot.classList.add('radar-dot', 'ping');
+      siaRadarDots.appendChild(dot);
+      siaRadarIdx++;
+    }
+  }
 
   let fileHash = '';
   try {
@@ -2167,13 +2411,17 @@ async function startSIAScan() {
   pText.textContent = 'Analyzing file type...';
   pEngine.textContent = 'File Heuristics';
   await new Promise(r => setTimeout(r, 400));
-  results.push(analyzeFileType(fileName, fileExt, fileSize));
+  const ftResult = analyzeFileType(fileName, fileExt, fileSize);
+  results.push(ftResult);
+  siaRadarUpdate('File Heuristics', 20, ftResult);
 
   pFill.style.width = '35%';
   pText.textContent = 'Checking extension risk...';
   pEngine.textContent = 'Extension Analysis';
   await new Promise(r => setTimeout(r, 400));
-  results.push(analyzeExtensionRisk(fileName, fileExt));
+  const extResult = analyzeExtensionRisk(fileName, fileExt);
+  results.push(extResult);
+  siaRadarUpdate('Extension Analysis', 35, extResult);
 
   pFill.style.width = '50%';
   pText.textContent = 'Analyzing file size...';
@@ -2424,10 +2672,13 @@ async function startSIAScan() {
 
   renderSIAResults(fileName, fileHash, fileSize, fileExt, results, verdict, controls);
 
+  siaRadarEng.textContent = 'Analysis Complete';
+  siaRadarStat.textContent = verdict.title;
+
   btn.disabled = false;
   btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> ANALYZE FILE';
 
-  setTimeout(() => progress.classList.remove('active'), 2000);
+  setTimeout(() => { progress.classList.remove('active'); siaRadar.classList.remove('active'); }, 3000);
 }
 function renderSIAResults(fileName,hash,fileSize,ext,results,verdict,controls=[]){
   const container=document.getElementById('siaResultsContainer');
@@ -3198,6 +3449,243 @@ async function sendAIVerdictToTeams(url, aiVerdict) {
 }
 
 function generateSIAPdf(){if(!lastSIAScanData){showToast('No scan data available');return;}showToast('Generating PDF report...');const d=lastSIAScanData;const{jsPDF}=window.jspdf;const pdf=new jsPDF('p','mm','a4');const pageW=210;const margin=20;const contentW=pageW-2*margin;let y=margin;const today=d.scanDate.toLocaleDateString('en-US',{day:'numeric',month:'long',year:'numeric'});const sizeMB=d.fileSize<1048576?(d.fileSize/1024).toFixed(1)+' KB':(d.fileSize/1048576).toFixed(2)+' MB';const appName=d.fileName.replace(/[-_](windows|win|mac|linux|x64|x86|arm|setup|user|installer|portable)[-_]?/gi,' ').replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\s+/g,' ').trim();const additionalNotes=d.additionalNotes||'None';function checkPage(needed){if(y+needed>280){pdf.addPage();y=margin;addHeader();}}function addHeader(){pdf.setFontSize(8);pdf.setTextColor(150);pdf.text('Security Impact Analysis',pageW/2,12,{align:'center'});pdf.setDrawColor(200);pdf.line(margin,15,pageW-margin,15);}function addFooter(){pdf.setFontSize(8);pdf.setTextColor(150);pdf.text(`Trishul SIA Report — Page ${pdf.internal.getNumberOfPages()}`,pageW/2,290,{align:'center'});}addHeader();y=25;pdf.setFontSize(22);pdf.setTextColor(232,93,38);pdf.setFont('helvetica','bold');pdf.text('Security Impact Analysis',pageW/2,y,{align:'center'});y+=8;pdf.setFontSize(10);pdf.setTextColor(100);pdf.setFont('helvetica','normal');pdf.text(`Trishul SIA — ${today}`,pageW/2,y,{align:'center'});y+=10;pdf.setFontSize(14);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text(appName,pageW/2,y,{align:'center'});y+=15;pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('System Information',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.setLineWidth(0.5);pdf.line(margin,y,margin+50,y);y+=6;const sysInfo=[['System/Application Name',appName],['File Name',d.fileName],['Application Category',getAppCategory(d.fileExt)],['Assessment Agent',d.assessmentAgent],['Date',today]];pdf.setFontSize(9);for(const[label,value]of sysInfo){checkPage(8);pdf.setFont('helvetica','bold');pdf.setTextColor(80);pdf.text(label+':',margin,y);pdf.setFont('helvetica','normal');pdf.setTextColor(40);const valLines=pdf.splitTextToSize(value,contentW-55);pdf.text(valLines,margin+55,y);y+=Math.max(6,valLines.length*5);}y+=8;checkPage(60);pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Summary',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.line(margin,y,margin+30,y);y+=6;const summaryData=[['Name',d.fileName],['Size',`${sizeMB} (${d.fileSize.toLocaleString()} bytes)`],['SHA-256',d.fileHash||'N/A'],['Verdict',d.verdict.title],['Safety Score',`${100-d.verdict.threatScore} / 100`],['Threat Score',`${d.verdict.threatScore} / 100`],['Additional Notes',additionalNotes]];pdf.setFontSize(9);for(const[label,value]of summaryData){checkPage(8);pdf.setFont('helvetica','bold');pdf.setTextColor(80);pdf.text(label+':',margin,y);pdf.setFont('helvetica','normal');pdf.setTextColor(40);const valLines=pdf.splitTextToSize(String(value),contentW-55);pdf.text(valLines,margin+55,y);y+=Math.max(6,valLines.length*5);}y+=8;checkPage(20);pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Scan Engine Results',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.line(margin,y,margin+50,y);y+=6;pdf.setFontSize(8);for(const r of d.results){checkPage(12);const color=r.status==='clean'?[13,159,110]:r.status==='suspicious'?[217,119,6]:r.status==='malicious'?[220,38,38]:[100,100,100];pdf.setFillColor(...color);pdf.circle(margin+2,y-1.2,1.2,'F');pdf.setFont('helvetica','bold');pdf.setTextColor(40);pdf.text(r.engine,margin+6,y);pdf.setFont('helvetica','bold');pdf.setTextColor(...color);pdf.text(r.status.toUpperCase(),margin+65,y);pdf.setFont('helvetica','normal');pdf.setTextColor(80);const descLines=pdf.splitTextToSize(r.description,contentW-6);y+=4;pdf.text(descLines,margin+6,y);y+=descLines.length*4+3;}pdf.addPage();y=margin;addHeader();y=25;pdf.setFontSize(16);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Security Controls Assessment',pageW/2,y,{align:'center'});y+=10;const controls=d.controls;pdf.setFontSize(8);let ctrlNum=1;for(const ctrl of controls){checkPage(18);pdf.setFillColor(213,232,240);pdf.rect(margin,y-3,contentW,7,'F');pdf.setFont('helvetica','bold');pdf.setTextColor(11,29,58);pdf.text(`${ctrlNum}. ${ctrl.code} (${ctrl.title})`,margin+2,y+1.5);const answerColor=ctrl.answer==='Yes'?[220,38,38]:[13,159,110];pdf.setTextColor(...answerColor);pdf.setFont('helvetica','bold');pdf.text(ctrl.answer==='Yes'?'YES':'NO',pageW-margin-10,y+1.5,{align:'right'});y+=8;pdf.setFont('helvetica','normal');pdf.setTextColor(80);pdf.setFontSize(7.5);const detailLines=pdf.splitTextToSize(ctrl.detail,contentW-4);pdf.text(detailLines,margin+2,y);y+=detailLines.length*3.5+4;pdf.setFontSize(8);ctrlNum++;}checkPage(15);y+=5;pdf.setFontSize(7);pdf.setTextColor(150);pdf.setFont('helvetica','italic');const fnLines=pdf.splitTextToSize('If you selected "yes" to any of the above, please update the appropriate document in the security package (SSP, boundary diagram, control implementation, policies, procedures, plans).',contentW);pdf.text(fnLines,margin,y);addFooter();const safeName=appName.replace(/[^a-zA-Z0-9]/g,'_').substring(0,40);pdf.save(`SIA_${safeName}_${d.scanDate.toISOString().split('T')[0]}.pdf`);showToast('SIA PDF report downloaded!');}
+
+// ═══════════════ BULK SCANNER ═══════════════
+
+let bulkScanResults = [];
+let bulkScanAborted = false;
+
+function updateBulkCount() {
+  const txt = document.getElementById('bulkUrls').value.trim();
+  const urls = txt ? txt.split('\n').map(u => u.trim()).filter(u => u.length > 0) : [];
+  document.getElementById('bulkCount').textContent = urls.length + ' URL' + (urls.length !== 1 ? 's' : '');
+}
+
+async function scanSingleUrlFull(urlStr, onEngineComplete) {
+  const parsed = parseURL(urlStr);
+  if (!parsed) return { url: urlStr, verdict: { title: 'INVALID URL', level: 'danger', threatScore: 100 }, results: [], parsed: null, error: true };
+
+  const engines = [
+    { name: 'Domain Heuristics', fn: () => checkDomainReputation(parsed) },
+    { name: 'Phishing Detection', fn: () => checkPhishing(parsed) },
+    { name: 'SSL/TLS Analysis', fn: () => checkSSL(parsed) },
+    { name: 'Safe Browsing Heuristics', fn: () => checkSafeBrowsingHeuristic(parsed) },
+    { name: 'Entropy Analysis', fn: () => checkEntropy(parsed) },
+    { name: 'Exploit Detection', fn: () => checkOpenRedirect(parsed) },
+    { name: 'Download Risk', fn: () => checkContentRisk(parsed) },
+    { name: 'Certificate Transparency', fn: () => checkCertTransparency(parsed) },
+    { name: 'IP Geolocation & ASN', fn: () => checkIPInfo(parsed) },
+    { name: 'Cloudflare Radar', fn: () => checkCloudflareRadar(parsed) },
+    { name: 'DNS & Infrastructure', fn: () => checkDNS(parsed) },
+    { name: 'WHOIS / RDAP', fn: () => checkDomainAge(parsed) },
+    { name: 'Wayback Machine', fn: () => checkWaybackExistence(parsed) },
+    { name: 'Redirect & Headers', fn: () => checkRedirects(parsed.full, parsed) },
+    { name: 'URLhaus', fn: () => checkURLhaus(parsed.full) },
+    { name: 'ThreatFox', fn: () => checkThreatFox(parsed.full, parsed) },
+    { name: 'PhishTank', fn: () => checkPhishTank(parsed.full) },
+    { name: 'AbuseIPDB', fn: () => checkAbuseIPDB(parsed) },
+    { name: 'VT Community Votes', fn: () => checkVTCommunity(parsed) },
+    { name: 'VirusTotal', fn: () => checkVirusTotal(parsed.full) },
+  ];
+
+  const results = [];
+  for (let i = 0; i < engines.length; i++) {
+    try {
+      const result = await engines[i].fn();
+      results.push(result);
+      if (onEngineComplete) onEngineComplete(engines[i].name, i + 1, engines.length, result);
+    } catch(e) { /* skip failed engines */ }
+  }
+
+  const verdict = calculateVerdict(results, parsed);
+
+  // Also run AI verdict if backend available
+  let aiVerdict = null;
+  try {
+    if (onEngineComplete) onEngineComplete('AI Security Verdict', engines.length, engines.length, null);
+    aiVerdict = await checkAISecurityVerdict(parsed);
+  } catch(e) {}
+
+  return { url: parsed.full, verdict, results, parsed, aiVerdict };
+}
+
+async function startBulkScan() {
+  const txt = document.getElementById('bulkUrls').value.trim();
+  if (!txt) { showToast('Paste some URLs first'); return; }
+  const urls = txt.split('\n').map(u => u.trim()).filter(u => u.length > 0);
+  if (urls.length === 0) { showToast('No valid URLs found'); return; }
+  if (urls.length > 25) { showToast('Maximum 25 URLs per batch'); return; }
+
+  await checkBackend();
+  bulkScanAborted = false;
+  bulkScanResults = [];
+
+  const btn = document.getElementById('bulkScanBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> SCANNING...';
+
+  const radarCont = document.getElementById('bulkRadarContainer');
+  const radarEng = document.getElementById('bulkRadarEngine');
+  const radarStat = document.getElementById('bulkRadarStatus');
+  const radarCount = document.getElementById('bulkRadarCounter');
+  const dotsGroup = document.getElementById('bulkRadarDots');
+  radarCont.classList.add('active');
+  dotsGroup.innerHTML = '';
+  let bClean = 0, bCaution = 0, bDanger = 0;
+  document.getElementById('bulkLiveClean').textContent = '0';
+  document.getElementById('bulkLiveCaution').textContent = '0';
+  document.getElementById('bulkLiveDanger').textContent = '0';
+
+  const container = document.getElementById('bulkResultsContainer');
+  container.innerHTML = '';
+
+  for (let i = 0; i < urls.length; i++) {
+    if (bulkScanAborted) break;
+
+    const urlLabel = urls[i].length > 40 ? urls[i].substring(0, 40) + '...' : urls[i];
+
+    // Per-engine callback for radar during each URL scan
+    const onEngine = (engineName, engIdx, engTotal, result) => {
+      radarEng.textContent = engineName;
+      radarStat.textContent = `URL ${i + 1}/${urls.length} — Engine ${engIdx}/${engTotal}`;
+      const overallPct = Math.round(((i + engIdx / engTotal) / urls.length) * 100);
+      radarCount.textContent = overallPct + '%';
+
+      if (result) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 25 + Math.random() * 55;
+        const cx = 100 + Math.cos(angle) * dist;
+        const cy = 100 + Math.sin(angle) * dist;
+        const dc = result.status === 'clean' ? 'var(--safe)' : result.status === 'suspicious' ? 'var(--warn)' : result.status === 'malicious' ? 'var(--danger)' : 'var(--text-muted)';
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', '2.5');
+        dot.setAttribute('fill', dc); dot.classList.add('radar-dot', 'ping');
+        dotsGroup.appendChild(dot);
+        // Keep dots manageable (remove old ones after 60)
+        if (dotsGroup.children.length > 60) dotsGroup.removeChild(dotsGroup.firstChild);
+      }
+    };
+
+    radarStat.textContent = `Scanning URL ${i + 1} of ${urls.length}`;
+    const result = await scanSingleUrlFull(urls[i], onEngine);
+    bulkScanResults.push(result);
+
+    // Update live counters
+    if (result.verdict.level === 'safe') { bClean++; document.getElementById('bulkLiveClean').textContent = bClean; }
+    else if (result.verdict.level === 'caution') { bCaution++; document.getElementById('bulkLiveCaution').textContent = bCaution; }
+    else { bDanger++; document.getElementById('bulkLiveDanger').textContent = bDanger; }
+
+    // Add a larger dot for the URL-level verdict
+    const angle = (i / urls.length) * Math.PI * 2 - Math.PI / 2;
+    const dist = 30 + Math.random() * 45;
+    const cx = 100 + Math.cos(angle) * dist;
+    const cy = 100 + Math.sin(angle) * dist;
+    const dotColor = result.verdict.level === 'safe' ? 'var(--safe)' : result.verdict.level === 'caution' ? 'var(--warn)' : 'var(--danger)';
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', '5');
+    dot.setAttribute('fill', dotColor); dot.classList.add('radar-dot', 'ping');
+    dotsGroup.appendChild(dot);
+
+    renderBulkResults(bulkScanResults);
+  }
+
+  radarEng.textContent = 'Bulk Scan Complete';
+  radarStat.textContent = `${urls.length} URLs × 20 engines analyzed`;
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> SCAN ALL';
+  setTimeout(() => radarCont.classList.remove('active'), 3000);
+}
+
+function renderBulkResults(results) {
+  const container = document.getElementById('bulkResultsContainer');
+  const safe = results.filter(r => r.verdict.level === 'safe').length;
+  const caution = results.filter(r => r.verdict.level === 'caution').length;
+  const danger = results.filter(r => r.verdict.level === 'danger').length;
+  const avgScore = results.length ? Math.round(results.reduce((s, r) => s + (100 - r.verdict.threatScore), 0) / results.length) : 0;
+
+  let html = `<div class="bulk-summary-cards" style="animation:fadeUp 0.5s ease">
+    <div class="bulk-summary-card"><div class="bulk-summary-num" style="color:var(--text)">${results.length}</div><div class="bulk-summary-label">Total Scanned</div></div>
+    <div class="bulk-summary-card"><div class="bulk-summary-num" style="color:var(--safe)">${safe}</div><div class="bulk-summary-label">Safe</div></div>
+    <div class="bulk-summary-card"><div class="bulk-summary-num" style="color:var(--warn)">${caution}</div><div class="bulk-summary-label">Caution</div></div>
+    <div class="bulk-summary-card"><div class="bulk-summary-num" style="color:var(--danger)">${danger}</div><div class="bulk-summary-label">Dangerous</div></div>
+  </div>`;
+
+  html += `<div class="bulk-export-row">
+    <button class="export-btn" onclick="exportBulkCSV()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export CSV</button>
+    <button class="export-btn" onclick="copyBulkReport()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Report</button>
+  </div>`;
+
+  html += `<table class="bulk-results-table" style="animation:fadeUp 0.5s ease 0.1s both">
+    <thead><tr><th>#</th><th>URL</th><th>Verdict</th><th>Safety Score</th><th>Engines (20)</th><th>AI Verdict</th><th>Action</th></tr></thead><tbody>`;
+
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    const vc = r.verdict.level === 'safe' ? 'var(--safe)' : r.verdict.level === 'caution' ? 'var(--warn)' : 'var(--danger)';
+    const safety = 100 - r.verdict.threatScore;
+    const safeUrl = escapeHtml(r.url);
+    const malCount = r.results.filter(x => x.status === 'malicious').length;
+    const susCount = r.results.filter(x => x.status === 'suspicious').length;
+    const cleanCount = r.results.filter(x => x.status === 'clean').length;
+    const aiV = r.aiVerdict;
+    const aiLabel = aiV ? (aiV.verdict === 'ALLOW' ? '<span style="color:var(--safe);font-weight:700">✅ ALLOW</span>' : '<span style="color:var(--danger);font-weight:700">🚫 BLOCK</span>') : '<span style="color:var(--text-muted)">—</span>';
+    html += `<tr>
+      <td style="font-weight:700;color:var(--text-muted)">${i + 1}</td>
+      <td class="bulk-url-cell" title="${safeUrl}">${safeUrl}</td>
+      <td class="bulk-verdict-cell" style="color:${vc}">${r.verdict.level.toUpperCase()}</td>
+      <td><div class="bulk-score-bar"><div class="bulk-score-fill" style="width:${safety}%;background:${vc}"></div></div><span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:${vc}">${safety}</span></td>
+      <td style="font-size:11px;color:var(--text-secondary);font-family:var(--font-mono)">🟢${cleanCount} 🟡${susCount} 🔴${malCount}</td>
+      <td style="font-size:11px">${aiLabel}</td>
+      <td><button class="bulk-action-btn" onclick="bulkDeepScan(${i})">Full Report</button></td>
+    </tr>`;
+  }
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function bulkDeepScan(index) {
+  if (!bulkScanResults[index]) return;
+  const r = bulkScanResults[index];
+  showModule('security');
+  document.getElementById('urlInput').value = r.url;
+  // Since we already have full 20-engine results, render them directly
+  if (r.parsed && r.results && r.verdict) {
+    renderResults(r.parsed, r.results, r.verdict, r.aiVerdict || undefined);
+    // Add to scan history
+    scanHistory.unshift({ url: r.url, verdict: r.verdict, time: new Date(), results: r.results, parsed: r.parsed, aiVerdict: r.aiVerdict });
+    renderHistory();
+    window.history.replaceState(null, '', '#' + encodeURIComponent(r.url));
+    document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    setTimeout(() => startScan(), 400);
+  }
+}
+
+function exportBulkCSV() {
+  if (!bulkScanResults.length) return;
+  let csv = 'URL,Verdict,Safety Score,Threat Score,Clean,Suspicious,Malicious,AI Verdict\n';
+  for (const r of bulkScanResults) {
+    const mal = r.results.filter(x => x.status === 'malicious').length;
+    const sus = r.results.filter(x => x.status === 'suspicious').length;
+    const clean = r.results.filter(x => x.status === 'clean').length;
+    const ai = r.aiVerdict ? r.aiVerdict.verdict : 'N/A';
+    csv += `"${r.url}","${r.verdict.level.toUpperCase()}",${100 - r.verdict.threatScore},${r.verdict.threatScore},${clean},${sus},${mal},"${ai}"\n`;
+  }
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `trishul-bulk-scan-${Date.now()}.csv`; a.click();
+  showToast('CSV exported!');
+}
+
+function copyBulkReport() {
+  if (!bulkScanResults.length) return;
+  let t = `TRISHUL BULK SCAN REPORT\n${'='.repeat(50)}\nTotal: ${bulkScanResults.length} URLs\nSafe: ${bulkScanResults.filter(r => r.verdict.level === 'safe').length}\nCaution: ${bulkScanResults.filter(r => r.verdict.level === 'caution').length}\nDangerous: ${bulkScanResults.filter(r => r.verdict.level === 'danger').length}\n\n`;
+  for (const r of bulkScanResults) {
+    t += `${r.verdict.level.toUpperCase().padEnd(10)} | Safety: ${(100 - r.verdict.threatScore).toString().padStart(3)} | ${r.url}\n`;
+  }
+  navigator.clipboard.writeText(t).then(() => showToast('Report copied!'));
+}
+
 
 // ═══════════════ INIT ═══════════════
 document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') startScan(); });
