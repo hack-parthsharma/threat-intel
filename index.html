@@ -1060,6 +1060,11 @@ async function startScan() {
   const aiVerdict = await checkAISecurityVerdict(parsed);
   renderResults(parsed, results, verdict, aiVerdict);
 
+  // Auto-send AI Verdict to Teams channel
+  if (aiVerdict) {
+    await sendAIVerdictToTeams(parsed.full, aiVerdict);
+  }
+
   pText.textContent = 'Analysis complete';
   pEngine.textContent = '';
 
@@ -1153,7 +1158,6 @@ function renderResults(parsed, results, verdict, aiVerdict) {
       <button class="export-btn" onclick="downloadReport('html')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> HTML</button>
       <button class="export-btn" onclick="downloadReport('pdf')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PDF</button>
       <button class="export-btn" onclick="downloadReport('docx')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> DOCX</button>
-      <button class="teams-send-btn" style="margin-left:auto;margin-top:0;padding:8px 14px;font-size:12px" onclick="sendSingleToTeams()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9z"/></svg> Teams</button>
     </div>
     <div class="analysis-card" style="animation:fadeUp 0.5s ease 0.15s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Why This Verdict?</div>${aHTML}</div>
     <div style="animation:fadeUp 0.5s ease 0.25s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Engine Results (${results.length} total)</div>${engHTML}</div>
@@ -3183,35 +3187,34 @@ async function sendToTeamsViaBackend(card) {
   }
 }
 
-async function sendSingleToTeams() {
-  if (!scanHistory.length) { showToast('No scan results to send'); return; }
+async function sendAIVerdictToTeams(url, aiVerdict) {
+  if (!aiVerdict) { console.warn('No AI verdict to send to Teams'); return; }
 
-  const h = scanHistory[0];
-  const emoji = h.verdict.level === 'safe' ? '🟢' : h.verdict.level === 'caution' ? '🟡' : '🔴';
-  const label = h.verdict.level === 'safe' ? 'SAFE' : h.verdict.level === 'caution' ? 'CAUTION' : 'DANGER';
-  const safety = 100 - h.verdict.threatScore;
+  const isAllow = aiVerdict.verdict === 'ALLOW';
+  const emoji = isAllow ? '✅' : '🚫';
+  const label = isAllow ? 'ALLOW' : 'BLOCK';
+  const themeColor = isAllow ? '0D9F6E' : 'DC2626';
 
-  const engineSummary = h.results.slice(0, 10).map(r => {
-    const em = r.status === 'clean' ? '🟢' : r.status === 'suspicious' ? '🟡' : r.status === 'malicious' ? '🔴' : '⚪';
-    return `${em} **${r.engine}**: ${r.status.toUpperCase()}`;
-  }).join('\n\n');
+  const findingsText = (aiVerdict.key_findings || []).length > 0
+    ? aiVerdict.key_findings.map((f, i) => `${i + 1}. ${f}`).join('\n\n')
+    : 'No specific findings reported.';
 
   const card = {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
-    "themeColor": h.verdict.level === 'safe' ? "0D9F6E" : h.verdict.level === 'caution' ? "D97706" : "DC2626",
-    "summary": `Trishul — ${label}: ${h.url}`,
+    "themeColor": themeColor,
+    "summary": `Trishul AI Verdict — ${label}: ${url}`,
     "sections": [{
-      "activityTitle": `🔱 Trishul URL Scan — ${emoji} ${label}`,
-      "activitySubtitle": h.url,
+      "activityTitle": `🔱 Trishul AI Security Verdict — ${emoji} ${label}`,
+      "activitySubtitle": url,
       "facts": [
-        { "name": "Verdict", "value": h.verdict.title },
-        { "name": "Safety Score", "value": `${safety}/100` },
-        { "name": "Engines", "value": `${h.results.length} scanned` },
-        { "name": "Time", "value": h.time.toLocaleString() }
+        { "name": "AI Verdict", "value": `${emoji} ${aiVerdict.verdict || 'N/A'}` },
+        { "name": "Confidence", "value": aiVerdict.confidence || 'N/A' },
+        { "name": "Risk Level", "value": aiVerdict.risk_level || 'N/A' },
+        { "name": "Time", "value": new Date().toLocaleString() }
       ],
       "markdown": true,
-      "text": engineSummary
+      "text": `**Summary:** ${aiVerdict.summary || 'N/A'}\n\n**Key Findings:**\n\n${findingsText}\n\n**Recommendation:** ${aiVerdict.recommendation || 'N/A'}`
     }]
   };
 
