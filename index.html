@@ -1103,12 +1103,6 @@ function calculateVerdict(results, parsed) {
 
 function renderResults(parsed, results, verdict, aiVerdict) {
   const container = document.getElementById('resultsContainer');
-  const safety = 100 - verdict.threatScore;
-  const vc = verdict.level === 'safe' ? 'var(--safe)' : verdict.level === 'caution' ? 'var(--warn)' : 'var(--danger)';
-  const circ = 2 * Math.PI * 42;
-  const safeOff = circ - (safety / 100) * circ;
-  const threatOff = circ - (verdict.threatScore / 100) * circ;
-  const emoji = verdict.level === 'safe' ? '✅' : verdict.level === 'caution' ? '⚠️' : '🚨';
 
   let engHTML = '';
   for (const r of results) {
@@ -1124,11 +1118,6 @@ function renderResults(parsed, results, verdict, aiVerdict) {
   for(const r of verdict.reasons.caution) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-warn"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
   for(const r of verdict.reasons.danger) aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
 
-  // Score breakdown for new engines
-  const newEngineResults = results.filter(r => ['PhishTank','AbuseIPDB','Cloudflare Radar','Certificate Transparency (crt.sh)','IP Geolocation & ASN','VT Community Votes'].includes(r.engine));
-  const newClean = newEngineResults.filter(r => r.status === 'clean').length;
-  const newFlag = newEngineResults.filter(r => r.status === 'malicious' || r.status === 'suspicious').length;
-
   // AI Verdict HTML — loading spinner if null (still fetching), or full card
   const aiVerdictHTML = aiVerdict === null
     ? `<div class="ai-verdict-card" style="animation:fadeUp 0.5s ease 0.1s both">
@@ -1138,19 +1127,6 @@ function renderResults(parsed, results, verdict, aiVerdict) {
     : renderAIVerdictCard(aiVerdict);
 
   container.innerHTML = `
-    <div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease">
-      <div class="verdict-icon">${emoji}</div>
-      <div class="verdict-text">
-        <div class="verdict-title">${verdict.title}</div>
-        <div class="verdict-subtitle">${verdict.subtitle}</div>
-      </div>
-      <div class="verdict-url">${parsed.full}</div>
-    </div>
-    <div class="scores-row">
-      <div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${safeOff}"/></svg><div class="score-num" style="color:${vc}">${safety}</div></div><div class="score-label">Safety Score</div></div>
-      <div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${threatOff}"/></svg><div class="score-num" style="color:${vc}">${verdict.threatScore}</div></div><div class="score-label">Threat Level</div></div>
-      <div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Scan Summary</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🔍 <strong>${results.length}</strong> engines<br>🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious<br>✦ <strong>${newClean}</strong>/<strong>${newEngineResults.length}</strong> new engines clean</div></div></div>
-    </div>
     ${aiVerdictHTML}
     <div class="export-row">
       <button class="export-btn" onclick="shareLink()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share</button>
