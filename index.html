@@ -1160,19 +1160,20 @@ const resp = await fetchWithCORSFallback(
 }
 
 // ═══════════════ AI SECURITY VERDICT ═══════════════
-
+// UPDATED: Changed model from 'openai/gpt-4o-mini' to free model
+ 
 async function checkAISecurityVerdict(parsedUrl) {
   if (!backendAvailable) return null;
-
+ 
   try {
     const resp = await fetchViaBackend('/api/openrouter-security-check', {
       method: 'POST',
       body: JSON.stringify({
         url: parsedUrl.full,
-        model: 'openai/gpt-4o-mini'
+        model: 'meta-llama/llama-3.1-8b-instruct:free'
       })
     });
-
+ 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     return data.ai_verdict || null;
