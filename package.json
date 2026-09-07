@@ -1,0 +1,9 @@
+{
+  "name": "trishul-threat-intel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-worker.mjs",
+    "test": "node --test"
+  }
+}

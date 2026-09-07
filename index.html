@@ -137,6 +137,7 @@ body.dark .hero h1 span { color: var(--accent); }
 .ai-verdict-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
 .ai-verdict-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 24px; font-size: 14px; font-weight: 800; letter-spacing: 1px; }
 .ai-verdict-badge.allow { background: var(--safe-bg); color: var(--safe); border: 1.5px solid var(--safe-border); }
+.ai-verdict-badge.review { background: var(--warn-bg); color: var(--warn); border: 1.5px solid var(--warn); }
 .ai-verdict-badge.block { background: var(--danger-bg); color: var(--danger); border: 1.5px solid var(--danger-border); }
 .ai-verdict-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
 .ai-meta-tag { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: var(--bg-subtle); color: var(--text-secondary); }
@@ -653,7 +654,6 @@ body.dark .agent-input:focus { background: #141B2D; }
 // ================================================================
 
 const PROXY_BASE = 'https://threatintel.ps191240.workers.dev';
-const VT_API_KEY = '5bcaccb925cb630787f05b9ef5ec6f91ecf4acaa354c9c0459bcfaf5fd2a9055';
 let backendAvailable = false;
 let backendCheckPromise = null;
 let lastSIAScanData = null;
@@ -745,6 +745,8 @@ function safeParse(text) { try { return JSON.parse(text); } catch(e) { const m =
 
 function parseURL(urlStr) {
   try {
+    if (/^[a-z][a-z\d+.-]*:/i.test(urlStr) && !/^https?:\/\//i.test(urlStr) && !/^[^/:]+:\d+(?:\/|$)/.test(urlStr)) return null;
+    if (/[\u0000-\u0020\u007f\\]/.test(urlStr)) return null;
     if (!/^https?:\/\//i.test(urlStr)) urlStr = 'https://' + urlStr;
     const u = new URL(urlStr);
     return { full: u.href, protocol: u.protocol, hostname: u.hostname, pathname: u.pathname, search: u.search, port: u.port, tld: '.' + u.hostname.split('.').slice(-1)[0], domain: u.hostname.split('.').slice(-2).join('.'), subdomain: u.hostname.split('.').length > 2 ? u.hostname.split('.').slice(0, -2).join('.') : '', isIP: /^\d{1,3}(\.\d{1,3}){3}$/.test(u.hostname), isHTTPS: u.protocol === 'https:', hasPort: !!u.port, fullDomain: u.hostname };
@@ -768,7 +770,7 @@ function isKnownSafe(parsed) {
 
 // ═══════════════ EXISTING ENGINES ═══════════════
 
-async function checkURLhaus(url) { try { let data; if (backendAvailable) { const resp = await fetchViaBackend('/api/urlhaus', { method: 'POST', body: JSON.stringify({ url }) }); data = await resp.json(); } else { const resp = await fetchWithCORSFallback('https://urlhaus-api.abuse.ch/v1/url/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'url=' + encodeURIComponent(url) }); data = safeParse(await resp.text()); } if (!data) throw new Error('Invalid response'); if (data.query_status === 'ok' && data.id) { return { engine: 'URLhaus (abuse.ch)', status: 'malicious', confidence: 95, details: { 'Threat Type': data.threat || 'malware', 'Date Added': data.date_added || 'Unknown', 'Tags': (data.tags || []).join(', ') || 'None', 'URLhaus ID': data.id, 'Reporter': data.reporter || 'N/A', 'Status': data.url_status || 'active' }, description: `Reported to URLhaus as distributing ${data.threat || 'malware'}. Flagged by "${data.reporter || 'anonymous'}".` }; } return { engine: 'URLhaus (abuse.ch)', status: 'clean', confidence: 70, details: { 'Result': 'Not found in database', 'Database': 'URLhaus Malware URL Exchange' }, description: 'Not present in URLhaus malware database. Positive signal.' }; } catch(e) { return { engine: 'URLhaus (abuse.ch)', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'Could not reach URLhaus API.' }; } }
+async function checkURLhaus(url) { try { let data; if (backendAvailable) { const resp = await fetchViaBackend('/api/urlhaus', { method: 'POST', body: JSON.stringify({ url }) }); data = await resp.json(); } else { const resp = await fetchWithCORSFallback('https://urlhaus-api.abuse.ch/v1/url/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'url=' + encodeURIComponent(url) }); data = safeParse(await resp.text()); } if (!data || !['ok', 'no_results'].includes(data.query_status)) throw new Error('URLhaus lookup unavailable'); if (data.query_status === 'ok' && data.id) { return { engine: 'URLhaus (abuse.ch)', status: 'malicious', confidence: 95, details: { 'Threat Type': data.threat || 'malware', 'Date Added': data.date_added || 'Unknown', 'Tags': (data.tags || []).join(', ') || 'None', 'URLhaus ID': data.id, 'Reporter': data.reporter || 'N/A', 'Status': data.url_status || 'active' }, description: `Reported to URLhaus as distributing ${data.threat || 'malware'}. Flagged by "${data.reporter || 'anonymous'}".` }; } return { engine: 'URLhaus (abuse.ch)', status: 'clean', confidence: 70, details: { 'Result': 'Not found in database', 'Database': 'URLhaus Malware URL Exchange' }, description: 'Not present in URLhaus malware database. Positive signal.' }; } catch(e) { return { engine: 'URLhaus (abuse.ch)', status: 'error', confidence: 0, details: { 'Error': e.message }, description: 'Could not reach URLhaus API.' }; } }
 
 async function checkVirusTotal(url) {
 
@@ -786,10 +788,7 @@ async function checkVirusTotal(url) {
 
     } else {
 
-      resp = await fetch(
-        `https://www.virustotal.com/api/v3/domains/${domain}`,
-        { headers: { 'x-apikey': VT_API_KEY } }
-      );
+      throw new Error('VirusTotal requires the configured backend');
 
     }
 
@@ -1096,11 +1095,7 @@ if (backendAvailable) {
 } else {
       const domain = parsed.fullDomain || parsed.hostname;
 
-const resp = await fetchWithCORSFallback(
-  `https://www.virustotal.com/api/v3/domains/${domain}/votes`,
-  { headers: { 'x-apikey': VT_API_KEY } }
-);
-      data = safeParse(await resp.text());
+throw new Error('VirusTotal requires the configured backend');
     }
     if (data?.data) {
       const votes = data.data || [];
@@ -1160,44 +1155,51 @@ const resp = await fetchWithCORSFallback(
 }
 
 // ═══════════════ AI SECURITY VERDICT ═══════════════
-// UPDATED: Changed model from 'openai/gpt-4o-mini' to free model
+// Server evidence policy; AI can optionally prioritize verified findings.
  
 async function checkAISecurityVerdict(parsedUrl) {
-  if (!backendAvailable) return null;
+  if (!backendAvailable) return unavailableUrlVerdict();
  
   try {
     const resp = await fetchViaBackend('/api/openrouter-security-check', {
       method: 'POST',
+      signal: AbortSignal.timeout(20000),
       body: JSON.stringify({
-        url: parsedUrl.full,
-        model: 'openrouter/free'
+        url: parsedUrl.full
       })
     });
  
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
-    return data.ai_verdict || null;
+    const v = data.ai_verdict;
+    if (!v || v.policy_version !== 'url-evidence-v1' || !['ALLOW', 'BLOCK', 'REVIEW'].includes(v.verdict) || !Array.isArray(v.key_findings) || !v.key_findings.every(f => typeof f === 'string') || !['summary', 'recommendation', 'confidence', 'risk_level'].every(k => typeof v[k] === 'string')) return unavailableUrlVerdict();
+    return v;
   } catch (e) {
     console.error('AI Security Check failed:', e);
-    return null;
+    return unavailableUrlVerdict();
   }
+}
+
+function unavailableUrlVerdict() {
+  return { verdict: 'REVIEW', confidence: 'LOW', risk_level: 'UNKNOWN', summary: 'URL reputation assessment is unavailable. No approval can be inferred.', key_findings: [], recommendation: 'Restore the backend connection and retry, or review manually.' };
 }
 
 function renderAIVerdictCard(aiVerdict) {
   if (!aiVerdict) {
     return `<div class="ai-verdict-card" style="animation:fadeUp 0.5s ease 0.1s both">
       <div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4z"/></svg> AI Security Verdict</div>
-      <div style="font-size:13px;color:var(--text-muted)">AI analysis unavailable — OpenRouter not configured or backend offline.</div>
+      <div style="font-size:13px;color:var(--text-muted)">URL reputation assessment pending or unavailable — no approval has been established.</div>
     </div>`;
   }
 
   const isAllow = aiVerdict.verdict === 'ALLOW';
-  const badgeClass = isAllow ? 'allow' : 'block';
-  const badgeIcon = isAllow ? '✅' : '🚫';
-  const badgeText = isAllow ? 'ALLOW' : 'BLOCK';
+  const isBlock = aiVerdict.verdict === 'BLOCK';
+  const badgeClass = isAllow ? 'allow' : isBlock ? 'block' : 'review';
+  const badgeIcon = isAllow ? '✅' : isBlock ? '🚫' : '⚠️';
+  const badgeText = isAllow ? 'ALLOW' : isBlock ? 'BLOCK' : 'REVIEW';
 
   const findingsHTML = (aiVerdict.key_findings || []).length > 0
-    ? `<ul class="ai-findings">${aiVerdict.key_findings.map(f => `<li>${f}</li>`).join('')}</ul>`
+    ? `<ul class="ai-findings">${aiVerdict.key_findings.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul>`
     : '';
 
   return `<div class="ai-verdict-card" style="animation:fadeUp 0.5s ease 0.1s both">
@@ -1206,12 +1208,13 @@ function renderAIVerdictCard(aiVerdict) {
       <div class="ai-verdict-badge ${badgeClass}">${badgeIcon} ${badgeText}</div>
     </div>
     <div class="ai-verdict-meta">
-      <span class="ai-meta-tag">Confidence: ${aiVerdict.confidence || 'N/A'}</span>
-      <span class="ai-meta-tag">Risk: ${aiVerdict.risk_level || 'N/A'}</span>
+      <span class="ai-meta-tag">Confidence: ${escapeHtml(aiVerdict.confidence || 'N/A')}</span>
+      <span class="ai-meta-tag">Risk: ${escapeHtml(aiVerdict.risk_level || 'N/A')}</span>
     </div>
-    <div class="ai-verdict-summary">${aiVerdict.summary || ''}</div>
+    <div class="ai-verdict-summary">${escapeHtml(aiVerdict.summary || '')}</div>
+    <div class="ai-verdict-summary">Decision: server evidence policy. ${aiVerdict.ai_status === 'prioritized' ? 'AI prioritized the findings.' : 'AI prioritization not used.'} ${aiVerdict.assessed_at ? 'Checked: ' + escapeHtml(aiVerdict.assessed_at) : ''}</div>
     ${findingsHTML}
-    ${aiVerdict.recommendation ? `<div class="ai-recommendation">💡 ${aiVerdict.recommendation}</div>` : ''}
+    ${aiVerdict.recommendation ? `<div class="ai-recommendation">💡 ${escapeHtml(aiVerdict.recommendation)}</div>` : ''}
   </div>`;
 }
 
@@ -1302,11 +1305,12 @@ async function startScan() {
   radarEngEl.textContent = 'AI Security Verdict';
   radarStatEl.textContent = 'Analyzing with AI...';
 
-  const verdict = calculateVerdict(results, parsed);
+  let verdict = calculateVerdict(results, parsed);
 
-  renderResults(parsed, results, verdict, null);
+  renderResults(parsed, results, applyUrlAssessment(verdict, null), null);
 
   const aiVerdict = await checkAISecurityVerdict(parsed);
+  verdict = applyUrlAssessment(verdict, aiVerdict);
   renderResults(parsed, results, verdict, aiVerdict);
 
   if (aiVerdict) {
@@ -1326,6 +1330,14 @@ async function startScan() {
   btn.classList.remove('scanning');
   btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> ANALYZE';
   setTimeout(() => { progress.classList.remove('active'); radarCont.classList.remove('active'); }, 3000);
+}
+
+function applyUrlAssessment(previous, assessment) {
+  const a = assessment || unavailableUrlVerdict();
+  const level = a.verdict === 'ALLOW' ? 'safe' : a.verdict === 'BLOCK' ? 'danger' : 'caution';
+  const reasons = { safe: [], caution: [], danger: [] };
+  reasons[level].push({ engine: 'URL reputation assessment', text: a.summary });
+  return { ...previous, reasons, level, title: a.verdict === 'ALLOW' ? 'ALLOW — No Current Threat Evidence' : a.verdict === 'BLOCK' ? 'BLOCK — Threat Evidence Detected' : 'REVIEW — Approval Pending', subtitle: a.summary };
 }
 
 function calculateVerdict(results, parsed) {
@@ -3453,9 +3465,10 @@ async function sendAIVerdictToTeams(url, aiVerdict) {
   if (!aiVerdict) { console.warn('No AI verdict to send to Teams'); return; }
 
   const isAllow = aiVerdict.verdict === 'ALLOW';
-  const emoji = isAllow ? '✅' : '🚫';
-  const label = isAllow ? 'ALLOW' : 'BLOCK';
-  const themeColor = isAllow ? '0D9F6E' : 'DC2626';
+  const isBlock = aiVerdict.verdict === 'BLOCK';
+  const emoji = isAllow ? '✅' : isBlock ? '🚫' : '⚠️';
+  const label = isAllow ? 'ALLOW' : isBlock ? 'BLOCK' : 'REVIEW';
+  const themeColor = isAllow ? '0D9F6E' : isBlock ? 'DC2626' : 'D97706';
 
   const findingsText = (aiVerdict.key_findings || []).length > 0
     ? aiVerdict.key_findings.map((f, i) => `${i + 1}. ${f}`).join('\n\n')
@@ -3476,7 +3489,7 @@ async function sendAIVerdictToTeams(url, aiVerdict) {
         { "name": "Time", "value": new Date().toLocaleString() }
       ],
       "markdown": true,
-      "text": `**Summary:** ${aiVerdict.summary || 'N/A'}\n\n**Key Findings:**\n\n${findingsText}\n\n**Recommendation:** ${aiVerdict.recommendation || 'N/A'}`
+      "text": `**Summary:** ${escapeHtml(aiVerdict.summary || 'N/A')}\n\n**Key Findings:**\n\n${findingsText}\n\n**Recommendation:** ${escapeHtml(aiVerdict.recommendation || 'N/A')}`
     }]
   };
 
@@ -3541,7 +3554,7 @@ async function scanSingleUrlFull(urlStr, onEngineComplete) {
     aiVerdict = await checkAISecurityVerdict(parsed);
   } catch(e) {}
 
-  return { url: parsed.full, verdict, results, parsed, aiVerdict };
+  return { url: parsed.full, verdict: applyUrlAssessment(verdict, aiVerdict), results, parsed, aiVerdict };
 }
 
 async function startBulkScan() {
@@ -3652,7 +3665,7 @@ function renderBulkResults(results) {
   </div>`;
 
   html += `<table class="bulk-results-table" style="animation:fadeUp 0.5s ease 0.1s both">
-    <thead><tr><th>#</th><th>URL</th><th>Verdict</th><th>Safety Score</th><th>Engines (20)</th><th>AI Verdict</th><th>Action</th></tr></thead><tbody>`;
+    <thead><tr><th>#</th><th>URL</th><th>Verdict</th><th>Legacy Heuristic Score</th><th>Engines (20)</th><th>AI Verdict</th><th>Action</th></tr></thead><tbody>`;
 
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
@@ -3663,7 +3676,7 @@ function renderBulkResults(results) {
     const susCount = r.results.filter(x => x.status === 'suspicious').length;
     const cleanCount = r.results.filter(x => x.status === 'clean').length;
     const aiV = r.aiVerdict;
-    const aiLabel = aiV ? (aiV.verdict === 'ALLOW' ? '<span style="color:var(--safe);font-weight:700">✅ ALLOW</span>' : '<span style="color:var(--danger);font-weight:700">🚫 BLOCK</span>') : '<span style="color:var(--text-muted)">—</span>';
+    const aiLabel = aiV ? (aiV.verdict === 'ALLOW' ? '<span style="color:var(--safe);font-weight:700">✅ ALLOW</span>' : aiV.verdict === 'BLOCK' ? '<span style="color:var(--danger);font-weight:700">🚫 BLOCK</span>' : '<span style="color:var(--warn);font-weight:700">⚠️ REVIEW</span>') : '<span style="color:var(--text-muted)">—</span>';
     html += `<tr>
       <td style="font-weight:700;color:var(--text-muted)">${i + 1}</td>
       <td class="bulk-url-cell" title="${safeUrl}">${safeUrl}</td>
