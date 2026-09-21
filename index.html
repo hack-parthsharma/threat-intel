@@ -1227,7 +1227,8 @@ function renderAIVerdictCard(aiVerdict) {
       <span class="ai-meta-tag">Risk: ${escapeHtml(aiVerdict.risk_level || 'N/A')}</span>
     </div>
     <div class="ai-verdict-summary">${escapeHtml(aiVerdict.summary || '')}</div>
-    <div class="ai-verdict-summary">Decision: server evidence policy. ${aiVerdict.ai_status === 'prioritized' ? 'AI prioritized the findings.' : 'AI prioritization not used.'} ${aiVerdict.assessed_at ? 'Checked: ' + escapeHtml(aiVerdict.assessed_at) : ''}</div>
+    ${aiVerdict.ai_explanation ? `<div class="ai-verdict-summary" style="border-left:2px solid var(--accent,#6366f1);padding-left:10px"><strong style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;opacity:.75">AI analysis of the evidence</strong><br>${escapeHtml(aiVerdict.ai_explanation)}</div>` : ''}
+    <div class="ai-verdict-summary">Decision: server evidence policy${aiVerdict.ai_status === 'explained' ? ', explained by AI. The AI cannot change the verdict' : '. AI explanation not used'}. ${aiVerdict.assessed_at ? 'Checked: ' + escapeHtml(aiVerdict.assessed_at) : ''}</div>
     ${findingsHTML}
     ${aiVerdict.recommendation ? `<div class="ai-recommendation">💡 ${escapeHtml(aiVerdict.recommendation)}</div>` : ''}
   </div>`;
