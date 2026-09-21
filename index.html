@@ -2711,7 +2711,7 @@ async function startSIAScan() {
 
   pFill.style.width = '97%';
   pText.textContent = 'Generating AI security controls...';
-  pEngine.textContent = 'Cerebras AI (Llama 3.3)';
+  pEngine.textContent = 'AI control generation';
 
   const userContext = collectSIAUserContext();
   const aiContext = userContext;
@@ -2730,7 +2730,8 @@ async function startSIAScan() {
     assessmentAgent,
     userControlInputs: { ...(siaDraftInputs.controlInputs || {}) },
     additionalNotes: siaDraftInputs.additionalNotes || '',
-    preScanSummary: ''
+    preScanSummary: userContext || '',
+    controlsSource: { ...lastControlsSource }
   };
 
   renderSIAResults(fileName, fileHash, fileSize, fileExt, results, verdict, controls);
@@ -2751,7 +2752,11 @@ function renderSIAResults(fileName,hash,fileSize,ext,results,verdict,controls=[]
   let engHTML='';for(const r of results){const bc=r.status==='clean'?'badge-clean':r.status==='suspicious'?'badge-suspicious':r.status==='malicious'?'badge-malicious':r.status==='error'?'badge-error':'badge-unknown';const bl=r.status==='clean'?'CLEAN':r.status==='suspicious'?'SUSPICIOUS':r.status==='malicious'?'MALICIOUS':r.status==='error'?'ERROR':'UNKNOWN';const em=r.status==='clean'?'🟢':r.status==='suspicious'?'🟡':r.status==='malicious'?'🔴':'⚪';let dHTML='';for(const[k,v]of Object.entries(r.details))dHTML+=`<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`;engHTML+=`<div class="engine-card"><div class="engine-header"><span class="engine-name">${em} ${r.engine}</span><span class="engine-badge ${bc}">${bl}</span></div><p class="engine-desc">${r.description}</p><div class="engine-details">${dHTML}</div></div>`;}
   let aHTML='';for(const r of verdict.reasons.safe)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-safe"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;for(const r of verdict.reasons.caution)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-warn"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;for(const r of verdict.reasons.danger)aHTML+=`<div class="analysis-item"><div class="analysis-bar bar-danger"></div><div class="analysis-content"><h4>${r.engine}</h4><p>${r.text}</p></div></div>`;
   const aiSummary = escapeHtml(lastSIAScanData?.preScanSummary || 'No pre-analysis context provided.');
-  container.innerHTML=`<div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease;margin-top:24px"><div class="verdict-icon">${emoji}</div><div class="verdict-text"><div class="verdict-title">${verdict.title}</div><div class="verdict-subtitle">${verdict.subtitle}</div></div><div class="verdict-url">${fileName}<br><span style="font-size:10px;opacity:0.7">${sizeMB} · .${ext}</span></div></div><div class="scores-row"><div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${safeOff}"/></svg><div class="score-num" style="color:${vc}">${safety}</div></div><div class="score-label">Safety Score</div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">File Summary</div><div style="font-size:12px;color:var(--text-secondary);line-height:2;font-family:var(--font-mono)">📁 ${fileName}<br>📏 ${sizeMB}<br>🔑 SHA-256: <span style="cursor:pointer;border-bottom:1px dashed var(--text-muted)" onclick="navigator.clipboard.writeText('${hash||''}').then(()=>showToast('Hash copied!'))">${hash?hash.substring(0,20)+'...':'N/A'}</span></div></div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Results</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious</div></div></div></div><div class="export-row"><button class="export-btn sia-report-btn" onclick="generateSIAPdf()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Download SIA Report (PDF)</button></div><div class="analysis-card" style="animation:fadeUp 0.5s ease 0.15s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Analysis Summary</div>${aHTML}</div><div style="animation:fadeUp 0.5s ease 0.25s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Detailed Results</div>${engHTML}</div><div class="sia-controls-card" style="animation:fadeUp 0.5s ease 0.3s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Pre-Analysis Summary Used for AI Control Update</div><div class="sia-summary-box" style="display:block">${aiSummary}</div></div>`;
+  const src = lastSIAScanData?.controlsSource || { ai: false, reason: 'Unknown.' };
+  const controlsNotice = src.ai
+    ? `<div class="sia-summary-box" style="display:block;border-left:3px solid var(--safe);margin-bottom:12px"><strong>Controls tailored by AI</strong> (${escapeHtml(src.provider || 'ai')}) from this file's scan results and your notes.</div>`
+    : `<div class="sia-summary-box" style="display:block;border-left:3px solid var(--warn);margin-bottom:12px"><strong>⚠️ Generic controls — not tailored to this file.</strong> AI control generation was unavailable, so the assessment below is a static template. Review and edit every control before using this report. Reason: ${escapeHtml(src.reason || 'unknown')}</div>`;
+  container.innerHTML=`<div class="verdict-card verdict-${verdict.level}" style="animation:fadeUp 0.5s ease;margin-top:24px"><div class="verdict-icon">${emoji}</div><div class="verdict-text"><div class="verdict-title">${verdict.title}</div><div class="verdict-subtitle">${verdict.subtitle}</div></div><div class="verdict-url">${fileName}<br><span style="font-size:10px;opacity:0.7">${sizeMB} · .${ext}</span></div></div><div class="scores-row"><div class="score-card"><div class="score-ring-wrap"><svg viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42" stroke="${vc}" stroke-dasharray="${circ}" stroke-dashoffset="${safeOff}"/></svg><div class="score-num" style="color:${vc}">${safety}</div></div><div class="score-label">Safety Score</div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">File Summary</div><div style="font-size:12px;color:var(--text-secondary);line-height:2;font-family:var(--font-mono)">📁 ${fileName}<br>📏 ${sizeMB}<br>🔑 SHA-256: <span style="cursor:pointer;border-bottom:1px dashed var(--text-muted)" onclick="navigator.clipboard.writeText('${hash||''}').then(()=>showToast('Hash copied!'))">${hash?hash.substring(0,20)+'...':'N/A'}</span></div></div></div><div class="score-card" style="display:flex;flex-direction:column;justify-content:center"><div style="text-align:left"><div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Results</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.8">🟢 <strong>${results.filter(r=>r.status==='clean').length}</strong> clean<br>🟡 <strong>${results.filter(r=>r.status==='suspicious').length}</strong> suspicious<br>🔴 <strong>${results.filter(r=>r.status==='malicious').length}</strong> malicious</div></div></div></div><div class="export-row"><button class="export-btn sia-report-btn" onclick="generateSIAPdf()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Download SIA Report (PDF)</button></div><div class="analysis-card" style="animation:fadeUp 0.5s ease 0.15s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Analysis Summary</div>${aHTML}</div><div style="animation:fadeUp 0.5s ease 0.25s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Detailed Results</div>${engHTML}</div><div class="sia-controls-card" style="animation:fadeUp 0.5s ease 0.3s both"><div class="section-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Security Controls Source</div>${controlsNotice}<div class="sia-summary-box" style="display:block">${aiSummary}</div></div>`;
 }
 
 function renderPreSIAControlInputs() {
@@ -2763,11 +2768,6 @@ function renderPreSIAControlInputs() {
   }).join('');
   const extra = document.getElementById('siaPreAdditionalNotes');
   if (extra) extra.value = siaDraftInputs.additionalNotes || '';
-  const summaryBox = document.getElementById('preCerebrasSummaryBox');
-  if (summaryBox) {
-    summaryBox.textContent = siaDraftInputs.cerebrasSummary || '';
-    summaryBox.style.display = siaDraftInputs.cerebrasSummary ? 'block' : 'none';
-  }
 }
 
 function updatePreSIAControlInput(controlCode, value) {
@@ -2794,23 +2794,25 @@ ${additional || 'None'}`;
 }
 
 
-const CEREBRAS_MODEL = 'llama3.1-8b';
+// The backend chooses the provider (Workers AI first). The browser deliberately
+// sends no model id: the hardcoded one here rotted and silently disabled every
+// AI-generated SIA control set, with only a console warning.
+let lastAiProvider = null;
+let lastControlsSource = { ai: false, provider: null, reason: 'Not generated yet.' };
 
-async function requestCerebras(prompt, maxTokens = 700, temperature = 0.2) {
+async function requestAiSummary(prompt, maxTokens = 700, temperature = 0.2) {
   await ensureBackendChecked();
-  if (!backendAvailable) {
-    throw new Error('Backend unavailable for Cerebras request');
-  }
 
-  const resp = await fetchViaBackend('/api/cerebras-summary', {
+  const resp = await fetchViaBackend('/api/ai-summary', {
     method: 'POST',
-    body: JSON.stringify({ prompt, model: CEREBRAS_MODEL, max_tokens: maxTokens, temperature })
+    body: JSON.stringify({ prompt, max_tokens: maxTokens, temperature })
   });
   const data = await resp.json();
-  if (!resp.ok) throw new Error(data?.error || `Cerebras backend HTTP ${resp.status}`);
+  if (!resp.ok) throw new Error(data?.error || `AI backend HTTP ${resp.status}`);
 
-  const content = (data?.summary || data?.content || data?.choices?.[0]?.message?.content || '').trim();
-  if (!content) throw new Error('Empty Cerebras response');
+  const content = (data?.summary || data?.content || '').trim();
+  if (!content) throw new Error('AI backend returned an empty response');
+  lastAiProvider = data?.provider || null;
   return content;
 }
 
@@ -2819,14 +2821,13 @@ async function summarizeSIAInputsPreScan() {
   const additional = String(siaDraftInputs.additionalNotes || '').trim();
   const hasInput = enteredNotes.length > 0 || additional.length > 0;
   if (!hasInput) {
-    siaDraftInputs.cerebrasSummary = '';
     return '';
   }
   const controlText = SIA_PRE_CONTROLS.map((ctrl) => {
-    const note = (siaDraftInputs.controlInputs?.[ctrl.code] || '').trim() || 'No user input provided.';
-    return `${ctrl.code} (${ctrl.title})
-User Note: ${note}`;
-  }).join('\n\n');
+    const note = (siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
+    return note ? `${ctrl.code} (${ctrl.title})
+User Note: ${note}` : '';
+  }).filter(Boolean).join('\n\n');
 
   const prompt = `Summarize these pre-analysis security impact notes for file review and control tailoring.
 
@@ -2843,389 +2844,13 @@ Provide concise output with:
 4) Recommended disposition.`;
 
   try {
-    const summary = await requestCerebras(prompt, 700, 0.2);
+    const summary = await requestAiSummary(prompt, 700, 0.2);
     siaDraftInputs.cerebrasSummary = summary;
     const box = document.getElementById('preCerebrasSummaryBox');
     if (box && summary) { box.textContent = summary; box.style.display = 'block'; }
     return summary;
   } catch (err) {
-    console.error('Cerebras summary error:', err);
-    return '';
-  }
-}
-
-function renderPreSIAControlInputs() {
-  const grid = document.getElementById('siaPreControlsGrid');
-  if (!grid) return;
-  grid.innerHTML = SIA_PRE_CONTROLS.map((ctrl, idx) => {
-    const saved = escapeHtml(siaDraftInputs.controlInputs?.[ctrl.code] || '');
-    return `<div class="sia-control-item"><div class="sia-control-head"><strong>${idx + 1}. ${ctrl.code} — ${escapeHtml(ctrl.title)}</strong></div><textarea class="sia-control-input" id="preControl_${ctrl.code}" placeholder="Add notes for ${ctrl.code} based on this file and environment..." oninput="updatePreSIAControlInput('${ctrl.code}', this.value)">${saved}</textarea></div>`;
-  }).join('');
-  const extra = document.getElementById('siaPreAdditionalNotes');
-  if (extra) extra.value = siaDraftInputs.additionalNotes || '';
-}
-
-function updatePreSIAControlInput(controlCode, value) {
-  if (!siaDraftInputs.controlInputs) siaDraftInputs.controlInputs = {};
-  siaDraftInputs.controlInputs[controlCode] = value;
-}
-
-function updatePreSIAAdditionalNotes(value) {
-  siaDraftInputs.additionalNotes = value;
-}
-
-function collectSIAUserContext() {
-  const controlLines = SIA_PRE_CONTROLS.map((ctrl) => {
-    const note = String(siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
-    return note ? `${ctrl.code}: ${note}` : '';
-  }).filter(Boolean);
-  const additional = String(siaDraftInputs.additionalNotes || '').trim();
-  if (!controlLines.length && !additional) return '';
-  return `Control Notes:
-${controlLines.join('\n')}
-
-Additional Notes:
-${additional || 'None'}`;
-}
-
-
-function getCerebrasModel() {
-  if (!window.__TRISHUL_CEREBRAS_MODEL__) window.__TRISHUL_CEREBRAS_MODEL__ = 'llama3.1-8b';
-  return window.__TRISHUL_CEREBRAS_MODEL__;
-}
-
-async function requestCerebras(prompt, maxTokens = 700, temperature = 0.2) {
-  await ensureBackendChecked();
-  if (!backendAvailable) {
-    throw new Error('Backend unavailable for Cerebras request');
-  }
-
-  const resp = await fetchViaBackend('/api/cerebras-summary', {
-    method: 'POST',
-    body: JSON.stringify({ prompt, model: getCerebrasModel(), max_tokens: maxTokens, temperature })
-  });
-  const data = await resp.json();
-  if (!resp.ok) throw new Error(data?.error || `Cerebras backend HTTP ${resp.status}`);
-
-  const content = (data?.summary || data?.content || data?.choices?.[0]?.message?.content || '').trim();
-  if (!content) throw new Error('Empty Cerebras response');
-  return content;
-}
-
-async function summarizeSIAInputsPreScan() {
-  const enteredNotes = Object.values(siaDraftInputs.controlInputs || {}).filter(v => String(v || '').trim().length > 0);
-  const additional = String(siaDraftInputs.additionalNotes || '').trim();
-  const hasInput = enteredNotes.length > 0 || additional.length > 0;
-  if (!hasInput) {
-    return '';
-  }
-  const controlText = SIA_PRE_CONTROLS.map((ctrl) => {
-    const note = (siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
-    return note ? `${ctrl.code} (${ctrl.title})
-User Note: ${note}` : '';
-  }).filter(Boolean).join('\n\n');
-
-  const prompt = `Summarize these pre-analysis security impact notes for file review and control tailoring.
-
-Control notes:
-${controlText}
-
-Additional Notes:
-${additional || 'None'}
-
-Provide concise output with:
-1) Executive summary
-2) Key risk flags
-3) Control considerations
-4) Recommended disposition.`;
-
-  try {
-    const summary = await requestCerebras(prompt, 700, 0.2);
-    return summary;
-  } catch (err) {
-    console.error('Cerebras summary error:', err);
-    return '';
-  }
-}
-
-function renderPreSIAControlInputs() {
-  const grid = document.getElementById('siaPreControlsGrid');
-  if (!grid) return;
-  grid.innerHTML = SIA_PRE_CONTROLS.map((ctrl, idx) => {
-    const saved = escapeHtml(siaDraftInputs.controlInputs?.[ctrl.code] || '');
-    return `<div class="sia-control-item"><div class="sia-control-head"><strong>${idx + 1}. ${ctrl.code} — ${escapeHtml(ctrl.title)}</strong></div><textarea class="sia-control-input" id="preControl_${ctrl.code}" placeholder="Add notes for ${ctrl.code} based on this file and environment..." oninput="updatePreSIAControlInput('${ctrl.code}', this.value)">${saved}</textarea></div>`;
-  }).join('');
-  const extra = document.getElementById('siaPreAdditionalNotes');
-  if (extra) extra.value = siaDraftInputs.additionalNotes || '';
-}
-
-function updatePreSIAControlInput(controlCode, value) {
-  if (!siaDraftInputs.controlInputs) siaDraftInputs.controlInputs = {};
-  siaDraftInputs.controlInputs[controlCode] = value;
-}
-
-function updatePreSIAAdditionalNotes(value) {
-  siaDraftInputs.additionalNotes = value;
-}
-
-function collectSIAUserContext() {
-  const controlLines = SIA_PRE_CONTROLS.map((ctrl) => {
-    const note = String(siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
-    return note ? `${ctrl.code}: ${note}` : '';
-  }).filter(Boolean);
-  const additional = String(siaDraftInputs.additionalNotes || '').trim();
-  if (!controlLines.length && !additional) return '';
-  return `Control Notes:
-${controlLines.join('\n')}
-
-Additional Notes:
-${additional || 'None'}`;
-}
-
-
-function getCerebrasModel() {
-  if (!window.__TRISHUL_CEREBRAS_MODEL__) window.__TRISHUL_CEREBRAS_MODEL__ = 'llama3.1-8b';
-  return window.__TRISHUL_CEREBRAS_MODEL__;
-}
-
-async function requestCerebras(prompt, maxTokens = 700, temperature = 0.2) {
-  await ensureBackendChecked();
-  if (!backendAvailable) {
-    throw new Error('Backend unavailable for Cerebras request');
-  }
-
-  const resp = await fetchViaBackend('/api/cerebras-summary', {
-    method: 'POST',
-    body: JSON.stringify({ prompt, model: getCerebrasModel(), max_tokens: maxTokens, temperature })
-  });
-  const data = await resp.json();
-  if (!resp.ok) throw new Error(data?.error || `Cerebras backend HTTP ${resp.status}`);
-
-  const content = (data?.summary || data?.content || data?.choices?.[0]?.message?.content || '').trim();
-  if (!content) throw new Error('Empty Cerebras response');
-  return content;
-}
-
-async function summarizeSIAInputsPreScan() {
-  const enteredNotes = Object.values(siaDraftInputs.controlInputs || {}).filter(v => String(v || '').trim().length > 0);
-  const additional = String(siaDraftInputs.additionalNotes || '').trim();
-  const hasInput = enteredNotes.length > 0 || additional.length > 0;
-  if (!hasInput) {
-    return '';
-  }
-  const controlText = SIA_PRE_CONTROLS.map((ctrl) => {
-    const note = (siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
-    return note ? `${ctrl.code} (${ctrl.title})
-User Note: ${note}` : '';
-  }).filter(Boolean).join('\n\n');
-
-  const prompt = `Summarize these pre-analysis security impact notes for file review and control tailoring.
-
-Control notes:
-${controlText}
-
-Additional Notes:
-${additional || 'None'}
-
-Provide concise output with:
-1) Executive summary
-2) Key risk flags
-3) Control considerations
-4) Recommended disposition.`;
-
-  try {
-    const summary = await requestCerebras(prompt, 700, 0.2);
-    return summary;
-  } catch (err) {
-    console.error('Cerebras summary error:', err);
-    return '';
-  }
-}
-
-function renderPreSIAControlInputs() {
-  const grid = document.getElementById('siaPreControlsGrid');
-  if (!grid) return;
-  grid.innerHTML = SIA_PRE_CONTROLS.map((ctrl, idx) => {
-    const saved = escapeHtml(siaDraftInputs.controlInputs?.[ctrl.code] || '');
-    return `<div class="sia-control-item"><div class="sia-control-head"><strong>${idx + 1}. ${ctrl.code} — ${escapeHtml(ctrl.title)}</strong></div><textarea class="sia-control-input" id="preControl_${ctrl.code}" placeholder="Add notes for ${ctrl.code} based on this file and environment..." oninput="updatePreSIAControlInput('${ctrl.code}', this.value)">${saved}</textarea></div>`;
-  }).join('');
-  const extra = document.getElementById('siaPreAdditionalNotes');
-  if (extra) extra.value = siaDraftInputs.additionalNotes || '';
-}
-
-function updatePreSIAControlInput(controlCode, value) {
-  if (!siaDraftInputs.controlInputs) siaDraftInputs.controlInputs = {};
-  siaDraftInputs.controlInputs[controlCode] = value;
-}
-
-function updatePreSIAAdditionalNotes(value) {
-  siaDraftInputs.additionalNotes = value;
-}
-
-function collectSIAUserContext() {
-  const controlLines = SIA_PRE_CONTROLS.map((ctrl) => {
-    const note = String(siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
-    return note ? `${ctrl.code}: ${note}` : '';
-  }).filter(Boolean);
-  const additional = String(siaDraftInputs.additionalNotes || '').trim();
-  if (!controlLines.length && !additional) return '';
-  return `Control Notes:
-${controlLines.join('\n')}
-
-Additional Notes:
-${additional || 'None'}`;
-}
-
-
-function getCerebrasModel() {
-  if (!window.__TRISHUL_CEREBRAS_MODEL__) window.__TRISHUL_CEREBRAS_MODEL__ = 'llama3.1-8b';
-  return window.__TRISHUL_CEREBRAS_MODEL__;
-}
-
-async function requestCerebras(prompt, maxTokens = 700, temperature = 0.2) {
-  await ensureBackendChecked();
-  if (!backendAvailable) {
-    throw new Error('Backend unavailable for Cerebras request');
-  }
-
-  const resp = await fetchViaBackend('/api/cerebras-summary', {
-    method: 'POST',
-    body: JSON.stringify({ prompt, model: getCerebrasModel(), max_tokens: maxTokens, temperature })
-  });
-  const data = await resp.json();
-  if (!resp.ok) throw new Error(data?.error || `Cerebras backend HTTP ${resp.status}`);
-
-  const content = (data?.summary || data?.content || data?.choices?.[0]?.message?.content || '').trim();
-  if (!content) throw new Error('Empty Cerebras response');
-  return content;
-}
-
-async function summarizeSIAInputsPreScan() {
-  const enteredNotes = Object.values(siaDraftInputs.controlInputs || {}).filter(v => String(v || '').trim().length > 0);
-  const additional = String(siaDraftInputs.additionalNotes || '').trim();
-  const hasInput = enteredNotes.length > 0 || additional.length > 0;
-  if (!hasInput) {
-    return '';
-  }
-  const controlText = SIA_PRE_CONTROLS.map((ctrl) => {
-    const note = (siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
-    return note ? `${ctrl.code} (${ctrl.title})
-User Note: ${note}` : '';
-  }).filter(Boolean).join('\n\n');
-
-  const prompt = `Summarize these pre-analysis security impact notes for file review and control tailoring.
-
-Control notes:
-${controlText}
-
-Additional Notes:
-${additional || 'None'}
-
-Provide concise output with:
-1) Executive summary
-2) Key risk flags
-3) Control considerations
-4) Recommended disposition.`;
-
-  try {
-    const summary = await requestCerebras(prompt, 700, 0.2);
-    return summary;
-  } catch (err) {
-    console.error('Cerebras summary error:', err);
-    return '';
-  }
-}
-
-function renderPreSIAControlInputs() {
-  const grid = document.getElementById('siaPreControlsGrid');
-  if (!grid) return;
-  grid.innerHTML = SIA_PRE_CONTROLS.map((ctrl, idx) => {
-    const saved = escapeHtml(siaDraftInputs.controlInputs?.[ctrl.code] || '');
-    return `<div class="sia-control-item"><div class="sia-control-head"><strong>${idx + 1}. ${ctrl.code} — ${escapeHtml(ctrl.title)}</strong></div><textarea class="sia-control-input" id="preControl_${ctrl.code}" placeholder="Add notes for ${ctrl.code} based on this file and environment..." oninput="updatePreSIAControlInput('${ctrl.code}', this.value)">${saved}</textarea></div>`;
-  }).join('');
-  const extra = document.getElementById('siaPreAdditionalNotes');
-  if (extra) extra.value = siaDraftInputs.additionalNotes || '';
-}
-
-function updatePreSIAControlInput(controlCode, value) {
-  if (!siaDraftInputs.controlInputs) siaDraftInputs.controlInputs = {};
-  siaDraftInputs.controlInputs[controlCode] = value;
-}
-
-function updatePreSIAAdditionalNotes(value) {
-  siaDraftInputs.additionalNotes = value;
-}
-
-function collectSIAUserContext() {
-  const controlLines = SIA_PRE_CONTROLS.map((ctrl) => {
-    const note = String(siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
-    return note ? `${ctrl.code}: ${note}` : '';
-  }).filter(Boolean);
-  const additional = String(siaDraftInputs.additionalNotes || '').trim();
-  if (!controlLines.length && !additional) return '';
-  return `Control Notes:
-${controlLines.join('\n')}
-
-Additional Notes:
-${additional || 'None'}`;
-}
-
-
-function getCerebrasModel() {
-  if (!window.__TRISHUL_CEREBRAS_MODEL__) window.__TRISHUL_CEREBRAS_MODEL__ = 'llama3.1-8b';
-  return window.__TRISHUL_CEREBRAS_MODEL__;
-}
-
-async function requestCerebras(prompt, maxTokens = 700, temperature = 0.2) {
-  await ensureBackendChecked();
-  if (!backendAvailable) {
-    throw new Error('Backend unavailable for Cerebras request');
-  }
-
-  const resp = await fetchViaBackend('/api/cerebras-summary', {
-    method: 'POST',
-    body: JSON.stringify({ prompt, model: getCerebrasModel(), max_tokens: maxTokens, temperature })
-  });
-  const data = await resp.json();
-  if (!resp.ok) throw new Error(data?.error || `Cerebras backend HTTP ${resp.status}`);
-
-  const content = (data?.summary || data?.content || data?.choices?.[0]?.message?.content || '').trim();
-  if (!content) throw new Error('Empty Cerebras response');
-  return content;
-}
-
-async function summarizeSIAInputsPreScan() {
-  const enteredNotes = Object.values(siaDraftInputs.controlInputs || {}).filter(v => String(v || '').trim().length > 0);
-  const additional = String(siaDraftInputs.additionalNotes || '').trim();
-  const hasInput = enteredNotes.length > 0 || additional.length > 0;
-  if (!hasInput) {
-    return '';
-  }
-  const controlText = SIA_PRE_CONTROLS.map((ctrl) => {
-    const note = (siaDraftInputs.controlInputs?.[ctrl.code] || '').trim();
-    return note ? `${ctrl.code} (${ctrl.title})
-User Note: ${note}` : '';
-  }).filter(Boolean).join('\n\n');
-
-  const prompt = `Summarize these pre-analysis security impact notes for file review and control tailoring.
-
-Control notes:
-${controlText}
-
-Additional Notes:
-${additional || 'None'}
-
-Provide concise output with:
-1) Executive summary
-2) Key risk flags
-3) Control considerations
-4) Recommended disposition.`;
-
-  try {
-    const summary = await requestCerebras(prompt, 700, 0.2);
-    return summary;
-  } catch (err) {
-    console.error('Cerebras summary error:', err);
+    console.error('Pre-analysis summary error:', err);
     return '';
   }
 }
@@ -3345,13 +2970,17 @@ Respond ONLY with a valid JSON array, no markdown, no preamble:
 [{"code":"AC","title":"Access Control","answer":"Yes","detail":"..."},...]`;
 
   try {
-    const raw = await requestCerebras(prompt, 2048, 0.3);
+    const raw = await requestAiSummary(prompt, 2048, 0.3);
     const clean = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
     if (!Array.isArray(parsed) || parsed.length < 10) throw new Error('Invalid response shape');
+    lastControlsSource = { ai: true, provider: lastAiProvider, reason: null };
     return parsed.map((c, i) => ({ num: String(i + 1), code: c.code, title: c.title, answer: c.answer, detail: c.detail }));
   } catch (e) {
-    console.warn('Cerebras fallback to static controls:', e.message, 'backendAvailable=', backendAvailable);
+    // Record why, so the report can say the controls are generic instead of
+    // presenting boilerplate as file-specific analysis.
+    console.warn('AI control generation failed; using generic controls:', e.message);
+    lastControlsSource = { ai: false, provider: null, reason: e.message };
     return staticFallback();
   }
 }
@@ -3512,7 +3141,7 @@ async function sendAIVerdictToTeams(url, aiVerdict) {
   await sendToTeamsViaBackend(card);
 }
 
-function generateSIAPdf(){if(!lastSIAScanData){showToast('No scan data available');return;}showToast('Generating PDF report...');const d=lastSIAScanData;const{jsPDF}=window.jspdf;const pdf=new jsPDF('p','mm','a4');const pageW=210;const margin=20;const contentW=pageW-2*margin;let y=margin;const today=d.scanDate.toLocaleDateString('en-US',{day:'numeric',month:'long',year:'numeric'});const sizeMB=d.fileSize<1048576?(d.fileSize/1024).toFixed(1)+' KB':(d.fileSize/1048576).toFixed(2)+' MB';const appName=d.fileName.replace(/[-_](windows|win|mac|linux|x64|x86|arm|setup|user|installer|portable)[-_]?/gi,' ').replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\s+/g,' ').trim();const additionalNotes=d.additionalNotes||'None';function checkPage(needed){if(y+needed>280){pdf.addPage();y=margin;addHeader();}}function addHeader(){pdf.setFontSize(8);pdf.setTextColor(150);pdf.text('Security Impact Analysis',pageW/2,12,{align:'center'});pdf.setDrawColor(200);pdf.line(margin,15,pageW-margin,15);}function addFooter(){pdf.setFontSize(8);pdf.setTextColor(150);pdf.text(`Trishul SIA Report — Page ${pdf.internal.getNumberOfPages()}`,pageW/2,290,{align:'center'});}addHeader();y=25;pdf.setFontSize(22);pdf.setTextColor(232,93,38);pdf.setFont('helvetica','bold');pdf.text('Security Impact Analysis',pageW/2,y,{align:'center'});y+=8;pdf.setFontSize(10);pdf.setTextColor(100);pdf.setFont('helvetica','normal');pdf.text(`Trishul SIA — ${today}`,pageW/2,y,{align:'center'});y+=10;pdf.setFontSize(14);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text(appName,pageW/2,y,{align:'center'});y+=15;pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('System Information',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.setLineWidth(0.5);pdf.line(margin,y,margin+50,y);y+=6;const sysInfo=[['System/Application Name',appName],['File Name',d.fileName],['Application Category',getAppCategory(d.fileExt)],['Assessment Agent',d.assessmentAgent],['Date',today]];pdf.setFontSize(9);for(const[label,value]of sysInfo){checkPage(8);pdf.setFont('helvetica','bold');pdf.setTextColor(80);pdf.text(label+':',margin,y);pdf.setFont('helvetica','normal');pdf.setTextColor(40);const valLines=pdf.splitTextToSize(value,contentW-55);pdf.text(valLines,margin+55,y);y+=Math.max(6,valLines.length*5);}y+=8;checkPage(60);pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Summary',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.line(margin,y,margin+30,y);y+=6;const summaryData=[['Name',d.fileName],['Size',`${sizeMB} (${d.fileSize.toLocaleString()} bytes)`],['SHA-256',d.fileHash||'N/A'],['Verdict',d.verdict.title],['Safety Score',`${100-d.verdict.threatScore} / 100`],['Threat Score',`${d.verdict.threatScore} / 100`],['Additional Notes',additionalNotes]];pdf.setFontSize(9);for(const[label,value]of summaryData){checkPage(8);pdf.setFont('helvetica','bold');pdf.setTextColor(80);pdf.text(label+':',margin,y);pdf.setFont('helvetica','normal');pdf.setTextColor(40);const valLines=pdf.splitTextToSize(String(value),contentW-55);pdf.text(valLines,margin+55,y);y+=Math.max(6,valLines.length*5);}y+=8;checkPage(20);pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Scan Engine Results',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.line(margin,y,margin+50,y);y+=6;pdf.setFontSize(8);for(const r of d.results){checkPage(12);const color=r.status==='clean'?[13,159,110]:r.status==='suspicious'?[217,119,6]:r.status==='malicious'?[220,38,38]:[100,100,100];pdf.setFillColor(...color);pdf.circle(margin+2,y-1.2,1.2,'F');pdf.setFont('helvetica','bold');pdf.setTextColor(40);pdf.text(r.engine,margin+6,y);pdf.setFont('helvetica','bold');pdf.setTextColor(...color);pdf.text(r.status.toUpperCase(),margin+65,y);pdf.setFont('helvetica','normal');pdf.setTextColor(80);const descLines=pdf.splitTextToSize(r.description,contentW-6);y+=4;pdf.text(descLines,margin+6,y);y+=descLines.length*4+3;}pdf.addPage();y=margin;addHeader();y=25;pdf.setFontSize(16);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Security Controls Assessment',pageW/2,y,{align:'center'});y+=10;const controls=d.controls;pdf.setFontSize(8);let ctrlNum=1;for(const ctrl of controls){checkPage(18);pdf.setFillColor(213,232,240);pdf.rect(margin,y-3,contentW,7,'F');pdf.setFont('helvetica','bold');pdf.setTextColor(11,29,58);pdf.text(`${ctrlNum}. ${ctrl.code} (${ctrl.title})`,margin+2,y+1.5);const answerColor=ctrl.answer==='Yes'?[220,38,38]:[13,159,110];pdf.setTextColor(...answerColor);pdf.setFont('helvetica','bold');pdf.text(ctrl.answer==='Yes'?'YES':'NO',pageW-margin-10,y+1.5,{align:'right'});y+=8;pdf.setFont('helvetica','normal');pdf.setTextColor(80);pdf.setFontSize(7.5);const detailLines=pdf.splitTextToSize(ctrl.detail,contentW-4);pdf.text(detailLines,margin+2,y);y+=detailLines.length*3.5+4;pdf.setFontSize(8);ctrlNum++;}checkPage(15);y+=5;pdf.setFontSize(7);pdf.setTextColor(150);pdf.setFont('helvetica','italic');const fnLines=pdf.splitTextToSize('If you selected "yes" to any of the above, please update the appropriate document in the security package (SSP, boundary diagram, control implementation, policies, procedures, plans).',contentW);pdf.text(fnLines,margin,y);addFooter();const safeName=appName.replace(/[^a-zA-Z0-9]/g,'_').substring(0,40);pdf.save(`SIA_${safeName}_${d.scanDate.toISOString().split('T')[0]}.pdf`);showToast('SIA PDF report downloaded!');}
+function generateSIAPdf(){if(!lastSIAScanData){showToast('No scan data available');return;}showToast('Generating PDF report...');const d=lastSIAScanData;const{jsPDF}=window.jspdf;const pdf=new jsPDF('p','mm','a4');const pageW=210;const margin=20;const contentW=pageW-2*margin;let y=margin;const today=d.scanDate.toLocaleDateString('en-US',{day:'numeric',month:'long',year:'numeric'});const sizeMB=d.fileSize<1048576?(d.fileSize/1024).toFixed(1)+' KB':(d.fileSize/1048576).toFixed(2)+' MB';const appName=d.fileName.replace(/[-_](windows|win|mac|linux|x64|x86|arm|setup|user|installer|portable)[-_]?/gi,' ').replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').replace(/\s+/g,' ').trim();const additionalNotes=d.additionalNotes||'None';function checkPage(needed){if(y+needed>280){pdf.addPage();y=margin;addHeader();}}function addHeader(){pdf.setFontSize(8);pdf.setTextColor(150);pdf.text('Security Impact Analysis',pageW/2,12,{align:'center'});pdf.setDrawColor(200);pdf.line(margin,15,pageW-margin,15);}function addFooter(){pdf.setFontSize(8);pdf.setTextColor(150);pdf.text(`Trishul SIA Report — Page ${pdf.internal.getNumberOfPages()}`,pageW/2,290,{align:'center'});}addHeader();y=25;pdf.setFontSize(22);pdf.setTextColor(232,93,38);pdf.setFont('helvetica','bold');pdf.text('Security Impact Analysis',pageW/2,y,{align:'center'});y+=8;pdf.setFontSize(10);pdf.setTextColor(100);pdf.setFont('helvetica','normal');pdf.text(`Trishul SIA — ${today}`,pageW/2,y,{align:'center'});y+=10;pdf.setFontSize(14);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text(appName,pageW/2,y,{align:'center'});y+=15;pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('System Information',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.setLineWidth(0.5);pdf.line(margin,y,margin+50,y);y+=6;const sysInfo=[['System/Application Name',appName],['File Name',d.fileName],['Application Category',getAppCategory(d.fileExt)],['Assessment Agent',d.assessmentAgent],['Date',today]];pdf.setFontSize(9);for(const[label,value]of sysInfo){checkPage(8);pdf.setFont('helvetica','bold');pdf.setTextColor(80);pdf.text(label+':',margin,y);pdf.setFont('helvetica','normal');pdf.setTextColor(40);const valLines=pdf.splitTextToSize(value,contentW-55);pdf.text(valLines,margin+55,y);y+=Math.max(6,valLines.length*5);}y+=8;checkPage(60);pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Summary',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.line(margin,y,margin+30,y);y+=6;const summaryData=[['Name',d.fileName],['Size',`${sizeMB} (${d.fileSize.toLocaleString()} bytes)`],['SHA-256',d.fileHash||'N/A'],['Verdict',d.verdict.title],['Safety Score',`${100-d.verdict.threatScore} / 100`],['Threat Score',`${d.verdict.threatScore} / 100`],['Additional Notes',additionalNotes]];pdf.setFontSize(9);for(const[label,value]of summaryData){checkPage(8);pdf.setFont('helvetica','bold');pdf.setTextColor(80);pdf.text(label+':',margin,y);pdf.setFont('helvetica','normal');pdf.setTextColor(40);const valLines=pdf.splitTextToSize(String(value),contentW-55);pdf.text(valLines,margin+55,y);y+=Math.max(6,valLines.length*5);}y+=8;checkPage(20);pdf.setFontSize(13);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Scan Engine Results',margin,y);y+=2;pdf.setDrawColor(232,93,38);pdf.line(margin,y,margin+50,y);y+=6;pdf.setFontSize(8);for(const r of d.results){checkPage(12);const color=r.status==='clean'?[13,159,110]:r.status==='suspicious'?[217,119,6]:r.status==='malicious'?[220,38,38]:[100,100,100];pdf.setFillColor(...color);pdf.circle(margin+2,y-1.2,1.2,'F');pdf.setFont('helvetica','bold');pdf.setTextColor(40);pdf.text(r.engine,margin+6,y);pdf.setFont('helvetica','bold');pdf.setTextColor(...color);pdf.text(r.status.toUpperCase(),margin+65,y);pdf.setFont('helvetica','normal');pdf.setTextColor(80);const descLines=pdf.splitTextToSize(r.description,contentW-6);y+=4;pdf.text(descLines,margin+6,y);y+=descLines.length*4+3;}pdf.addPage();y=margin;addHeader();y=25;pdf.setFontSize(16);pdf.setTextColor(11,29,58);pdf.setFont('helvetica','bold');pdf.text('Security Controls Assessment',pageW/2,y,{align:'center'});y+=8;const ctrlSrc=d.controlsSource||{ai:false,reason:'unknown'};if(!ctrlSrc.ai){pdf.setFontSize(8);pdf.setTextColor(180,60,10);pdf.setFont('helvetica','bold');const warnLines=pdf.splitTextToSize('GENERIC CONTROLS - NOT TAILORED TO THIS FILE. AI control generation was unavailable ('+(ctrlSrc.reason||'unknown')+'), so the assessment below is a static template. Review and edit every control before use.',contentW);pdf.text(warnLines,margin,y);y+=warnLines.length*4+4;}else{pdf.setFontSize(8);pdf.setTextColor(13,159,110);pdf.setFont('helvetica','normal');pdf.text('Controls tailored by AI ('+(ctrlSrc.provider||'ai')+') from this file scan results and reviewer notes.',margin,y);y+=6;}pdf.setTextColor(40);y+=2;const controls=d.controls;pdf.setFontSize(8);let ctrlNum=1;for(const ctrl of controls){checkPage(18);pdf.setFillColor(213,232,240);pdf.rect(margin,y-3,contentW,7,'F');pdf.setFont('helvetica','bold');pdf.setTextColor(11,29,58);pdf.text(`${ctrlNum}. ${ctrl.code} (${ctrl.title})`,margin+2,y+1.5);const answerColor=ctrl.answer==='Yes'?[220,38,38]:[13,159,110];pdf.setTextColor(...answerColor);pdf.setFont('helvetica','bold');pdf.text(ctrl.answer==='Yes'?'YES':'NO',pageW-margin-10,y+1.5,{align:'right'});y+=8;pdf.setFont('helvetica','normal');pdf.setTextColor(80);pdf.setFontSize(7.5);const detailLines=pdf.splitTextToSize(ctrl.detail,contentW-4);pdf.text(detailLines,margin+2,y);y+=detailLines.length*3.5+4;pdf.setFontSize(8);ctrlNum++;}checkPage(15);y+=5;pdf.setFontSize(7);pdf.setTextColor(150);pdf.setFont('helvetica','italic');const fnLines=pdf.splitTextToSize('If you selected "yes" to any of the above, please update the appropriate document in the security package (SSP, boundary diagram, control implementation, policies, procedures, plans).',contentW);pdf.text(fnLines,margin,y);addFooter();const safeName=appName.replace(/[^a-zA-Z0-9]/g,'_').substring(0,40);pdf.save(`SIA_${safeName}_${d.scanDate.toISOString().split('T')[0]}.pdf`);showToast('SIA PDF report downloaded!');}
 
 // ═══════════════ BULK SCANNER ═══════════════
 
