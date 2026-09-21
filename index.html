@@ -1157,9 +1157,11 @@ const resp = await fetchWithCORSFallback(
 // ═══════════════ AI SECURITY VERDICT ═══════════════
 // Server evidence policy; AI can optionally prioritize verified findings.
  
+const SUPPORTED_POLICY_VERSIONS = ['url-evidence-v1', 'url-evidence-v2'];
+
 async function checkAISecurityVerdict(parsedUrl) {
-  if (!backendAvailable) return unavailableUrlVerdict();
- 
+  // A failed /health probe does not prove the API is down, so still attempt the
+  // assessment and fall back only on a real failure.
   try {
     const resp = await fetchViaBackend('/api/openrouter-security-check', {
       method: 'POST',
@@ -1168,20 +1170,33 @@ async function checkAISecurityVerdict(parsedUrl) {
         url: parsedUrl.full
       })
     });
- 
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    if (!resp.ok) throw new Error(`backend returned HTTP ${resp.status}`);
     const data = await resp.json();
     const v = data.ai_verdict;
-    if (!v || v.policy_version !== 'url-evidence-v1' || !['ALLOW', 'BLOCK', 'REVIEW'].includes(v.verdict) || !Array.isArray(v.key_findings) || !v.key_findings.every(f => typeof f === 'string') || !['summary', 'recommendation', 'confidence', 'risk_level'].every(k => typeof v[k] === 'string')) return unavailableUrlVerdict();
+    if (!v || !['ALLOW', 'BLOCK', 'REVIEW'].includes(v.verdict) || !Array.isArray(v.key_findings) || !v.key_findings.every(f => typeof f === 'string') || !['summary', 'recommendation', 'confidence', 'risk_level'].every(k => typeof v[k] === 'string')) {
+      throw new Error('backend returned an unrecognised verdict payload');
+    }
+    if (!SUPPORTED_POLICY_VERSIONS.includes(v.policy_version)) {
+      throw new Error(`backend is running an unsupported policy (${v.policy_version || 'none'}) — deploy the current Worker`);
+    }
+    backendAvailable = true;
     return v;
   } catch (e) {
     console.error('AI Security Check failed:', e);
-    return unavailableUrlVerdict();
+    return unavailableUrlVerdict(e && e.message ? e.message : String(e));
   }
 }
 
-function unavailableUrlVerdict() {
-  return { verdict: 'REVIEW', confidence: 'LOW', risk_level: 'UNKNOWN', summary: 'URL reputation assessment is unavailable. No approval can be inferred.', key_findings: [], recommendation: 'Restore the backend connection and retry, or review manually.' };
+function unavailableUrlVerdict(reason) {
+  return {
+    verdict: 'REVIEW',
+    confidence: 'LOW',
+    risk_level: 'UNKNOWN',
+    summary: 'URL reputation assessment is unavailable, so no approval can be inferred. This is a tool failure, not a finding about the URL.',
+    key_findings: reason ? [`Assessment could not be completed: ${reason}.`] : [],
+    recommendation: 'Restore the backend connection and retry, or review manually.'
+  };
 }
 
 function renderAIVerdictCard(aiVerdict) {
