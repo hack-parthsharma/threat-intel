@@ -378,12 +378,12 @@ body.dark .agent-input:focus { background: #141B2D; }
   <div class="landing-stats">
     <div class="landing-stat"><div class="landing-stat-num" id="statEngines">20+</div><div class="landing-stat-label">Engines</div></div>
     <div class="landing-stat"><div class="landing-stat-num" id="statAPIs">8</div><div class="landing-stat-label">Live APIs</div></div>
-    <div class="landing-stat"><div class="landing-stat-num" id="statAI">2</div><div class="landing-stat-label">AI Models</div></div>
+    <div class="landing-stat"><div class="landing-stat-num" id="statAI">1</div><div class="landing-stat-label">AI Models</div></div>
     <div class="landing-stat"><div class="landing-stat-num" id="statExports">5</div><div class="landing-stat-label">Export Formats</div></div>
   </div>
   <div class="landing-footer-note">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-    Powered by VirusTotal · URLhaus · ThreatFox · PhishTank · AbuseIPDB · Cloudflare Radar · MetaDefender · Cerebras AI · OpenRouter
+    Powered by VirusTotal · URLhaus · ThreatFox · PhishTank · AbuseIPDB · Cloudflare Radar · MetaDefender · Cloudflare Workers AI
   </div>
 </div>
 
@@ -510,7 +510,7 @@ body.dark .agent-input:focus { background: #141B2D; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       Pre-Analysis Control Inputs
     </div>
-    <p style="font-size:12px;color:var(--text-secondary)">Fill in control-specific notes before running file analysis. If notes are provided, they are summarized via Cerebras and used to guide Cerebras-generated control updates.</p>
+    <p style="font-size:12px;color:var(--text-secondary)">Fill in control-specific notes before running file analysis. If notes are provided, they are summarized by AI and used to guide the AI-generated control updates.</p>
     <div class="sia-controls-grid" id="siaPreControlsGrid"></div>
     <div style="margin-top:14px">
       <label class="input-label" style="margin-bottom:8px">Additional Notes</label>
@@ -522,7 +522,7 @@ body.dark .agent-input:focus { background: #141B2D; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       Pre-Analysis Control Inputs
     </div>
-    <p style="font-size:12px;color:var(--text-secondary)">Fill in control-specific notes before running file analysis. If notes are provided, they are summarized via Cerebras and used to guide Cerebras-generated control updates.</p>
+    <p style="font-size:12px;color:var(--text-secondary)">Fill in control-specific notes before running file analysis. If notes are provided, they are summarized by AI and used to guide the AI-generated control updates.</p>
     <div class="sia-controls-grid" id="siaPreControlsGrid"></div>
     <div style="margin-top:14px">
       <label class="input-label" style="margin-bottom:8px">Additional Notes</label>
@@ -648,7 +648,7 @@ body.dark .agent-input:focus { background: #141B2D; }
 
 <script>
 // ================================================================
-// TRISHUL v5.0 — 21-Engine URL Threat Intelligence + SIA (12 File Engines + Cerebras AI Controls)
+// TRISHUL v5.0 — 21-Engine URL Threat Intelligence + SIA (12 File Engines + AI Controls)
 // NEW: PhishTank, AbuseIPDB, Cloudflare Radar, Cert Transparency,
 //      IP Geolocation/ASN, VT Community Votes
 // ================================================================
@@ -1317,7 +1317,7 @@ async function startScan() {
 
   pFill.style.width = '100%';
   pText.textContent = 'Running AI analysis...';
-  pEngine.textContent = 'OpenRouter AI Verdict';
+  pEngine.textContent = 'AI Security Verdict';
   radarEngEl.textContent = 'AI Security Verdict';
   radarStatEl.textContent = 'Analyzing with AI...';
 
@@ -3353,7 +3353,10 @@ function renderBulkResults(results) {
     const susCount = r.results.filter(x => x.status === 'suspicious').length;
     const cleanCount = r.results.filter(x => x.status === 'clean').length;
     const aiV = r.aiVerdict;
-    const aiLabel = aiV ? (aiV.verdict === 'ALLOW' ? '<span style="color:var(--safe);font-weight:700">✅ ALLOW</span>' : aiV.verdict === 'BLOCK' ? '<span style="color:var(--danger);font-weight:700">🚫 BLOCK</span>' : '<span style="color:var(--warn);font-weight:700">⚠️ REVIEW</span>') : '<span style="color:var(--text-muted)">—</span>';
+    // Hover carries the evidence reasoning; a bare badge across 25 rows hides why.
+    const aiTip = aiV ? escapeHtml([aiV.summary, aiV.ai_explanation].filter(Boolean).join(' — ')) : '';
+    const aiConf = aiV && aiV.confidence ? `<br><span style="color:var(--text-muted);font-size:10px">${escapeHtml(aiV.confidence)} confidence</span>` : '';
+    const aiLabel = aiV ? `<span title="${aiTip}">` + (aiV.verdict === 'ALLOW' ? '<span style="color:var(--safe);font-weight:700">✅ ALLOW</span>' : aiV.verdict === 'BLOCK' ? '<span style="color:var(--danger);font-weight:700">🚫 BLOCK</span>' : '<span style="color:var(--warn);font-weight:700">⚠️ REVIEW</span>') + aiConf + '</span>' : '<span style="color:var(--text-muted)">—</span>';
     html += `<tr>
       <td style="font-weight:700;color:var(--text-muted)">${i + 1}</td>
       <td class="bulk-url-cell" title="${safeUrl}">${safeUrl}</td>
